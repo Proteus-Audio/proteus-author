@@ -1,5 +1,5 @@
 {
-  "name": "electron-vue-template",
+  "name": "proteus",
   "version": "0.1.0",
   "description": "A minimal Electron + Vue application",
   "main": "build/main/main.js",
@@ -12,8 +12,8 @@
   },
   "repository": "https://github.com/deluze/electron-vue-template",
   "author": {
-    "name": "Deluze",
-    "url": "https://github.com/Deluze"
+    "name": "Adam Howard",
+    "url": "https://github.com/howardah"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^2.2.4",

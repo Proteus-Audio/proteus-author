@@ -1,0 +1,66 @@
+Arguments: 
+  /usr/local/bin/node /usr/local/Cellar/yarn/1.22.18/libexec/bin/yarn.js
+
+PATH: 
+  /Users/innocentsmith/Library/Preferences/netlify/helper/bin:/Users/innocentsmith/Dev/google-cloud-sdk/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Library/Apple/usr/bin:/Users/innocentsmith/Dev/flutter/bin:/usr/local/bin/cdp
+
+Yarn version: 
+  1.22.18
+
+Node version: 
+  16.13.1
+
+Platform: 
+  darwin x64
+
+Trace: 
+  Error: connect ENETUNREACH 104.16.26.35:443 - Local (0.0.0.0:60026)
+      at internalConnect (node:net:931:16)
+      at defaultTriggerAsyncIdScope (node:internal/async_hooks:454:18)
+      at emitLookup (node:net:1075:9)
+      at /usr/local/Cellar/yarn/1.22.18/libexec/lib/cli.js:103580:28
+      at /usr/local/Cellar/yarn/1.22.18/libexec/lib/cli.js:103489:13
+      at RawTask.module.exports.RawTask.call (/usr/local/Cellar/yarn/1.22.18/libexec/lib/cli.js:79577:19)
+      at flush (/usr/local/Cellar/yarn/1.22.18/libexec/lib/cli.js:79659:29)
+      at processTicksAndRejections (node:internal/process/task_queues:78:11)
+      at runNextTicks (node:internal/process/task_queues:65:3)
+      at processImmediate (node:internal/timers:437:9)
+
+npm manifest: 
+  {
+    "name": "electron-vue-template",
+    "version": "0.1.0",
+    "description": "A minimal Electron + Vue application",
+    "main": "build/main/main.js",
+    "scripts": {
+      "dev": "node scripts/dev-server.js",
+      "build": "node scripts/build.js && electron-builder -c config/electron-builder.json",
+      "build:win": "node scripts/build.js && electron-builder -c config/electron-builder.json --win",
+      "build:mac": "node scripts/build.js && electron-builder -c config/electron-builder.json --mac",
+      "build:linux": "node scripts/build.js && electron-builder -c config/electron-builder.json --linux"
+    },
+    "repository": "https://github.com/deluze/electron-vue-template",
+    "author": {
+      "name": "Deluze",
+      "url": "https://github.com/Deluze"
+    },
+    "devDependencies": {
+      "@vitejs/plugin-vue": "^2.2.4",
+      "@vue/cli": "^5.0.1",
+      "chalk": "^4.1.2",
+      "chokidar": "^3.5.3",
+      "electron": "^19.0.0",
+      "electron-builder": "^23.0.3",
+      "typescript": "^4.6.2",
+      "vite": "^2.9.9"
+    },
+    "dependencies": {
+      "vue": "^3.2.36"
+    }
+  }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile
