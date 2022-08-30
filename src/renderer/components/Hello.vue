@@ -1,50 +1,58 @@
-<script setup lang="ts">
-const msg = 'Electron + Vue3 template';
-</script>
-
 <template>
   <div id="hello">
-    <div class="small">
-    <img src="http://vuejs.org/images/logo.png">
+    <div class="large">
+      <img :src="imageSrc" />
     </div>
-    <h1>{{ msg }}</h1>
+    <el-button label="New Header" @click="getImage" :icon="IceCream" class="" >New Header</el-button>
   </div>
 </template>
 
-<style scoped>
+<script setup lang="ts">
+import { computed, ref } from "vue";
+import { ipcRenderer, fs } from "../electron";
+
+import { IceCream } from "@element-plus/icons-vue";
+
+const fileName = ref("");
+const filePath = ref("");
+const fileSrc = ref("");
+const directory = ref("/");
+
+const imageSrc = computed(() =>
+  // fileSrc.value !== "" ? fileSrc.value : "./images/sevs_nevess.png"
+  filePath.value !== "" ? `file://${filePath.value}` : "./images/sevs_nevess.png"
+);
+
+const getImage = async (): Promise<void> => {
+  const file = await ipcRenderer.invoke("openFile", "main", directory.value);
+  if (file === "canceled") return;
+  if (!/image/i.test(file.type)) {
+    return;
+  }
+  fileName.value = file.fileName;
+  filePath.value = file.filePath;
+  fileSrc.value = file.src;
+};
+</script>
+
+<style lang="scss" scoped>
 #hello {
-  font-family: 'Avenir', Helvetica, Arial, sans-serif;
+  font-family: "Avenir", Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
-  margin-top: 60px;
+  margin: 60px 0;
+  .small {
+    max-width: 150px;
+    margin: auto;
+  }
+  .large {
+    max-width: 550px;
+    margin: auto;
+  }
 }
-
-h1, h2 {
-  font-weight: normal;
-}
-
-ul {
-  list-style-type: none;
-  padding: 0;
-}
-
-li {
-  display: inline-block;
-  margin: 0 10px;
-}
-
-a {
-  color: #42b983;
-}
-
-.small {
-  max-width: 150px;
-  margin: auto;
-}
-
 img {
-  width: 100%
+  width: 100%;
 }
 </style>
