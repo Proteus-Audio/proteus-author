@@ -5758,11 +5758,6 @@ primeicons@^5.0.0:
   resolved "https://registry.yarnpkg.com/primeicons/-/primeicons-5.0.0.tgz#73a0b6028a77c58a9eeb331ad13aaf085e8451ee"
   integrity sha512-heygWF0X5HFI1otlZE62pp6ye7sZ8om78J9au2BRkg8O7Y8AHTZ9qKMRzchZUHLe8zUAvdi6hZzzm9XxgwIExw==
 
-primevue@^3.16.2:
-  version "3.16.2"
-  resolved "https://registry.yarnpkg.com/primevue/-/primevue-3.16.2.tgz#07b3b519e12579921801d17836c060a0973f71bc"
-  integrity sha512-wvZj0kEnpVFZDb3vLy7SFrjZaPBjrznt4iq/CiLmofcPETwxQjbr7E+8ZFtPiQR1oUvhXyQ/Lyu9yTj9TjA0+g==
-
 prismjs@^1.23.0:
   version "1.29.0"
   resolved "https://registry.yarnpkg.com/prismjs/-/prismjs-1.29.0.tgz#f113555a8fa9b57c35e637bba27509dcf802dd12"

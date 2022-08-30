@@ -1,15 +1,15 @@
 <template>
   <div id="app">
     <BaseContainer>
-      <Hello />
+      <!-- <Hello /> -->
+      <h1 class="center">Proteus.play</h1>
       <a class="shuffler" @click="prot.setSelections">SHUFFLE!</a>
-      <BaseTransport />
-      <TrackBin
-        v-for="track in prot.tracks"
-        @add-tracks="addAudioFiles"
-        :track-id="track.id"
-        :key="track.id"
-      />
+
+      <el-affix :offset="20">
+        <BaseTransport />
+      </el-affix>
+
+      <TrackBin v-for="track in prot.tracks" :track-id="track.id" :key="track.id" />
       <div class="padding"></div>
     </BaseContainer>
 
@@ -18,35 +18,19 @@
 </template>
 
 <script setup lang="ts">
-import "primevue/resources/primevue.min.css";
-import "primeicons/primeicons.css";
 import Hello from "./components/Hello.vue";
-import { onMounted, ref } from "vue";
-import type { Ref } from "vue";
+import { onMounted } from "vue";
 import EffectRack from "./components/effects/EffectRack.vue";
 import BaseContainer from "./components/base/BaseContainer.vue";
 import TrackBin from "./components/track/TrackBin.vue";
-import { Track } from "./typings/tracks";
 
 import { useProteusStore } from "./stores/proteus";
-import BaseTransport from './components/base/BaseTransport.vue';
+import BaseTransport from "./components/base/BaseTransport.vue";
 
 const prot = useProteusStore();
 
-const addAudioFiles = (input: any) => {
-  const key = input.id;
-  prot.addFileToTrack(input.files, key);
-  addEmptyTrackIfNone();
-};
-
-const addEmptyTrackIfNone = () => {
-  if (!prot.emptyTrackExists) {
-    prot.addTrack({ id: prot.nextTrackId, files: [] });
-  }
-};
-
 onMounted(() => {
-  addEmptyTrackIfNone();
+  prot.addEmptyTrackIfNone();
 });
 </script>
 
@@ -54,6 +38,10 @@ onMounted(() => {
 body {
   margin: 0;
   font-family: "Silkscreen", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.center {
+  text-align: center;
 }
 
 // img.file {
@@ -69,7 +57,6 @@ body {
   &:hover {
     opacity: 0.7;
   }
-
 }
 
 .padding {

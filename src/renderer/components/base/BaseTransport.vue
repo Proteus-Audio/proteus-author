@@ -1,41 +1,36 @@
 <template>
     <div class="transport">
-        <el-button @click="play">Play</el-button>
-        <el-button @click="pause">Pause</el-button>
-        <el-button @click="stop">Stop</el-button>
+        <el-button v-if="!prot.isPlaying" :icon="VideoPlay" @click="play" text>play</el-button>
+        <el-button v-else :icon="VideoPause" @click="pause" text>pause</el-button>
+        <el-button :icon="Close" @click="stop" text>stop</el-button>
     </div>
 </template>
 
 <script setup lang="ts">
+import { useProteusStore } from "../../stores/proteus";
+import playMaster from "../../public/playmaster";
+import { VideoPlay, VideoPause, Close } from "@element-plus/icons-vue";
+
+const prot = useProteusStore();
 
 const play = () => {
-    const players = document.getElementsByClassName('playable') as HTMLCollectionOf<HTMLAudioElement>;
-    for (let i = 0; i < players.length; i++) {
-        const player = players[i];
-        player.play();
-    }
-}
+    playMaster.play();
+    prot.setPlaying(true);
+};
 
 const pause = () => {
-    const players = document.getElementsByClassName('player') as HTMLCollectionOf<HTMLAudioElement>;
-    for (let i = 0; i < players.length; i++) {
-        const player = players[i];
-        player.pause();
-    }
-}
+  playMaster.pause();
+  prot.setPlaying(false);
+};
 
 const stop = () => {
-    const players = document.getElementsByClassName('player') as HTMLCollectionOf<HTMLAudioElement>;
-    for (let i = 0; i < players.length; i++) {
-        const player = players[i];
-        player.pause();
-        player.currentTime = 0;
-    }
-}
+  playMaster.stop();
+  prot.setPlaying(false);
+};
 </script>
 
 <style scoped>
 .transport {
-    margin-bottom: 1em;
+  margin-bottom: 1em;
 }
 </style>

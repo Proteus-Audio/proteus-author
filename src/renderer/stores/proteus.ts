@@ -1,7 +1,9 @@
 import { defineStore } from "pinia";
 import { Track, TrackFile } from "../typings/tracks";
-import _ from "lodash";
+import {sample, assignIn} from "lodash";
 import { computed, ref } from "vue";
+import { Transport } from "../typings/transport";
+import PlayMaster from '../typings/playMaster';
 
 export const useProteusStore = defineStore("prot", () => {
   /////////////
@@ -9,6 +11,7 @@ export const useProteusStore = defineStore("prot", () => {
   /////////////
 
   const tracks = ref([] as Track[]);
+  const transport = ref({ playing: false, currentTime: 0, master: new PlayMaster() } as Transport);
 
   /////////////
   // GETTERS //
@@ -24,9 +27,19 @@ export const useProteusStore = defineStore("prot", () => {
 
   const emptyTrackExists = computed((): boolean => tracks.value.some((t) => t.files.length === 0));
 
+  const isPlaying = computed(():boolean => transport.value.playing);
+
   /////////////
   // SETTERS //
   /////////////
+
+  const setPlaying = (playing:boolean): void => {
+    transport.value.playing = playing;
+  }
+
+  const togglePlaying = (playing:boolean): void => {
+    transport.value.playing = !isPlaying.value;
+  }
 
   function getTrackFromId(trackId: number): Track | undefined {
     return tracks.value.find((v) => v.id === trackId);
@@ -53,6 +66,12 @@ export const useProteusStore = defineStore("prot", () => {
     return track;
   }
 
+  const addEmptyTrackIfNone = () => {
+    if (!emptyTrackExists.value) {
+      addTrack({ id: nextTrackId.value, files: [] });
+    }
+  };
+
   function setSelections() {
     tracks.value.forEach((track, i) => {
       setTrackSelection(track.id, i);
@@ -68,14 +87,14 @@ export const useProteusStore = defineStore("prot", () => {
   function setTrackSelection(trackId: number, index?: number) {
     index = index || tracks.value.findIndex((v) => v.id === trackId);
     const options = tracks.value[index].files.map((f) => f.id);
-    tracks.value[index].selection = _.sample(options);
+    tracks.value[index].selection = sample(options);
   }
 
   function addFileToTrack(files: File | File[], trackId: number) {
     const index = tracks.value.findIndex((v) => v.id === trackId);
     if (!Array.isArray(files)) files = [files];
     files.forEach((file) => {
-      const trackFile: TrackFile = _.assignIn(file, {
+      const trackFile: TrackFile = assignIn(file, {
         id: nextFileId(tracks.value[index]),
         parentId: trackId,
       });
@@ -87,28 +106,32 @@ export const useProteusStore = defineStore("prot", () => {
     const index = tracks.value.findIndex((v) => v.id === trackId);
     if (!Array.isArray(fileIds)) fileIds = [fileIds];
     fileIds.forEach((id) => {
-      const fileIndex = tracks.value[index].files.findIndex(file => file.id === id);
-      if(fileIndex !== -1) tracks.value[index].files.splice(fileIndex, 1);
-      if(fileIndex === tracks.value[index].selection) {
-        console.log(tracks.value[index])
+      const fileIndex = tracks.value[index].files.findIndex((file) => file.id === id);
+      if (fileIndex !== -1) tracks.value[index].files.splice(fileIndex, 1);
+      if (fileIndex === tracks.value[index].selection) {
+        console.log(tracks.value[index]);
         setTrackSelection(tracks.value[index].id, index);
-        console.log(tracks.value[index])
+        console.log(tracks.value[index]);
       }
     });
   }
 
   return {
     tracks,
+    isPlaying,
     nextTrackId,
     emptyTrackExists,
+    setPlaying,
+    togglePlaying,
     getTrackFromId,
     getOrCreateTrackFromId,
     nextFileId,
     addTrack,
+    addEmptyTrackIfNone,
     addFileToTrack,
     setSelections,
     getTrackSelection,
     setTrackSelection,
-    removeFileFromTrack
+    removeFileFromTrack,
   };
 });

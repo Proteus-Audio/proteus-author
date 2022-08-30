@@ -1,8 +1,8 @@
 <template>
   <div v-bind="getRootProps()" :class="`track-bin ${isDragActive ? 'drag' : ''}`">
     <div v-if="!fresh" class="bin">
-      <input type="text" class="bin-name" placeholder="Click to Add Name" v-model="binName" />
-      <!-- <div type="text" class="bin-name" >{{binName}}</div> -->
+      <!-- <input type="text" class="bin-name" placeholder="Click to Add Name" v-model="binName" /> -->
+      <div type="text" class="bin-name">{{ binName }}</div>
       <span class="flex">
         <div class="waveforms">
           <TrackWaveform
@@ -25,21 +25,16 @@
       <el-drawer
         ref="folderContents"
         v-model="folderOpen"
-        title="I have a nested form inside!"
+        :title="`Track Bin Contents`"
         custom-class="drawer"
       >
-      <div class="tracklist">
+        <div class="tracklist">
           <div v-for="file in track.files">
             {{ file.name }}
-  
-          <el-button
-            :icon="Close"
-            class="closeButton"
-            @click="() => removeFile(file.id)"
-            text
-          />
+
+            <el-button :icon="Delete" class="closeButton" @click="() => removeFile(file.id)" text />
           </div>
-      </div>
+        </div>
       </el-drawer>
     </div>
 
@@ -63,7 +58,7 @@ import { useDropzone } from "vue3-dropzone";
 import { useProteusStore } from "../../stores/proteus";
 import TrackWaveform from "./TrackWaveform.vue";
 
-import { Folder, Close } from "@element-plus/icons-vue";
+import { Folder, Delete } from "@element-plus/icons-vue";
 // import Button from "element-plus";
 
 interface Props {
@@ -76,11 +71,8 @@ const prot = useProteusStore();
 
 const track = prot.getOrCreateTrackFromId(props.trackId);
 
-const binName = ref("");
 const folderOpen = ref(false);
 const error = ref("");
-
-const emit = defineEmits(["add-tracks"]);
 
 const errorMessage = (code: string): string => {
   type Lookup = { [key: string]: string };
@@ -96,18 +88,18 @@ async function onDrop(acceptFiles: File[], rejectReasons: any) {
   else error.value = "";
 
   if (acceptFiles.length > 0) {
-    emit("add-tracks", { files: acceptFiles, id: props.trackId });
-
+    prot.addFileToTrack(acceptFiles, props.trackId);
     prot.setTrackSelection(props.trackId);
+    prot.addEmptyTrackIfNone();
   }
 }
 
-const removeFile = (id: number) => prot.removeFileFromTrack(id, props.trackId)
+const removeFile = (id: number) => prot.removeFileFromTrack(id, props.trackId);
 
-onUpdated(() => {
-  const filename: string | undefined = track.files[0]?.name;
-  if (filename && binName.value === "") binName.value = filename.replace(/\..*$/, "");
-});
+const binName = computed(() => {
+  const filename: string | undefined = prot.getTrackSelection(props.trackId)?.name;
+  return filename ? filename.replace(/\..*$/, "") : "";
+})
 
 const fresh = computed(() => {
   const isFresh = track.files.length === 0;
@@ -174,15 +166,15 @@ const { getRootProps, getInputProps, isDragActive, open, ...rest } = useDropzone
 
     &:deep(.drawer) {
       min-width: 300px;
-      
+
       .tracklist {
         display: grid;
-    //   grid-template-columns: 1fr 45px;
+        //   grid-template-columns: 1fr 45px;
       }
 
-    //   .closeButton {
-    //     display: inline-block;
-    //   }
+      //   .closeButton {
+      //     display: inline-block;
+      //   }
     }
   }
 }

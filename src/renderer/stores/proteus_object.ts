@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { Track, TrackFile } from "../typings/tracks";
-import _ from "lodash";
+import { assignIn } from "lodash";
 
 export const useProteusStore = defineStore("prot", {
   state: () => {
@@ -44,7 +44,7 @@ export const useProteusStore = defineStore("prot", {
       const index = this.tracks.findIndex((v) => v.id === trackId);
       if (!Array.isArray(files)) files = [files];
       files.forEach((file) => {
-        const trackFile: TrackFile = _.assignIn(file, {
+        const trackFile: TrackFile = assignIn(file, {
           id: this.nextFileId(this.tracks[index]),
           parentId: trackId,
         });
