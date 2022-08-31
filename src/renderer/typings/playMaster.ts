@@ -14,8 +14,6 @@ class PlayMaster {
     return this.getPlayers()[0]?.currentTime || 0;
   }
 
-  // eachPlayer()
-
   play() {
     const players = this.getPlayers();
     for (let i = 0; i < players.length; i++) {

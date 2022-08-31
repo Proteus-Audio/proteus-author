@@ -1,8 +1,10 @@
 <template>
   <div v-bind="getRootProps()" :class="`track-bin ${isDragActive ? 'drag' : ''}`">
     <div v-if="!fresh" class="bin">
-      <!-- <input type="text" class="bin-name" placeholder="Click to Add Name" v-model="binName" /> -->
-      <div type="text" class="bin-name">{{ binName }}</div>
+      <div class="bin-name">
+        <input type="text" class="track-name" placeholder="Click to Add Name" v-model="binName" /> - 
+        <div type="text" class="selection-name">{{ binName }}</div>
+      </div>
       <span class="flex">
         <div class="waveforms">
           <TrackWaveform
@@ -15,29 +17,32 @@
           >
         </div>
 
+        
         <el-button
-          :icon="Folder"
-          class="folder-button"
-          @click="() => (folderOpen = !folderOpen)"
-          text
+        :icon="Folder"
+        class="folder-button"
+        @click="() => (folderOpen = !folderOpen)"
+        text
         />
       </span>
       <el-drawer
-        ref="folderContents"
-        v-model="folderOpen"
-        :title="`Track Bin Contents`"
-        custom-class="drawer"
+      ref="folderContents"
+      v-model="folderOpen"
+      :title="`Track Bin Contents`"
+      custom-class="drawer"
       >
-        <div class="tracklist">
-          <div v-for="file in track.files">
-            {{ file.name }}
-
-            <el-button :icon="Delete" class="closeButton" @click="() => removeFile(file.id)" text />
+      <div class="tracklist">
+        <div v-for="file in track.files">
+          
+          {{ file.name }}
+          
+          <el-button :icon="Delete" class="closeButton" @click="() => removeFile(file.id)" text />
           </div>
         </div>
       </el-drawer>
     </div>
-
+    
+    {{trackId}}
     <input v-bind="getInputProps()" />
 
     <span v-if="fresh" class="message clickable" @click="open">
@@ -132,15 +137,25 @@ const { getRootProps, getInputProps, isDragActive, open, ...rest } = useDropzone
 
   .bin {
     .bin-name {
-      font-family: inherit;
-      background: transparent;
-      border: none;
-      max-width: 100%;
-      width: fit-content;
-      margin-bottom: 1em;
 
-      &:focus-visible {
+      .track-name,
+      .selection-name {
+        display: inline-block;
+      }
+
+      .track-name {
+        font-family: inherit;
+        background: transparent;
         border: none;
+        max-width: 100%;
+        width: fit-content;
+        margin-bottom: 1em;
+  
+        &:focus,
+        &:focus-visible {
+          border: none;
+          outline: none;
+        }
       }
     }
 

@@ -1,36 +1,34 @@
 <template>
-    <div class="transport">
-        <el-button v-if="!prot.isPlaying" :icon="VideoPlay" @click="play" text>play</el-button>
-        <el-button v-else :icon="VideoPause" @click="pause" text>pause</el-button>
-        <el-button :icon="Close" @click="stop" text>stop</el-button>
-    </div>
+  <div class="transport">
+    <el-button v-if="!prot.isPlaying" :icon="VideoPlay" @click="prot.play" text>play</el-button>
+    <el-button v-else :icon="VideoPause" @click="prot.pause" text>pause</el-button>
+    <el-button :icon="Close" @click="prot.stop" text>stop</el-button>
+    <el-button :icon="Refresh" @click="shuffle" text>shuffle</el-button>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { useProteusStore } from "../../stores/proteus";
-import playMaster from "../../public/playmaster";
-import { VideoPlay, VideoPause, Close } from "@element-plus/icons-vue";
+import { VideoPlay, VideoPause, Close, Refresh } from "@element-plus/icons-vue";
 
 const prot = useProteusStore();
 
-const play = () => {
-    playMaster.play();
-    prot.setPlaying(true);
-};
-
-const pause = () => {
-  playMaster.pause();
-  prot.setPlaying(false);
-};
-
-const stop = () => {
-  playMaster.stop();
-  prot.setPlaying(false);
+const shuffle = () => {
+  const playing = prot.isPlaying;
+  if (playing) prot.pause();
+  prot.setSelections();
+  prot.pause();
+  if (playing)
+    setTimeout(() => {
+      prot.play();
+    }, 200);
 };
 </script>
 
 <style scoped>
 .transport {
-  margin-bottom: 1em;
+  /* margin-bottom: 1em; */
+  background-color: white;
+  padding: 1em;
 }
 </style>

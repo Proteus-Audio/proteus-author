@@ -1,9 +1,11 @@
 import { defineStore } from "pinia";
-import { Track, TrackFile } from "../typings/tracks";
-import {sample, assignIn} from "lodash";
+import { Track, TrackFile, TrackFileSkeleton } from "../typings/tracks";
+import { sample, assignIn } from "lodash";
 import { computed, ref } from "vue";
 import { Transport } from "../typings/transport";
-import PlayMaster from '../typings/playMaster';
+import PlayMaster from "../typings/playMaster";
+import { Alert, AlertType, ProjectHead, TrackSkeleton } from "../typings/proteus";
+import { srcToFile } from "../public/tools";
 
 export const useProteusStore = defineStore("prot", () => {
   /////////////
@@ -12,6 +14,8 @@ export const useProteusStore = defineStore("prot", () => {
 
   const tracks = ref([] as Track[]);
   const transport = ref({ playing: false, currentTime: 0, master: new PlayMaster() } as Transport);
+  const alerts = ref([] as Alert[]);
+  const head = ref({name: "untitled", path: ""} as ProjectHead);
 
   /////////////
   // GETTERS //
@@ -26,20 +30,53 @@ export const useProteusStore = defineStore("prot", () => {
   });
 
   const emptyTrackExists = computed((): boolean => tracks.value.some((t) => t.files.length === 0));
+  const trackFilesExists = computed((): boolean => tracks.value.some((t) => t.files.length > 0));
 
-  const isPlaying = computed(():boolean => transport.value.playing);
+  const isPlaying = computed((): boolean => transport.value.playing);
 
   /////////////
   // SETTERS //
   /////////////
 
-  const setPlaying = (playing:boolean): void => {
-    transport.value.playing = playing;
-  }
+  const play = () => {
+    if (!trackFilesExists.value) {
+      addAlert("There are no tracks to play", "warning");
+      return;
+    }
+    transport.value.master.play();
+    setPlaying(true);
+  };
 
-  const togglePlaying = (playing:boolean): void => {
+  const pause = () => {
+    transport.value.master.pause();
+    setPlaying(false);
+  };
+
+  const stop = () => {
+    transport.value.master.stop();
+    setPlaying(false);
+  };
+
+  const addAlert = (contents: string, type?: AlertType) => {
+    type = type || "info";
+    alerts.value.push({ contents, type, autoClose: type !== "error" });
+  };
+
+  const setFileLocation = (location: string) => {
+    console.log(location);
+    console.log((location.match(/[^\/\\]*\.\w+$/) || [".jpg"])[0].replace(/\.\w+$/, ''));
+    
+    head.value.name = (location.match(/[^\/\\]*\.\w+$/) || [".jpg"])[0].replace(/\.\w+$/, '');
+    head.value.path = location;
+  };
+
+  const setPlaying = (playing: boolean): void => {
+    transport.value.playing = playing;
+  };
+
+  const togglePlaying = (playing: boolean): void => {
     transport.value.playing = !isPlaying.value;
-  }
+  };
 
   function getTrackFromId(trackId: number): Track | undefined {
     return tracks.value.find((v) => v.id === trackId);
@@ -47,6 +84,35 @@ export const useProteusStore = defineStore("prot", () => {
 
   function getOrCreateTrackFromId(trackId: number): Track {
     return getTrackFromId(trackId) || addTrack({ id: nextTrackId.value, files: [] });
+  }
+
+  function clearTracks():void {
+    tracks.value = [];
+  }
+
+  async function replaceTracksFromLoad(trackSkeletons: TrackSkeleton[]) {
+    const buildTracks: Track[] = [];
+    for (let i = 0; i < trackSkeletons.length; i++) {
+      const skeleton = trackSkeletons[i];
+      const track: Track = { id: skeleton.id, files: [] };
+      
+      for (let j = 0; j < skeleton.files.length; j++) {
+        const f = skeleton.files[j];
+        track.files.push({...f, parentId: track.id});
+      }
+      const tIndex = tracks.value.findIndex(t => t.id === track.id)
+      if(tIndex !== -1) tracks.value[tIndex] = track;
+      else buildTracks.push(track);
+    }
+    
+    tracks.value = buildTracks;
+
+    // const forDeletion:string[] = [];
+    // tracks.value.forEach(track => {
+    //   tracks.value = buildTracks;
+
+    // })
+
   }
 
   function nextFileId(track: number | Track): number {
@@ -78,7 +144,7 @@ export const useProteusStore = defineStore("prot", () => {
     });
   }
 
-  function getTrackSelection(trackId: number): TrackFile | undefined {
+  function getTrackSelection(trackId: number): TrackFileSkeleton | undefined {
     const index = tracks.value.findIndex((v) => v.id === trackId);
     const selectionId = tracks.value[index].selection;
     return tracks.value[index].files.find((file) => file.id === selectionId);
@@ -118,13 +184,24 @@ export const useProteusStore = defineStore("prot", () => {
 
   return {
     tracks,
+    transport,
+    alerts,
+    head,
     isPlaying,
     nextTrackId,
     emptyTrackExists,
+    trackFilesExists,
+    play,
+    pause,
+    stop,
+    addAlert,
+    setFileLocation,
     setPlaying,
     togglePlaying,
     getTrackFromId,
     getOrCreateTrackFromId,
+    clearTracks,
+    replaceTracksFromLoad,
     nextFileId,
     addTrack,
     addEmptyTrackIfNone,

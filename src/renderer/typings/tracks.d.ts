@@ -1,7 +1,14 @@
 interface Track {
   id: number;
   selection?: number;
-  files: TrackFile[];
+  files: TrackFileSkeleton[];
+}
+
+interface TrackFileSkeleton {
+  id: number;
+  parentId: number;
+  name: string;
+  path: string;
 }
 
 interface TrackFile extends File {
@@ -9,4 +16,4 @@ interface TrackFile extends File {
   parentId: number;
 }
 
-export { Track, TrackFile };
+export { Track, TrackFile, TrackFileSkeleton };

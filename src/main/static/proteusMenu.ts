@@ -1,10 +1,10 @@
-import { app } from "electron";
+import { app, ipcMain } from "electron";
 
 const isMac = process.platform === "darwin";
 
 const proteusMenu: Electron.MenuItemConstructorOptions[] = [
   {
-    label: "File",
+    label: "Title",
     submenu: [
       {
         label: "About Proteus",
@@ -13,8 +13,36 @@ const proteusMenu: Electron.MenuItemConstructorOptions[] = [
         },
       },
       { type: "separator" },
-      { role: "close" },
       { role: "quit" },
+    ],
+  },
+  {
+    label: "File",
+    submenu: [
+      {
+        label: "New Window",
+        click() {
+          ipcMain.emit("newWindow")
+        },
+        accelerator: 'CmdOrCtrl+N',
+      },
+      { type: "separator" },
+      {
+        label: "Load Project",
+        click() {
+          ipcMain.emit("load")
+        },
+        accelerator: 'CmdOrCtrl+O',
+      },
+      {
+        label: "Save Project",
+        click() {
+          ipcMain.emit("save")
+        },
+        accelerator: 'CmdOrCtrl+S',
+      },
+      { type: "separator" },
+      { role: "close" },
     ],
   },
   {

@@ -15,11 +15,11 @@ import { onMounted, computed, onUpdated, ref } from "vue";
 import { v4 as uuidv4 } from "uuid";
 
 import { useProteusStore } from "../../stores/proteus";
-import { TrackFile } from "../../typings/tracks";
-import playMaster from '../../public/playmaster';
+import { TrackFile, TrackFileSkeleton } from "../../typings/tracks";
+// import playMaster from '../../public/playmaster';
 
 interface Props {
-  track: TrackFile;
+  track: TrackFileSkeleton;
   selected: boolean;
 }
 
@@ -62,7 +62,8 @@ const initialisePeaks = () => {
     // console.log(peaks?.views.getView('overview'));
     // console.log(uuid);
     // Do something when the waveform is displayed and ready
-    playMaster.pause();
+    prot.transport.master.pause();
+
   });
 };
 
