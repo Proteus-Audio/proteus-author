@@ -1,62 +1,28 @@
-<div align="center"> 
-  
-![image](https://user-images.githubusercontent.com/32544586/163651496-2589c0b0-4151-4941-9d90-4275eea5fd83.png)
+Proteus (.prot) file authoring **Vue3** + **Electron** TypeScript based application based on [Deluze's electron-vue-template](https://github.com/Deluze/electron-vue-template). This repo is moving from the same idea as the [multiplay mixer](https://github.com/howardah/multiplay_mixer) flutter application.
 
-A simple starter template for a **Vue3** + **Electron** TypeScript based application, including **ViteJS** and **Electron Builder**.
-</div>
-
-## About
-
-This template utilizes [ViteJS](https://vitejs.dev) for building and serving your (Vue powered) front-end process, it provides Hot Reloads (HMR) to make development fast and easy ⚡ 
-
-Building the Electron (main) process is done with [Electron Builder](https://www.electron.build/), which makes your application easily distributable and supports cross-platform compilation 😎
-
-## Getting started
-
-Click the green **Use this template** button on top of the repository, and clone your own newly created repository.
-
-**Or..**
-
-Clone this repository: `git clone git@github.com:Deluze/electron-vue-template.git`
-
-
-### Install dependencies ⏬
+### Install dependencies
 
 ```bash
-npm install
+yarn
 ```
 
 ### Start developing ⚒️
 
 ```bash
-npm run dev
+yarn dev
 ```
 
 ## Additional Commands
 
 ```bash
-npm run dev # starts application with hot reload
-npm run build # builds application
+yarn dev # starts application with hot reload
+yarn build # builds application
 
 # OR
 
-npm run build:win # uses windows as build target
-npm run build:mac # uses mac as build target
-npm run build:linux # uses linux as build target
-```
-
-Optional configuration options can be found in the [Electron Builder CLI docs](https://www.electron.build/cli.html).
-## Project Structure
-
-```bash
-- root
-  - config/
-    - vite.js # ViteJS configuration
-    - electron-builder.json # Electron Builder configuration
-  - scripts/ # all the scripts used to build or serve your application, change as you like.
-  - src/
-    - main/ # Main thread (Electron application source)
-    - renderer/ # Renderer thread (VueJS application source)
+yarn build:win # uses windows as build target
+yarn build:mac # uses mac as build target
+yarn build:linux # uses linux as build target
 ```
 
 ## Using static files
