@@ -1,5 +1,6 @@
 interface Track {
   id: number;
+  name: string;
   selection?: number;
   files: TrackFileSkeleton[];
 }

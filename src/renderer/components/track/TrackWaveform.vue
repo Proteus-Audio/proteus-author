@@ -15,7 +15,7 @@ import { onMounted, computed, onUpdated, ref } from "vue";
 import { v4 as uuidv4 } from "uuid";
 
 import { useProteusStore } from "../../stores/proteus";
-import { TrackFile, TrackFileSkeleton } from "../../typings/tracks";
+import { TrackFileSkeleton } from "../../typings/tracks";
 // import playMaster from '../../public/playmaster';
 
 interface Props {
@@ -54,11 +54,12 @@ const initialisePeaks = () => {
     mediaElement: document.getElementById(`audio-${identifier.value}`),
     //   mediaElement: document.querySelector("audio"),
     webAudio: {
-      audioContext: new AudioContext(),
+      audioContext: audioContext,
     },
   };
   
   Peaks.init(options, function (err, peaks) {
+    console.log(audioContext)
     // console.log(peaks?.views.getView('overview'));
     // console.log(uuid);
     // Do something when the waveform is displayed and ready

@@ -6,6 +6,7 @@ import {LocalFileData} from "get-file-object-from-local-path";
 
 interface TrackSkeleton {
   id: number;
+  name: string;
   files: {
     id: number;
     path: string;
@@ -37,14 +38,27 @@ const copyFilesMakeDirs = async (src, dest): Promise<void> => {
 
 };
 
+const mkdirIfNone = (dir): void => {
+    const destArr = dir.split(path.sep);
+    let dirString = "";
+    for (let i = 0; i < destArr.length; i++) {
+      const dir = destArr[i];
+      dirString += path.sep + dir;
+      if (!existsSync(dirString)) {
+        mkdirSync(dirString);
+      }
+    }
+}
+
 const save = async (tracks: TrackSkeleton[], fileLocation: string): Promise<Project> => {
   const exitTracks: TrackSkeleton[] = [];
   const promises: Promise<void>[] = [];
+  const trackDir = fileLocation.replace(/\.\w+$/i, "");
+//   mkdirIfNone(trackDir);
   if (tracks && tracks.length > 0) {
-    const trackDir = fileLocation.replace(/\.\w+$/i, "");
     console.log(trackDir);
     tracks.forEach((t) => {
-      const track: TrackSkeleton = { id: t.id, files: [] };
+      const track: TrackSkeleton = { id: t.id, name: t.name, files: [] };
       t.files.forEach((file) => {
         const filePath = `${trackDir}/track${track.id}/${file.name}`;
         promises.push(copyFilesMakeDirs(file.path, filePath));

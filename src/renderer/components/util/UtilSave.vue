@@ -12,7 +12,8 @@ const prot = useProteusStore();
 const save = async () => {
   const tracks = prot.tracks.map((t) => ({
     id: t.id,
-    files: t.files.map((f) => ({ id: t.id, path: f.path, name: f.name })),
+    name: t.name,
+    files: t.files.map((f) => ({ id: f.id, path: f.path, name: f.name })),
   }));
   const update:ProjectSkeleton = await ipcRenderer.invoke("save", { location: prot.head.path, tracks });
   console.log(update)

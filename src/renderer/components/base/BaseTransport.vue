@@ -4,12 +4,13 @@
     <el-button v-else :icon="VideoPause" @click="prot.pause" text>pause</el-button>
     <el-button :icon="Close" @click="prot.stop" text>stop</el-button>
     <el-button :icon="Refresh" @click="shuffle" text>shuffle</el-button>
+    <el-button :icon="InfoFilled" @click="test" text>test</el-button>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useProteusStore } from "../../stores/proteus";
-import { VideoPlay, VideoPause, Close, Refresh } from "@element-plus/icons-vue";
+import { VideoPlay, VideoPause, Close, Refresh, InfoFilled } from "@element-plus/icons-vue";
 
 const prot = useProteusStore();
 
@@ -21,8 +22,14 @@ const shuffle = () => {
   if (playing)
     setTimeout(() => {
       prot.play();
-    }, 200);
+    }, 300);
 };
+
+const test = () => {
+  const audio = new AudioContext();
+
+  console.log(audio);
+}
 </script>
 
 <style scoped>

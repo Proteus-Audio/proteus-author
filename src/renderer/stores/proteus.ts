@@ -5,7 +5,6 @@ import { computed, ref } from "vue";
 import { Transport } from "../typings/transport";
 import PlayMaster from "../typings/playMaster";
 import { Alert, AlertType, ProjectHead, TrackSkeleton } from "../typings/proteus";
-import { srcToFile } from "../public/tools";
 
 export const useProteusStore = defineStore("prot", () => {
   /////////////
@@ -52,6 +51,10 @@ export const useProteusStore = defineStore("prot", () => {
     setPlaying(false);
   };
 
+  const playPause = () => {
+    isPlaying.value ? pause() : play();
+  }
+
   const stop = () => {
     transport.value.master.stop();
     setPlaying(false);
@@ -82,8 +85,12 @@ export const useProteusStore = defineStore("prot", () => {
     return tracks.value.find((v) => v.id === trackId);
   }
 
+  function getTrackIndexFromId(trackId:number):number {
+    return tracks.value.findIndex((v) => v.id === trackId);
+  }
+
   function getOrCreateTrackFromId(trackId: number): Track {
-    return getTrackFromId(trackId) || addTrack({ id: nextTrackId.value, files: [] });
+    return getTrackFromId(trackId) || addTrack({ id: nextTrackId.value, name: "", files: [] });
   }
 
   function clearTracks():void {
@@ -94,15 +101,15 @@ export const useProteusStore = defineStore("prot", () => {
     const buildTracks: Track[] = [];
     for (let i = 0; i < trackSkeletons.length; i++) {
       const skeleton = trackSkeletons[i];
-      const track: Track = { id: skeleton.id, files: [] };
+      const track: Track = { id: skeleton.id, name: skeleton.name, files: [] };
       
       for (let j = 0; j < skeleton.files.length; j++) {
         const f = skeleton.files[j];
         track.files.push({...f, parentId: track.id});
       }
       const tIndex = tracks.value.findIndex(t => t.id === track.id)
-      if(tIndex !== -1) tracks.value[tIndex] = track;
-      else buildTracks.push(track);
+      // if(tIndex !== -1) tracks.value[tIndex] = track;
+      buildTracks.push(track);
     }
     
     tracks.value = buildTracks;
@@ -134,7 +141,7 @@ export const useProteusStore = defineStore("prot", () => {
 
   const addEmptyTrackIfNone = () => {
     if (!emptyTrackExists.value) {
-      addTrack({ id: nextTrackId.value, files: [] });
+      addTrack({ id: nextTrackId.value, name: "", files: [] });
     }
   };
 
@@ -193,12 +200,14 @@ export const useProteusStore = defineStore("prot", () => {
     trackFilesExists,
     play,
     pause,
+    playPause,
     stop,
     addAlert,
     setFileLocation,
     setPlaying,
     togglePlaying,
     getTrackFromId,
+    getTrackIndexFromId,
     getOrCreateTrackFromId,
     clearTracks,
     replaceTracksFromLoad,

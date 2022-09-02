@@ -2,8 +2,13 @@
   <div v-bind="getRootProps()" :class="`track-bin ${isDragActive ? 'drag' : ''}`">
     <div v-if="!fresh" class="bin">
       <div class="bin-name">
-        <input type="text" class="track-name" placeholder="Click to Add Name" v-model="binName" /> - 
-        <div type="text" class="selection-name">{{ binName }}</div>
+        <InputAutoSizedText
+          class="track-name"
+          placeholder="Click to Add Name"
+          v-model="trackName"
+        />
+        -
+        <div type="text" class="selection-name">{{ selectedName }}</div>
       </div>
       <span class="flex">
         <div class="waveforms">
@@ -17,32 +22,29 @@
           >
         </div>
 
-        
         <el-button
-        :icon="Folder"
-        class="folder-button"
-        @click="() => (folderOpen = !folderOpen)"
-        text
+          :icon="Folder"
+          class="folder-button"
+          @click="() => (folderOpen = !folderOpen)"
+          text
         />
       </span>
       <el-drawer
-      ref="folderContents"
-      v-model="folderOpen"
-      :title="`Track Bin Contents`"
-      custom-class="drawer"
+        ref="folderContents"
+        v-model="folderOpen"
+        :title="`Track Bin Contents`"
+        custom-class="drawer"
       >
-      <div class="tracklist">
-        <div v-for="file in track.files">
-          
-          {{ file.name }}
-          
-          <el-button :icon="Delete" class="closeButton" @click="() => removeFile(file.id)" text />
+        <div class="tracklist">
+          <div v-for="file in track.files">
+            {{ file.name }}
+
+            <el-button :icon="Delete" class="closeButton" @click="() => removeFile(file.id)" text />
           </div>
         </div>
       </el-drawer>
     </div>
-    
-    {{trackId}}
+
     <input v-bind="getInputProps()" />
 
     <span v-if="fresh" class="message clickable" @click="open">
@@ -57,13 +59,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineEmits, onUpdated, ref } from "vue";
+import { computed, ref } from "vue";
 
 import { useDropzone } from "vue3-dropzone";
 import { useProteusStore } from "../../stores/proteus";
 import TrackWaveform from "./TrackWaveform.vue";
 
 import { Folder, Delete } from "@element-plus/icons-vue";
+import InputAutoSizedText from "../input/InputAutoSizedText.vue";
 // import Button from "element-plus";
 
 interface Props {
@@ -74,10 +77,20 @@ const props = defineProps<Props>();
 
 const prot = useProteusStore();
 
-const track = prot.getOrCreateTrackFromId(props.trackId);
+const track = computed(() => prot.getOrCreateTrackFromId(props.trackId));
 
 const folderOpen = ref(false);
 const error = ref("");
+const trackName = computed({
+  get: () => {
+    const index = prot.getTrackIndexFromId(props.trackId);
+    return prot.tracks[index].name || "";
+  },
+  set: (name: string) => {
+    const index = prot.getTrackIndexFromId(props.trackId);
+    return (prot.tracks[index].name = name);
+  },
+});
 
 const errorMessage = (code: string): string => {
   type Lookup = { [key: string]: string };
@@ -101,13 +114,15 @@ async function onDrop(acceptFiles: File[], rejectReasons: any) {
 
 const removeFile = (id: number) => prot.removeFileFromTrack(id, props.trackId);
 
-const binName = computed(() => {
+const binName = ref("");
+
+const selectedName = computed(() => {
   const filename: string | undefined = prot.getTrackSelection(props.trackId)?.name;
   return filename ? filename.replace(/\..*$/, "") : "";
-})
+});
 
 const fresh = computed(() => {
-  const isFresh = track.files.length === 0;
+  const isFresh = track.value.files.length === 0;
   return isFresh;
 });
 
@@ -137,25 +152,9 @@ const { getRootProps, getInputProps, isDragActive, open, ...rest } = useDropzone
 
   .bin {
     .bin-name {
-
       .track-name,
       .selection-name {
         display: inline-block;
-      }
-
-      .track-name {
-        font-family: inherit;
-        background: transparent;
-        border: none;
-        max-width: 100%;
-        width: fit-content;
-        margin-bottom: 1em;
-  
-        &:focus,
-        &:focus-visible {
-          border: none;
-          outline: none;
-        }
       }
     }
 

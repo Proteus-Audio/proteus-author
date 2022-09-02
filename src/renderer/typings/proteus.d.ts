@@ -20,6 +20,7 @@ interface ProjectHead {
 
 interface TrackSkeleton {
   id: number;
+  name: string;
   files: {
     id: number;
     path: string;

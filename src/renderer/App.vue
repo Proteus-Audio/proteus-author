@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <Teleport to="head">
-      <title>{{windowTitle}}</title>
+      <title>Proteus Author - {{windowTitle}}</title>
     </Teleport>
     <Util />
     <BaseContainer>
