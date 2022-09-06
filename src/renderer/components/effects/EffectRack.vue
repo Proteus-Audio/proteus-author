@@ -38,6 +38,7 @@ const addEffect = () => {
   transition: height 0.3s;
   align-content: center;
   cursor: pointer;
+  z-index: 20;
 
   &.empty {
     // background-color: green;

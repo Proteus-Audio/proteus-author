@@ -12,6 +12,7 @@
       </div>
       <span class="flex">
         <div class="waveforms">
+          <TrackPlayhead />
           <TrackWaveform
             v-for="file in track.files"
             :class="`waveform ${file.id === track.selection ? 'visible' : 'hidden'}`"
@@ -62,11 +63,12 @@
 import { computed, ref } from "vue";
 
 import { useDropzone } from "vue3-dropzone";
-import { useProteusStore } from "../../stores/proteus";
+import { useTrackStore } from '../../stores/tracks';
 import TrackWaveform from "./TrackWaveform.vue";
 
 import { Folder, Delete } from "@element-plus/icons-vue";
 import InputAutoSizedText from "../input/InputAutoSizedText.vue";
+import TrackPlayhead from './TrackPlayhead.vue';
 // import Button from "element-plus";
 
 interface Props {
@@ -75,20 +77,20 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const prot = useProteusStore();
+const trackStore = useTrackStore();
 
-const track = computed(() => prot.getOrCreateTrackFromId(props.trackId));
+const track = computed(() => trackStore.getOrCreateTrackFromId(props.trackId));
 
 const folderOpen = ref(false);
 const error = ref("");
 const trackName = computed({
   get: () => {
-    const index = prot.getTrackIndexFromId(props.trackId);
-    return prot.tracks[index].name || "";
+    const index = trackStore.getTrackIndexFromId(props.trackId);
+    return trackStore.tracks[index].name || "";
   },
   set: (name: string) => {
-    const index = prot.getTrackIndexFromId(props.trackId);
-    return (prot.tracks[index].name = name);
+    const index = trackStore.getTrackIndexFromId(props.trackId);
+    return (trackStore.tracks[index].name = name);
   },
 });
 
@@ -106,18 +108,18 @@ async function onDrop(acceptFiles: File[], rejectReasons: any) {
   else error.value = "";
 
   if (acceptFiles.length > 0) {
-    prot.addFileToTrack(acceptFiles, props.trackId);
-    prot.setTrackSelection(props.trackId);
-    prot.addEmptyTrackIfNone();
+    trackStore.addFileToTrack(acceptFiles, props.trackId);
+    trackStore.setTrackSelection(props.trackId);
+    trackStore.addEmptyTrackIfNone();
   }
 }
 
-const removeFile = (id: number) => prot.removeFileFromTrack(id, props.trackId);
+const removeFile = (id: number) => trackStore.removeFileFromTrack(id, props.trackId);
 
 const binName = ref("");
 
 const selectedName = computed(() => {
-  const filename: string | undefined = prot.getTrackSelection(props.trackId)?.name;
+  const filename: string | undefined = trackStore.getTrackSelection(props.trackId)?.name;
   return filename ? filename.replace(/\..*$/, "") : "";
 });
 
@@ -165,11 +167,18 @@ const { getRootProps, getInputProps, isDragActive, open, ...rest } = useDropzone
 
     .waveforms {
       display: inline-block;
+      position: relative;
       width: 100%;
+      height: 128px;
 
       .waveform {
+        position: absolute;
+        width: 100%;
+        display: block;
+        top: 0;
         &.hidden {
-          display: none;
+          pointer-events: none;
+          opacity: 0;
         }
       }
     }

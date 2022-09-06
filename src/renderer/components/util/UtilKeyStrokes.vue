@@ -4,16 +4,16 @@
 
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount } from "vue";
-import { useProteusStore } from "../../stores/proteus";
+import { useAudioStore } from "../../stores/audio";
 
-const prot = useProteusStore();
+const audio = useAudioStore();
 
 const keyListener = (e: KeyboardEvent) => {
   if ((e.target as HTMLElement).localName === "body") {
     if (e.key === " ") {
       e.preventDefault();
       console.log(e);
-      prot.playPause();
+      audio.playPause();
     }
   }
 };

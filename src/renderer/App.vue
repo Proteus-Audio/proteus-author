@@ -1,17 +1,18 @@
 <template>
-  <div id="app">
+  <div id="proteus-author">
     <Teleport to="head">
       <title>Proteus Author - {{windowTitle}}</title>
     </Teleport>
     <Util />
     <BaseContainer>
+      <Hello2 />
       <BaseAlertBox />
       <h1 class="center">Proteus.play</h1>
       <el-affix :offset="0">
         <BaseTransport />
       </el-affix>
 
-      <TrackBin v-for="track in prot.tracks" :track-id="track.id" :key="track.id" />
+      <TrackBin v-for="track in trackStore.tracks" :track-id="track.id" :key="track.id" />
       <div class="padding"></div>
     </BaseContainer>
 
@@ -30,15 +31,19 @@ import { useProteusStore } from "./stores/proteus";
 import BaseTransport from "./components/base/BaseTransport.vue";
 import BaseAlertBox from "./components/base/BaseAlertBox.vue";
 import Util from "./components/util/Util.vue";
+import { useHeadStore } from './stores/head';
+import { useTrackStore } from './stores/tracks';
+import Hello2 from './components/Hello2.vue';
 
-const prot = useProteusStore();
+const head = useHeadStore();
+const trackStore = useTrackStore();
 
 const windowTitle = computed(() => {
-  return prot.head.name;
+  return head.name;
 })
 
 onMounted(() => {
-  prot.addEmptyTrackIfNone();
+  trackStore.addEmptyTrackIfNone();
 });
 </script>
 

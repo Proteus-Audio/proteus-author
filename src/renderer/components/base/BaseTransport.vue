@@ -1,34 +1,38 @@
 <template>
   <div class="transport">
-    <el-button v-if="!prot.isPlaying" :icon="VideoPlay" @click="prot.play" text>play</el-button>
-    <el-button v-else :icon="VideoPause" @click="prot.pause" text>pause</el-button>
-    <el-button :icon="Close" @click="prot.stop" text>stop</el-button>
+    <el-button v-if="!audio.isPlaying" :icon="VideoPlay" @click="audio.playPizz" text>play</el-button>
+    <el-button v-else :icon="VideoPause" @click="audio.pause" text>pause</el-button>
+    <el-button :icon="Close" @click="audio.stopPizz" text>stop</el-button>
     <el-button :icon="Refresh" @click="shuffle" text>shuffle</el-button>
     <el-button :icon="InfoFilled" @click="test" text>test</el-button>
+    <el-button :icon="ZoomIn" @click="zoom" text>zoom</el-button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useProteusStore } from "../../stores/proteus";
-import { VideoPlay, VideoPause, Close, Refresh, InfoFilled } from "@element-plus/icons-vue";
+import { useAudioStore } from '../../stores/audio';
+import { useTrackStore } from '../../stores/tracks';
+import { VideoPlay, VideoPause, Close, Refresh, InfoFilled, ZoomIn } from "@element-plus/icons-vue";
 
-const prot = useProteusStore();
+const audio = useAudioStore();
+const track = useTrackStore();
 
 const shuffle = () => {
-  const playing = prot.isPlaying;
-  if (playing) prot.pause();
-  prot.setSelections();
-  prot.pause();
+  const playing = audio.isPlaying;
+  if (playing) audio.pause();
+  track.setSelections();
+  audio.pause();
   if (playing)
     setTimeout(() => {
-      prot.play();
+      audio.play();
     }, 300);
 };
 
 const test = () => {
-  const audio = new AudioContext();
-
-  console.log(audio);
+  audio.setScale(audio.getScale + 5);
+}
+const zoom = () => {
+  audio.setZoom(audio.zoom + 5);
 }
 </script>
 

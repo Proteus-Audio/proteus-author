@@ -1,21 +1,25 @@
 <template>
   <div class="track">
-    <div :id="`overview-container-${identifier}`" class="overview-container"></div>
-    <audio v-if="track" :class="`player ${selected ? 'playable' : 'non-playable'}`" :id="`audio-${identifier}`">
+    <div
+      :style="`width:${width}; background-color: #fff;`"
+      :id="`overview-container-${identifier}`"
+      class="overview-container"
+    ></div>
+    <!-- <audio v-if="track" :class="`player ${selected ? 'playable' : 'non-playable'}`" :id="`audio-${identifier}`">
       <source :src="`file://${track.path}`" type="audio/mp3" />
-    </audio>
+    </audio> -->
   </div>
 </template>
 
 <script setup lang="ts">
 // import AudioPeaks from "vue-peaks";
-import Peaks from "peaks.js";
-import type PeaksOptions from "peaks.js";
-import { onMounted, computed, onUpdated, ref } from "vue";
-import { v4 as uuidv4 } from "uuid";
+import { onMounted, computed, onUpdated, ref, onBeforeMount, onBeforeUnmount, watch } from "vue";
 
-import { useProteusStore } from "../../stores/proteus";
+import { useAudioStore } from "../../stores/audio";
 import { TrackFileSkeleton } from "../../typings/tracks";
+import WaveSurfer from "wavesurfer.js";
+import { useAlertStore } from '../../stores/alerts';
+
 // import playMaster from '../../public/playmaster';
 
 interface Props {
@@ -23,63 +27,85 @@ interface Props {
   selected: boolean;
 }
 
-const prot = useProteusStore();
+const audio = useAudioStore();
+const alertStore = useAlertStore();
 
 const props = defineProps<Props>();
 
-const uuid = uuidv4();
-
-const audioContext = new AudioContext();
-
-const peaks = ref([]);
-
-// const peaks = computed(() => {
-//   reinitialisePeaks();
-//   return { name: props.track.name };
-// });
+const width = ref("100%");
+const duration = ref(0);
 
 const identifier = computed(() => `${props.track.parentId}-${props.track.id}`);
 
-const initialisePeaks = () => {
-  const container = document.getElementById(`overview-container-${identifier.value}`);
-//   if(container) container.innerHTML = "";
-  let options: PeaksOptions = {
-    overview: {
-      container: container,
-      waveformColor: "#848484",
-      playedWaveformColor: "#5d5d5d",
-      playheadColor: "white",
-      showAxisLabels: false,
-    },
-    mediaElement: document.getElementById(`audio-${identifier.value}`),
-    //   mediaElement: document.querySelector("audio"),
-    webAudio: {
-      audioContext: audioContext,
-    },
-  };
-  
-  Peaks.init(options, function (err, peaks) {
-    console.log(audioContext)
-    // console.log(peaks?.views.getView('overview'));
-    // console.log(uuid);
-    // Do something when the waveform is displayed and ready
-    prot.transport.master.pause();
+const wavesurfer = ref(null as WaveSurfer | null);
 
+const clearContainer = () => {
+  const container = document.getElementById(`overview-container-${identifier.value}`);
+  if (container) container.innerHTML = "";
+};
+
+const initialisePeaks = () => {
+  clearContainer();
+  wavesurfer.value = WaveSurfer.create({
+    container: `#overview-container-${identifier.value}`,
+    audioContext: audio.audioContext,
+    cursorWidth: 0,
+    autoCenter: false,
+    barHeight: audio.zoom
+    // barHeight: 20,
+    // barWidth: 1,
+  });
+
+  wavesurfer.value.load(`file://${props.track.path}`);
+
+  wavesurfer.value.on("ready", () => {
+    duration.value = wavesurfer.value?.getDuration() || duration.value;
+    resizeWave();
   });
 };
 
+const resizeWave = () => {
+  if (wavesurfer.value) {
+      width.value = `${duration.value * audio.getScale}px`;
+      wavesurfer.value.zoom(audio.getScale - .1);
+      // wavesurfer.value.setHeight(audio.zoom * 128);
+      // console.log(wavesurfer.value.set())
+    }
+}
+
+const onResize = () => {
+  resizeWave();
+  // initialisePeaks();
+};
+
 onUpdated(() => {
-    initialisePeaks();
+  resizeWave();
+  // initialisePeaks();
+});
+
+onBeforeMount(() => {
+  window.addEventListener("resize", onResize);
 });
 
 onMounted(() => {
+  audio.addFile(props.track.path);
   initialisePeaks();
+});
+
+// watch(audio.scale, resizeWave);
+// watch(audio.zoom, resizeWave);
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", onResize);
 });
 </script>
 
 <style lang="scss" scoped>
 .track {
   max-width: calc(100% - 44px);
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 0.5em;
+  padding: 0 0.5em;
 
   .folder-button {
     margin-top: auto;
