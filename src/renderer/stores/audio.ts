@@ -40,30 +40,30 @@ export const useAudioStore = defineStore("prot", () => {
     currentTime.value = time;
   };
 
-  const play = () => {
+  const play = async () => {
     if (!track.trackFilesExists) {
       alert.addAlert("There are no tracks to play", "warning");
       return;
     }
 
-    toneMaster.play((time: number, i?: number) => {
+    setPlaying(true);
+    await toneMaster.play((time: number, i?: number) => {
       if (time === 0 && i !== 0) stop();
       else currentTime.value = time;
     });
-    setPlaying(true);
   };
 
-  const pause = () => {
-    toneMaster.pause();
+  const pause = async () => {
     setPlaying(false);
+    await toneMaster.pause();
   };
 
-  const playPause = () => {
-    isPlaying.value ? pause() : play();
+  const playPause = async () => {
+    isPlaying.value ? await pause() : await play();
   };
 
-  const stop = () => {
-    toneMaster.stop();
+  const stop = async () => {
+    await toneMaster.stop();
     currentTime.value = 0;
     setPlaying(false);
   };

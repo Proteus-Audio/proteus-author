@@ -30,6 +30,7 @@ interface TrackSkeleton {
 
 interface ProjectSkeleton {
   location?: string;
+  name?: string;
   tracks: TrackSkeleton[] | false;
 }
 

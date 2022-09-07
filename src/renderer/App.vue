@@ -43,7 +43,7 @@ const trackStore = useTrackStore();
 const audio = useAudioStore();
 
 const windowTitle = computed(() => {
-  return head.name;
+  return (head.name).replace('.protproject', '');
 })
 
 onMounted(() => {

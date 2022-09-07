@@ -6,7 +6,7 @@ import { TrackSkeleton } from "../typings/proteus";
 import { useAudioStore } from "./audio";
 import { SelectionMap, ToneTrackPlayer } from "../typings/tone.d";
 import { Player } from "tone";
-import {toneMaster} from '../public/toneMaster';
+import { toneMaster } from "../public/toneMaster";
 
 export const useTrackStore = defineStore("track", () => {
   const audio = useAudioStore();
@@ -88,7 +88,7 @@ export const useTrackStore = defineStore("track", () => {
       toneMaster.addTrack({ id: track.id, name: track.name, players });
       buildTracks.push(track);
     }
-    
+
     audio.setDuration();
     tracks.value = buildTracks;
   }
@@ -120,30 +120,37 @@ export const useTrackStore = defineStore("track", () => {
     }
   };
 
-  function setSelections() {
+  const shuffle = async () => {
+    const playing = audio.isPlaying;
+    if (playing) await audio.pause();
+    setSelections();
+    if (playing) await audio.play();
+  };
+
+  const setSelections = () => {
     const selectionMap: SelectionMap = [];
     tracks.value.forEach((track, i) => {
       selectionMap.push([track.id, setTrackSelection(track.id, i)]);
     });
     toneMaster.setSelections(selectionMap);
     console.log("hello?");
-  }
+  };
 
-  function getTrackSelection(trackId: number): TrackFileSkeleton | undefined {
+  const getTrackSelection = (trackId: number): TrackFileSkeleton | undefined => {
     const index = tracks.value.findIndex((v) => v.id === trackId);
     const selectionId = tracks.value[index].selection;
     return tracks.value[index].files.find((file) => file.id === selectionId);
-  }
+  };
 
-  function setTrackSelection(trackId: number, index?: number): number {
+  const setTrackSelection = (trackId: number, index?: number): number => {
     index = index || tracks.value.findIndex((v) => v.id === trackId);
     const options = tracks.value[index].files.map((f) => f.id);
     const selection = sample(options);
     tracks.value[index].selection = selection;
     return selection || -1;
-  }
+  };
 
-  function addFileToTrack(files: File | File[], trackId: number) {
+  const addFileToTrack = (files: File | File[], trackId: number) => {
     const index = tracks.value.findIndex((v) => v.id === trackId);
     if (!Array.isArray(files)) files = [files];
     files.forEach((file) => {
@@ -159,9 +166,9 @@ export const useTrackStore = defineStore("track", () => {
         tone: new Player(`file://${trackFile.path}`),
       });
     });
-  }
+  };
 
-  function removeFileFromTrack(fileIds: number | number[], trackId: number) {
+  const removeFileFromTrack = (fileIds: number | number[], trackId: number) => {
     const index = tracks.value.findIndex((v) => v.id === trackId);
     if (!Array.isArray(fileIds)) fileIds = [fileIds];
     fileIds.forEach((id) => {
@@ -173,7 +180,7 @@ export const useTrackStore = defineStore("track", () => {
         console.log(tracks.value[index]);
       }
     });
-  }
+  };
 
   return {
     tracks,
@@ -192,6 +199,7 @@ export const useTrackStore = defineStore("track", () => {
     addTrack,
     addEmptyTrackIfNone,
     addFileToTrack,
+    shuffle,
     setSelections,
     getTrackSelection,
     setTrackSelection,

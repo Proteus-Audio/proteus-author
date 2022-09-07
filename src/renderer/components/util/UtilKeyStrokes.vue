@@ -12,6 +12,7 @@ const track = useTrackStore();
 
 const keyListener = (e: KeyboardEvent) => {
   if ((e.target as HTMLElement).localName === "body") {
+    if(e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.key === " ") {
       e.preventDefault();
       if (!audio.isPlaying && !track.initialised) {
@@ -19,6 +20,10 @@ const keyListener = (e: KeyboardEvent) => {
         track.initialised = true;
       }
       audio.playPause();
+    }
+    if (e.key === "s") {
+      e.preventDefault();
+      track.shuffle();
     }
   }
 };

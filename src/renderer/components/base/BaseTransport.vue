@@ -2,8 +2,8 @@
   <div class="transport">
     <el-button v-if="!audio.isPlaying" :icon="VideoPlay" @click="play" text>play</el-button>
     <el-button v-else :icon="VideoPause" @click="audio.pause" text>pause</el-button>
-    <el-button :icon="Close" @click="audio.stop" text>stop</el-button>
-    <el-button :icon="Refresh" @click="shuffle" text>shuffle</el-button>
+    <el-button id="BaseTransportStop" :icon="Close" @click="audio.stop" text>stop</el-button>
+    <el-button id="BaseTransportShuffle" :icon="Refresh" @click="track.shuffle" text>shuffle</el-button>
     <el-button :icon="ZoomIn" @click="zoomIn" text></el-button>
     <el-button :icon="ZoomOut" @click="zoomOut" text></el-button>
     <div class="volume-bin">
@@ -30,17 +30,6 @@ const volume = computed({
     toneMaster.setGain(value / 75);
   },
 });
-
-const shuffle = () => {
-  const playing = audio.isPlaying;
-  if (playing) audio.pause();
-  track.setSelections();
-  audio.pause();
-  if (playing)
-    setTimeout(() => {
-      audio.play();
-    }, 300);
-};
 
 const play = () => {
   audio.play();

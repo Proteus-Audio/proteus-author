@@ -1,2 +1,2 @@
-type Effect = 'compressor'|'reverb';
+type Effect = 'Compressor'|'Reverb';
 export default Effect;

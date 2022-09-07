@@ -162,7 +162,14 @@ class ToneMaster {
     trackIndex === -1 ? track.players.push(player) : (track.players[trackIndex] = player);
   }
 
+  removeEffect(effectName:string) {
+    const index = this.effects.findIndex(effect => effect.name === effectName);
+    if(index !== -1) this.effects.splice(index, 1);
+    this.connectEffects();
+  }
+
   async addEffect(effect: Effect) {
+
     this.effects.push(effect);
     this.connectEffects();
   }
@@ -207,15 +214,12 @@ class ToneMaster {
     this._executeOnAllPLayers("stop");
   }
 
-  stop() {
+  async stop() {
     this.playing = false;
     this.clock.stop();
     this.cachedCallback = () => {};
 
-    this.gain.gain.rampTo(0, 0.1);
-    setTimeout(() => {
-      this._executeOnAllPLayers("stop");
-    }, 10);
+    await this.rampGain(0);
   }
 }
 
