@@ -19,7 +19,8 @@ const load = async () => {
     !update.location || head.setFileLocation(update.location);
     track.replaceTracksFromLoad(update.tracks);
     track.setSelections();
-    if (update.location) head.setFileLocation(update.location);
+    !update.location || head.setPath(update.location);
+    !update.name || head.setName(update.name);
     console.log(track);
   }
 };

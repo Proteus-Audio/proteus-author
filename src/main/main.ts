@@ -1,12 +1,11 @@
 import { app, BrowserWindow, ipcMain, dialog, Menu } from "electron";
 import { join } from "path";
-import fs from "fs";
+import { readFileSync } from "fs";
 import proteusMenu from "./static/proteusMenu";
-import {save, load, Project} from "./static/fileOptions";
+import { save, load, Project } from "./static/fileOptions";
 import mime from "mime";
-import isDev from "electron-is-dev";
 
-function createWindow(data?:Project) {
+function createWindow(data?: Project) {
   // We cannot require the screen module until the app is ready.
   const { screen } = require("electron");
 
@@ -59,34 +58,13 @@ ipcMain.on("message", async (event, message) => {
   console.log(message);
 });
 
-// ipcMain.on("copyFileToTemp", async (event, message) => {
-//   console.log(join(__dirname));
-// });
-interface SimpleFile {
-  name: string;
-  path: string;
-}
-ipcMain.handle("copyFileToTemp", async (event, filePaths: SimpleFile[]) => {
-  const files: string[] = [];
-  filePaths.forEach((file) => {
-    // ToDo: add unique id so that files can have the same name
-    files.push(`/temp/${file.name}`);
-    // fs.copyFileSync(file.path, file.path.replace(file.name, (name) => name.replace(/^\w+/, (match) => `${match}2`)));
-    // fs.copyFileSync(file.path, join(__dirname, file.name));
-    // fs.copyFileSync(file.path, join(tempLocation, file.name));
-  });
-
-  return { dev: isDev, files };
-});
-
 ipcMain.handle("openFile", async (event, ...args) => {
   const file = await dialog.showOpenDialog({ properties: ["openFile"] });
   console.log(args);
   if (file.canceled) return "canceled";
   const filePath = file.filePaths[0];
   const fileName = (filePath.match(/[\w]*\..*$/) || [""])[0];
-  // ipcMain.emit("openFileReturn", { key, filename: "filename" });
-  const base64 = fs.readFileSync(file.filePaths[0]).toString("base64");
+  const base64 = readFileSync(file.filePaths[0]).toString("base64");
   const type = mime.getType(filePath);
   const src = `data:${type};base64,${base64}`;
   return { fileName, filePath, src, type };
@@ -97,8 +75,6 @@ ipcMain.handle("chooseDir", async (event, key) => {
   if (file.canceled) return "canceled";
   console.log(file);
   const filePath = file.filePaths[0] + "/";
-  // ipcMain.emit("openFileReturn", { key, filename: "filename" });
-  // console.log(fs.readFileSync(file.filePaths[0]))
   return filePath;
 });
 
@@ -114,30 +90,44 @@ ipcMain.on("save", (event) => {
   );
 });
 
+ipcMain.on("saveAs", (event) => {
+  console.log("No no, there's something to say");
+  console.log(
+    BrowserWindow.getFocusedWindow()?.webContents.executeJavaScript(
+      "document.getElementById('saveAsButton').click()"
+    )
+  );
+});
+
 ipcMain.handle("save", async (event, project: Project) => {
   project.location = project.location || "";
   let fileLocation = project.location;
+  let fileName = project.name || "";
 
   if (fileLocation === "") {
     const chosenLocation = await dialog.showSaveDialog({
       // title: "",
-      defaultPath: "prot.protproject",
-      filters: [{ name: "Prot Project", extensions: [".protproject"] }],
+      defaultPath: "prot",
       properties: [],
     });
 
     fileLocation = chosenLocation.filePath || fileLocation;
-    if(chosenLocation.canceled) return {tracks: false, location: fileLocation};
+    fileName = ((chosenLocation.filePath || "").match(/[^\\\/]+$/) || [""])[0] || fileName;
+    if (chosenLocation.canceled) return { tracks: false, location: fileLocation };
   }
 
-  if (/\.protproject/.test(fileLocation)) {
-    await save(project.tracks, fileLocation);
-    return {tracks: await load(fileLocation), location: fileLocation};
+  console.log(fileLocation, fileName);
+
+  if (fileLocation !== "") {
+    if (/\.protproject/.test(fileLocation)) fileLocation = fileLocation.replace(fileName, "");
+    await save(project.tracks, fileLocation, fileName);
+    return { tracks: await load(fileLocation, fileName), location: fileLocation, name: fileName };
   }
-  return {tracks: false, location: fileLocation};
+  return { tracks: false, location: fileLocation };
 });
 
 ipcMain.on("load", (event) => {
+  if(BrowserWindow.getAllWindows().length === 0) createWindow();
   console.log(
     BrowserWindow.getFocusedWindow()?.webContents.executeJavaScript(
       "document.getElementById('loadButton').click()"
@@ -146,15 +136,17 @@ ipcMain.on("load", (event) => {
 });
 
 ipcMain.handle("load", async () => {
-    const chosenLocation = await dialog.showOpenDialog({
-      filters: [{ name: "Prot Project", extensions: [".protproject"] }],
-      properties: ["openFile"],
-    });
+  const chosenLocation = await dialog.showOpenDialog({
+    filters: [{ name: "Prot Project", extensions: [".protproject"] }],
+    properties: ["openFile"],
+  });
 
-    const fileLocation = chosenLocation.filePaths[0];
-    if(chosenLocation.canceled) return {tracks: false, location: fileLocation};;
+  let fileLocation = chosenLocation.filePaths[0];
+  if (chosenLocation.canceled) return { tracks: false, location: fileLocation };
+  const fileName = (fileLocation.match(/[^\\\/]+$/) || [""])[0];
+  fileLocation = fileLocation.replace(fileName, "");
 
-  if (/\.protproject/.test(fileLocation)) {
-    return {tracks: await load(fileLocation), location: fileLocation};
+  if (/\.protproject/.test(fileName)) {
+    return { tracks: await load(fileLocation, fileName), location: fileLocation, name: fileName };
   }
 });
