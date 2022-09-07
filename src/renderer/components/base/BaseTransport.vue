@@ -1,41 +1,60 @@
 <template>
   <div class="transport">
-    <el-button v-if="!prot.isPlaying" :icon="VideoPlay" @click="prot.play" text>play</el-button>
-    <el-button v-else :icon="VideoPause" @click="prot.pause" text>pause</el-button>
-    <el-button :icon="Close" @click="prot.stop" text>stop</el-button>
-    <el-button :icon="Refresh" @click="shuffle" text>shuffle</el-button>
-    <el-button :icon="InfoFilled" @click="test" text>test</el-button>
+    <el-button v-if="!audio.isPlaying" :icon="VideoPlay" @click="play" text>play</el-button>
+    <el-button v-else :icon="VideoPause" @click="audio.pause" text>pause</el-button>
+    <el-button id="BaseTransportStop" :icon="Close" @click="audio.stop" text>stop</el-button>
+    <el-button id="BaseTransportShuffle" :icon="Refresh" @click="track.shuffle" text>shuffle</el-button>
+    <el-button :icon="ZoomIn" @click="zoomIn" text></el-button>
+    <el-button :icon="ZoomOut" @click="zoomOut" text></el-button>
+    <div class="volume-bin">
+      <el-slider v-model="volume" :show-tooltip="false" size="small" />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useProteusStore } from "../../stores/proteus";
-import { VideoPlay, VideoPause, Close, Refresh, InfoFilled } from "@element-plus/icons-vue";
+import { useAudioStore } from "../../stores/audio";
+import { useTrackStore } from "../../stores/tracks";
+import { VideoPlay, VideoPause, Close, Refresh, ZoomOut, ZoomIn } from "@element-plus/icons-vue";
+import { toneMaster } from "../../public/toneMaster";
+import { computed, ref } from "vue";
 
-const prot = useProteusStore();
+const audio = useAudioStore();
+const track = useTrackStore();
+const volumeRef = ref(toneMaster.volume);
 
-const shuffle = () => {
-  const playing = prot.isPlaying;
-  if (playing) prot.pause();
-  prot.setSelections();
-  prot.pause();
-  if (playing)
-    setTimeout(() => {
-      prot.play();
-    }, 300);
+const volume = computed({
+  get: () => volumeRef.value * 75,
+  set: (value: number) => {
+    volumeRef.value = value / 75;
+    toneMaster.setGain(value / 75);
+  },
+});
+
+const play = () => {
+  audio.play();
+  if (!track.initialised) {
+    window.dispatchEvent(new Event("resize"));
+    track.initialised = true;
+  }
 };
 
-const test = () => {
-  const audio = new AudioContext();
-
-  console.log(audio);
-}
+const zoomIn = () => {
+  audio.setXScale(audio.getXScale + 5);
+};
+const zoomOut = () => {
+  audio.setXScale(audio.getXScale - 5);
+};
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .transport {
   /* margin-bottom: 1em; */
   background-color: white;
   padding: 1em;
+  .volume-bin {
+    width: calc(100% - 500px);
+    display: inline-block;
+  }
 }
 </style>

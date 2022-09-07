@@ -4,16 +4,26 @@
 
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount } from "vue";
-import { useProteusStore } from "../../stores/proteus";
+import { useAudioStore } from "../../stores/audio";
+import { useTrackStore } from '../../stores/tracks';
 
-const prot = useProteusStore();
+const audio = useAudioStore();
+const track = useTrackStore();
 
 const keyListener = (e: KeyboardEvent) => {
   if ((e.target as HTMLElement).localName === "body") {
+    if(e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.key === " ") {
       e.preventDefault();
-      console.log(e);
-      prot.playPause();
+      if (!audio.isPlaying && !track.initialised) {
+        window.dispatchEvent(new Event("resize"));
+        track.initialised = true;
+      }
+      audio.playPause();
+    }
+    if (e.key === "s") {
+      e.preventDefault();
+      track.shuffle();
     }
   }
 };

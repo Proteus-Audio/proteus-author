@@ -1,5 +1,5 @@
 <template>
-  <button id="saveButton" class="hiddenButton" @click="save"></button>
+  <button id="saveAsButton" class="hiddenButton" @click="save"></button>
 </template>
 
 <script setup lang="ts">
@@ -17,15 +17,13 @@ const save = async () => {
     name: t.name,
     files: t.files.map((f) => ({ id: f.id, path: f.path, name: f.name })),
   }));
-  const update:ProjectSkeleton = await ipcRenderer.invoke("save", { location: head.path, name: head.name, tracks });
+  const update:ProjectSkeleton = await ipcRenderer.invoke("save", { tracks });
   console.log(update)
 
   if(update.tracks) {
     !update.location || head.setPath(update.location);
     !update.name || head.setName(update.name);
     track.replaceTracksFromLoad(update.tracks);
-    track.setSelections();
-    track.initialised = false;
   }
 };
 </script>

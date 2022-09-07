@@ -41,6 +41,13 @@ const proteusMenu: Electron.MenuItemConstructorOptions[] = [
         },
         accelerator: 'CmdOrCtrl+S',
       },
+      {
+        label: "Save Project As",
+        click() {
+          ipcMain.emit("saveAs")
+        },
+        accelerator: 'CmdOrCtrl+Shift+S',
+      },
       { type: "separator" },
       { role: "close" },
     ],

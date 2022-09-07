@@ -1,92 +1,115 @@
 <template>
   <div class="track">
-    <div :id="`overview-container-${identifier}`" class="overview-container"></div>
-    <audio v-if="track" :class="`player ${selected ? 'playable' : 'non-playable'}`" :id="`audio-${identifier}`">
+    <div
+      :style="`width:${width}; background-color: #fff;`"
+      :id="`overview-container-${identifier}`"
+      class="overview-container"
+    ></div>
+    <!-- <audio v-if="track" :class="`player ${selected ? 'playable' : 'non-playable'}`" :id="`audio-${identifier}`" controls>
       <source :src="`file://${track.path}`" type="audio/mp3" />
-    </audio>
+    </audio> -->
   </div>
 </template>
 
 <script setup lang="ts">
-// import AudioPeaks from "vue-peaks";
-import Peaks from "peaks.js";
-import type PeaksOptions from "peaks.js";
-import { onMounted, computed, onUpdated, ref } from "vue";
-import { v4 as uuidv4 } from "uuid";
+import { onMounted, computed, onUpdated, ref, onBeforeMount, onBeforeUnmount, watch } from "vue";
 
-import { useProteusStore } from "../../stores/proteus";
+import { useAudioStore } from "../../stores/audio";
 import { TrackFileSkeleton } from "../../typings/tracks";
-// import playMaster from '../../public/playmaster';
+import Peaks, { PeaksOptions } from "peaks.js";
+import { toneMaster, PeaksPlayer } from "../../public/toneMaster";
+import * as Tone from "tone";
+import { cloneAudioBuffer } from "../../public/tools";
+import { useTrackStore } from '../../stores/tracks';
 
 interface Props {
   track: TrackFileSkeleton;
   selected: boolean;
 }
 
-const prot = useProteusStore();
-
+const audio = useAudioStore();
+const trackStore = useTrackStore();
 const props = defineProps<Props>();
-
-const uuid = uuidv4();
-
-const audioContext = new AudioContext();
-
-const peaks = ref([]);
-
-// const peaks = computed(() => {
-//   reinitialisePeaks();
-//   return { name: props.track.name };
-// });
-
+const width = ref("100%");
+const duration = ref(0);
 const identifier = computed(() => `${props.track.parentId}-${props.track.id}`);
 
-const initialisePeaks = () => {
+const clearContainer = () => {
   const container = document.getElementById(`overview-container-${identifier.value}`);
-//   if(container) container.innerHTML = "";
-  let options: PeaksOptions = {
+  if (container) container.innerHTML = "";
+  return container;
+};
+
+const initialisePeaks = async () => {
+  trackStore.initialised = false;
+  const player = toneMaster.playerFromIds(props.track.parentId, props.track.id);
+  if (!player) return;
+  const container = clearContainer();
+
+  await Tone.loaded();
+  duration.value = player.buffer.duration;
+  resizeWave();
+  const audioBuffer = cloneAudioBuffer((player.buffer as any)._buffer);
+  const options = {
     overview: {
       container: container,
-      waveformColor: "#848484",
-      playedWaveformColor: "#5d5d5d",
-      playheadColor: "white",
-      showAxisLabels: false,
     },
-    mediaElement: document.getElementById(`audio-${identifier.value}`),
-    //   mediaElement: document.querySelector("audio"),
+    // mediaElement: document.querySelector("audio"),
+    player: new PeaksPlayer(),
     webAudio: {
-      audioContext: audioContext,
+      // audioContext: new AudioContext(),
+      audioBuffer: audioBuffer,
     },
   };
-  
-  Peaks.init(options, function (err, peaks) {
-    console.log(audioContext)
-    // console.log(peaks?.views.getView('overview'));
-    // console.log(uuid);
-    // Do something when the waveform is displayed and ready
-    prot.transport.master.pause();
 
+  Peaks.init(options as PeaksOptions, function (err, peaks) {
+    if (err) {
+      console.error("Failed to initialize Peaks instance: " + err.message);
+      return;
+    }
+    // Do something when the waveform is displayed and ready
   });
 };
 
+const resizeWave = () => {
+  width.value = `${duration.value * audio.getXScale}px`;
+};
+
+const onResize = () => {
+  console.log('resize')
+  resizeWave();
+};
+
 onUpdated(() => {
-    initialisePeaks();
+  resizeWave();
+});
+
+onBeforeMount(() => {
+  window.addEventListener("resize", onResize);
 });
 
 onMounted(() => {
   initialisePeaks();
 });
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", onResize);
+});
 </script>
 
 <style lang="scss" scoped>
 .track {
-  max-width: calc(100% - 44px);
+  // max-width: calc(100% - 44px);
+  background-color: rgba(0, 0, 0, 0.1);
+  // border-radius: 0.5em;
+  // padding: 0 0.5em;
 
   .folder-button {
     margin-top: auto;
   }
 
   .overview-container {
-    min-height: 75px;
+    min-height: 150px;
     width: 100%;
   }
 }

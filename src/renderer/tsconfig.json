@@ -10,7 +10,7 @@
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "lib": ["esnext", "dom"],
-    "types": ["@types/node", "@types/fs-extra", "@types/uuid", "@types/lodash"]
+    "types": ["@types/node", "@types/fs-extra", "@types/uuid", "@types/lodash", "@types/wavesurfer.js"]
   },
   "include": ["./**/*.ts", "./**/*.d.ts", "./**/*.tsx", "./**/*.vue"]
 }

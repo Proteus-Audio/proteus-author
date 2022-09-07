@@ -2,18 +2,20 @@
   <div id="effect-rack" :class="`${rackClass}`" @click="addEffect">
     <div class="no-effects" v-if="noEffects">There are no effects, click to add one</div>
     <div class="effects-list" v-else>
-      <EffectMini class="effect" v-for="(effect, i) in effects" :key="i" :type="effect" />
+      <EffectMini class="effect" v-for="(effect, i) in effects" @remove="() => remove(effect, i)" :key="i" :type="effect" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { Compressor, Reverb } from 'tone';
 import { computed, ref } from "vue";
+import { toneMaster } from '../../public/toneMaster';
 import Effect from "../../typings/effects";
 import EffectMini from "./EffectMini.vue";
 
 const effects = ref([] as Effect[]);
-const effectsToAdd: Effect[] = ["compressor", "reverb"];
+const effectsToAdd: Effect[] = ["Reverb", "Compressor"];
 
 const noEffects = computed(() => effects.value.length <= 0);
 
@@ -21,8 +23,16 @@ const rackClass = computed(() => (noEffects.value ? "empty" : "full"));
 
 const addEffect = () => {
   const toAdd = effectsToAdd.shift();
-  if (toAdd) effects.value.push(toAdd);
+  if (toAdd) {
+    toAdd === "Compressor" ? toneMaster.addEffect(new Compressor(-100, 20)) : toneMaster.addEffect(new Reverb(20))
+    effects.value.push(toAdd);
+  }
 };
+
+const remove = (effect:Effect, index:number) => {
+  effects.value.splice(index, 1);
+effectsToAdd.push(effect);
+}
 </script>
 
 <style lang="scss" scoped>
@@ -38,6 +48,7 @@ const addEffect = () => {
   transition: height 0.3s;
   align-content: center;
   cursor: pointer;
+  z-index: 20;
 
   &.empty {
     // background-color: green;

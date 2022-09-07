@@ -1,8 +1,7 @@
 import { existsSync, mkdirSync, writeFile } from "fs";
 import { readJson } from "fs-extra";
 import { copyFile } from "node:fs/promises";
-import path from "path";
-import {LocalFileData} from "get-file-object-from-local-path";
+import { sep } from "path";
 
 interface TrackSkeleton {
   id: number;
@@ -16,15 +15,16 @@ interface TrackSkeleton {
 
 interface Project {
   location?: string;
+  name?: string;
   tracks: TrackSkeleton[];
 }
 
 const copyFilesMakeDirs = async (src, dest): Promise<void> => {
-  const destArr = dest.split(path.sep);
+  const destArr = dest.split(sep);
   let dirString = "";
   for (let i = 0; i < destArr.length - 1; i++) {
     const dir = destArr[i];
-    dirString += path.sep + dir;
+    dirString += sep + dir;
     if (!existsSync(dirString)) {
       mkdirSync(dirString);
     }
@@ -33,35 +33,39 @@ const copyFilesMakeDirs = async (src, dest): Promise<void> => {
   try {
     await copyFile(src, dest);
   } catch (error) {
-    console.log("ERROR COPYING FILE:", error)
+    console.log("ERROR COPYING FILE:", error);
   }
-
 };
 
 const mkdirIfNone = (dir): void => {
-    const destArr = dir.split(path.sep);
-    let dirString = "";
-    for (let i = 0; i < destArr.length; i++) {
-      const dir = destArr[i];
-      dirString += path.sep + dir;
-      if (!existsSync(dirString)) {
-        mkdirSync(dirString);
-      }
+  const destArr = dir.split(sep);
+  let dirString = "";
+  for (let i = 0; i < destArr.length; i++) {
+    const dir = destArr[i];
+    dirString += sep + dir;
+    if (!existsSync(dirString)) {
+      mkdirSync(dirString);
     }
-}
+  }
+};
 
-const save = async (tracks: TrackSkeleton[], fileLocation: string): Promise<Project> => {
+const save = async (
+  tracks: TrackSkeleton[],
+  fileLocation: string,
+  fileName: string
+): Promise<Project> => {
   const exitTracks: TrackSkeleton[] = [];
   const promises: Promise<void>[] = [];
-  const trackDir = fileLocation.replace(/\.\w+$/i, "");
-//   mkdirIfNone(trackDir);
+  const trackDir = fileLocation.replace(/[\\\/]$/, "");
+
   if (tracks && tracks.length > 0) {
     console.log(trackDir);
     tracks.forEach((t) => {
       const track: TrackSkeleton = { id: t.id, name: t.name, files: [] };
       t.files.forEach((file) => {
-        const filePath = `${trackDir}/track${track.id}/${file.name}`;
-        promises.push(copyFilesMakeDirs(file.path, filePath));
+        const filePath = `/track${track.id}/${file.name}`;
+        console.log(`Saving ${trackDir}${filePath}`)
+        promises.push(copyFilesMakeDirs(file.path, `${trackDir}${filePath}`));
         track.files.push({ id: file.id, name: file.name, path: filePath });
       });
       exitTracks.push(track);
@@ -70,22 +74,25 @@ const save = async (tracks: TrackSkeleton[], fileLocation: string): Promise<Proj
 
   await Promise.all(promises);
 
-  writeFile(fileLocation, JSON.stringify(exitTracks), () => {
+  if(!(/\.protproject/i.test(fileName))) fileName += '.protproject';
+  writeFile(fileLocation + sep + fileName, JSON.stringify(exitTracks), () => {
     console.log("created");
   });
 
   return { location: fileLocation, tracks: exitTracks };
 };
 
-const load = async (fileLocation: string): Promise<TrackSkeleton[] | false> => {
+const load = async (fileLocation: string, fileName: string): Promise<TrackSkeleton[] | false> => {
+  if(!(/\.protproject/i.test(fileName))) fileName += '.protproject';
   try {
-    const details: TrackSkeleton[] = await readJson(fileLocation);
-    // details.forEach(skeleton => {
-    //     skeleton.files.forEach(f => {
-    //         const fileData = new LocalFileData(f.path);
+    const trackDir = fileLocation.replace(/[\\\/]$/, "");
+    const details: TrackSkeleton[] = await readJson(fileLocation + sep + fileName);
 
-    //     })
-    // })
+    details.forEach((skeleton) => {
+      skeleton.files.forEach((f) => {
+        f.path = trackDir + f.path;
+      });
+    });
     return details;
   } catch (err) {
     console.error(err);

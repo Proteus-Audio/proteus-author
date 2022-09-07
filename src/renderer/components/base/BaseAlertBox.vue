@@ -8,10 +8,10 @@
 
 <script setup lang="ts">
 import { onMounted, onUpdated, ref, watch } from "vue";
-import { useProteusStore } from "../../stores/proteus";
+import { useAlertStore } from '../../stores/alerts';
 import { AlertView } from "../../typings/proteus";
 
-const prot = useProteusStore();
+const alertStore = useAlertStore();
 const alerts = ref([] as AlertView[]);
 
 const closeAlert = (index:number) => {
@@ -34,8 +34,8 @@ const checkAlerts = (time?: Date) => {
 
 const processAlerts = () => {
   const now = new Date();
-  while (prot.alerts.length > 0) {
-    const alert = prot.alerts.shift();
+  while (alertStore.alerts.length > 0) {
+    const alert = alertStore.alerts.shift();
     if (alert) alerts.value.push({ ...alert, class: "fresh", added: now });
   }
 
@@ -45,7 +45,7 @@ const processAlerts = () => {
   }, 5 * 1000);
 };
 
-watch(prot.alerts, () => {
+watch(alertStore.alerts, () => {
   processAlerts();
 });
 

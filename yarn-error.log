@@ -1,5 +1,5 @@
 Arguments: 
-  /usr/local/bin/node /usr/local/Cellar/yarn/1.22.19/libexec/bin/yarn.js -D add @types/get-file-object-from-local-path
+  /usr/local/bin/node /usr/local/Cellar/yarn/1.22.19/libexec/bin/yarn.js add -D @types/snap-svg
 
 PATH: 
   /Users/innocentsmith/.pyenv/shims:/Users/innocentsmith/Library/Preferences/netlify/helper/bin:/Users/innocentsmith/Dev/google-cloud-sdk/bin:/Library/Frameworks/Python.framework/Versions/2.7/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Library/Apple/usr/bin:/Users/innocentsmith/Dev/flutter/bin:/usr/local/bin/cdp
@@ -14,7 +14,7 @@ Platform:
   darwin x64
 
 Trace: 
-  Error: https://registry.yarnpkg.com/@types%2fget-file-object-from-local-path: Not found
+  Error: https://registry.yarnpkg.com/@types%2fsnap-svg: Not found
       at Request.params.callback [as _callback] (/usr/local/Cellar/yarn/1.22.19/libexec/lib/cli.js:66145:18)
       at Request.self.callback (/usr/local/Cellar/yarn/1.22.19/libexec/lib/cli.js:140890:22)
       at Request.emit (node:events:390:28)
@@ -48,6 +48,8 @@ npm manifest:
       "@types/fs-extra": "^9.0.13",
       "@types/lodash": "^4.14.184",
       "@types/node": "^18.7.13",
+      "@types/p5": "^1.4.2",
+      "@types/pizzicato": "^0.6.0",
       "@types/uuid": "^8.3.4",
       "@vitejs/plugin-vue": "^2.2.4",
       "@vue/cli": "^5.0.1",
@@ -65,10 +67,10 @@ npm manifest:
       "element-plus": "^2.2.15",
       "fs-extra": "^10.1.0",
       "get-file-object-from-local-path": "^1.0.2",
-      "howler": "^2.2.3",
       "konva": "^8.3.12",
       "lodash": "^4.17.21",
       "mime": "^3.0.0",
+      "p5": "^1.4.2",
       "peaks.js": "^2.0.5",
       "pinia": "^2.0.21",
       "primeicons": "^5.0.0",
@@ -1617,6 +1619,16 @@ Lockfile:
     version "2.4.1"
     resolved "https://registry.yarnpkg.com/@types/normalize-package-data/-/normalize-package-data-2.4.1.tgz#d3357479a0fdfdd5907fe67e17e0a85c906e1301"
     integrity sha512-Gj7cI7z+98M282Tqmp2K5EIsoouUEzbBJhQQzDE3jSIRk6r9gsz0oUokqIUR4u1R3dMHo0pDHM7sNOHyhulypw==
+  
+  "@types/p5@^1.4.2":
+    version "1.4.2"
+    resolved "https://registry.yarnpkg.com/@types/p5/-/p5-1.4.2.tgz#aee3142741254a38ab9a95038d5b777901a2be1e"
+    integrity sha512-tzJ2PdmeXlX8tidbA1/pQEhs0MHVWam0K4ux5ri0GrZXhBU3QrpTpSVzNaBDuo6KheryHdH8wR82x1nPvxo42g==
+  
+  "@types/pizzicato@^0.6.0":
+    version "0.6.0"
+    resolved "https://registry.yarnpkg.com/@types/pizzicato/-/pizzicato-0.6.0.tgz#2dd45f235ad252a02d3482c2d808ae1fc12fc1f5"
+    integrity sha512-1FE/jslaxMJH+md7WUuY+SYUFEnWzNvvdzmgqjBIjkS60noJdMmUTHIzFuHaFSFSEhtUuj9hiJW8dX1EOAf0Dw==
   
   "@types/plist@^3.0.1":
     version "3.0.2"
@@ -4355,11 +4367,6 @@ Lockfile:
     dependencies:
       lru-cache "^6.0.0"
   
-  howler@^2.2.3:
-    version "2.2.3"
-    resolved "https://registry.yarnpkg.com/howler/-/howler-2.2.3.tgz#a2eff9b08b586798e7a2ee17a602a90df28715da"
-    integrity sha512-QM0FFkw0LRX1PR8pNzJVAY25JhIWvbKMBFM4gqk+QdV+kPXOhleWGCB6AiAF/goGjIHK2e/nIElplvjQwhr0jg==
-  
   http-cache-semantics@3.8.1:
     version "3.8.1"
     resolved "https://registry.yarnpkg.com/http-cache-semantics/-/http-cache-semantics-3.8.1.tgz#39b0e16add9b605bf0a9ef3d9daaf4843b4cacd2"
@@ -5654,6 +5661,11 @@ Lockfile:
     version "2.2.0"
     resolved "https://registry.yarnpkg.com/p-try/-/p-try-2.2.0.tgz#cb2868540e313d61de58fafbe35ce9004d5540e6"
     integrity sha512-R4nPAVTAU0B9D35/Gk3uJf/7XYbQcyohSKdvAxIRSNghFl4e71hVoGnBNQz9cWaXxO2I10KTC+3jMdvvoKw6dQ==
+  
+  p5@^1.4.2:
+    version "1.4.2"
+    resolved "https://registry.yarnpkg.com/p5/-/p5-1.4.2.tgz#c258fcf655ff75bd4e8b530607c9a96e6a556023"
+    integrity sha512-J5zqZ/l1NIbJSuNr/FH9nDYgBRg7/NubStNPnx1fQCMSAgxI6peKDHs9i5iaG9EuwbJzjuG6/5bX/D0lqqrP9A==
   
   package-json@^6.3.0:
     version "6.5.0"
