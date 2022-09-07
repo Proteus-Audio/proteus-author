@@ -12,7 +12,6 @@
 </template>
 
 <script setup lang="ts">
-// import AudioPeaks from "vue-peaks";
 import { onMounted, computed, onUpdated, ref, onBeforeMount, onBeforeUnmount, watch } from "vue";
 
 import { useAudioStore } from "../../stores/audio";

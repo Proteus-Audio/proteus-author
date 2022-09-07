@@ -1,4 +1,4 @@
-import axios from "axios";
+// import axios from "axios";
 
 const arrRandom = (arr: any[]) => {
   console.log(arr);
@@ -6,13 +6,13 @@ const arrRandom = (arr: any[]) => {
   return arr[Math.floor(Math.random() * arr.length)];
 };
 
-const srcToFile = async (src: string, fileName: string): Promise<File> => {
-  const response = await axios.get(src, {
-    responseType: "blob",
-  });
-  const mimeType = response.headers["content-type"];
-  return new File([response.data], fileName, { type: mimeType });
-};
+// const srcToFile = async (src: string, fileName: string): Promise<File> => {
+//   const response = await axios.get(src, {
+//     responseType: "blob",
+//   });
+//   const mimeType = response.headers["content-type"];
+//   return new File([response.data], fileName, { type: mimeType });
+// };
 
 const cloneAudioBuffer = (fromAudioBuffer: AudioBuffer):AudioBuffer => {
   const audioBuffer = new AudioBuffer({
@@ -28,4 +28,4 @@ const cloneAudioBuffer = (fromAudioBuffer: AudioBuffer):AudioBuffer => {
   return audioBuffer;
 };
 
-export { arrRandom, srcToFile, cloneAudioBuffer };
+export { arrRandom, cloneAudioBuffer };

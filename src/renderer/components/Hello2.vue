@@ -14,9 +14,6 @@
 import * as Tone from "tone";
 // import p5, {Element} from "p5";
 import { computed, onMounted, ref } from "vue";
-import { SVG } from "@svgdotjs/svg.js";
-import type { PointArrayAlias, PointArray, ArrayXY } from "@svgdotjs/svg.js";
-import WaveSurfer from "wavesurfer.js";
 import Peaks, { PeaksInstance, PeaksOptions } from "peaks.js";
 import ToneMaster from "../typings/tone";
 import { EventEmitter } from "stream";
