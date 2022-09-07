@@ -87,7 +87,7 @@ const audio = useAudioStore();
 const track = computed(() => trackStore.getOrCreateTrackFromId(props.trackId));
 
 const width = computed((): string => {
-  return audio.duration === 0 ? "100%" : `${(audio.znS.scale * audio.duration) + 30}px`;
+  return audio.duration === 0 ? "100%" : `${(audio.zoom.x * audio.duration) + 30}px`;
 });
 
 const padding = computed(():string => {

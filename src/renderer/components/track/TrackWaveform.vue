@@ -73,7 +73,7 @@ const initialisePeaks = async () => {
 };
 
 const resizeWave = () => {
-  width.value = `${duration.value * audio.getScale}px`;
+  width.value = `${duration.value * audio.getXScale}px`;
 };
 
 const onResize = () => {

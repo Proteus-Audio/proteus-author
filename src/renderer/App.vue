@@ -51,7 +51,7 @@ onMounted(() => {
 });
 
 
-watch(audio.znS, () => {
+watch(audio.zoom, () => {
   window.dispatchEvent(new Event("resize"));
 });
 </script>

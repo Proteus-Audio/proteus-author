@@ -16,9 +16,8 @@ export const useAudioStore = defineStore("prot", () => {
   const playing = ref(false);
   const currentTime = ref(0);
   const scale = ref(20 as number);
-  const zoom = ref(1 as number);
   const duration = ref(0);
-  const znS = ref({ zoom: 1, scale: 20 });
+  const zoom = ref({ y: 1, x: 20 });
   //   const group = ref(new Pizzicato.Group());
 
   /////////////
@@ -28,7 +27,8 @@ export const useAudioStore = defineStore("prot", () => {
   const isPlaying = computed((): boolean => playing.value);
   const watch = computed(() => ({ playing: playing.value, zoom: zoom.value, scale: scale.value }));
   const getCurrentTime = computed((): number => currentTime.value);
-  const getScale = computed((): number => znS.value.scale);
+  const getXScale = computed((): number => zoom.value.x);
+  const getYScale = computed((): number => zoom.value.y);
   const context = computed((): AudioContext => toneMaster.context);
   const audioContext = computed((): AudioContext => context.value);
 
@@ -76,12 +76,12 @@ export const useAudioStore = defineStore("prot", () => {
     playing.value = !playing.value;
   };
 
-  const setScale = (newScale: number): void => {
-    znS.value.scale = newScale;
+  const setXScale = (x: number): void => {
+    zoom.value.x = x;
   };
 
-  const setZoom = (newZoom: number): void => {
-    znS.value.zoom = newZoom;
+  const setYScale = (y: number): void => {
+    zoom.value.y = pageYOffset;
   };
 
   const setDuration = async () => {
@@ -92,19 +92,19 @@ export const useAudioStore = defineStore("prot", () => {
   return {
     scale,
     zoom,
-    znS,
     duration,
     watch,
     isPlaying,
     getCurrentTime,
-    getScale,
+    getXScale,
+    getYScale,
     audioContext,
     play,
     pause,
     playPause,
     stop,
-    setScale,
-    setZoom,
+    setXScale,
+    setYScale,
     setPlaying,
     setCurrentTime,
     togglePlaying,

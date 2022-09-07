@@ -51,13 +51,10 @@ const play = () => {
 };
 
 const zoomIn = () => {
-  audio.setScale(audio.getScale + 5);
+  audio.setXScale(audio.getXScale + 5);
 };
 const zoomOut = () => {
-  audio.setScale(audio.getScale - 5);
-};
-const zoom = () => {
-  audio.setZoom(audio.zoom + 5);
+  audio.setXScale(audio.getXScale - 5);
 };
 </script>
 
