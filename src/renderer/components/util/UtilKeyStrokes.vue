@@ -5,14 +5,19 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount } from "vue";
 import { useAudioStore } from "../../stores/audio";
+import { useTrackStore } from '../../stores/tracks';
 
 const audio = useAudioStore();
+const track = useTrackStore();
 
 const keyListener = (e: KeyboardEvent) => {
   if ((e.target as HTMLElement).localName === "body") {
     if (e.key === " ") {
       e.preventDefault();
-      console.log(e);
+      if (!audio.isPlaying && !track.initialised) {
+        window.dispatchEvent(new Event("resize"));
+        track.initialised = true;
+      }
       audio.playPause();
     }
   }

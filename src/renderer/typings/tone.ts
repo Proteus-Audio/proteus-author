@@ -1,29 +1,91 @@
-import { Compressor, Destination, Distortion, Limiter, loaded, Player, Players, Reverb, Transport } from "tone";
-import {ToneTrack, Effect, SelectionMap, ToneTrackPlayer} from "./tone.d";
-import { Track } from './tracks';
+import EventEmitter from "events";
+import { Destination, Gain, getContext, Limiter, loaded, Player } from "tone";
+import { Clock } from "./clock";
+import { ToneTrack, Effect, SelectionMap, ToneTrackPlayer } from "./tone.d";
+import { Track } from "./tracks";
+
+type Command = "start" | "stop" | "play" | "clockSync";
+type PlayCallback = (currentTime: number, iteration: number) => void;
 
 class ToneMaster {
   playing: boolean;
+  seeking: boolean;
   currentTime: number;
   currentPlayers: HTMLCollectionOf<HTMLAudioElement> | undefined;
   tracks: ToneTrack[];
   effects: Effect[];
+  gain: Gain;
+  clock: Clock;
+  cachedCallback: PlayCallback;
 
   constructor() {
-    Transport.cancel();
-    Transport.stop();
     this.playing = false;
+    this.seeking = false;
     this.currentTime = 0;
     this.tracks = [];
     this.effects = [];
-    // this.effects = [new Limiter(-5), new Reverb(20), new Compressor(-100, 20)];
+    this.gain = new Gain(1).toDestination();
+    this.clock = new Clock();
+    this.cachedCallback = () => {}
     this.connectEffects();
   }
 
-  _initTonePlayer(tone:Player) {
-    tone.volume.value = -20;
-    tone.toDestination();
-    tone.sync();
+  private _initTonePlayer(player: ToneTrackPlayer) {
+    player.tone.connect(this.gain);
+    player.tone.mute = !player.selected;
+    player.tone.sync();
+  }
+
+  private _allPLayers(): ToneTrackPlayer[] {
+    const players: ToneTrackPlayer[] = [];
+    this.tracks.forEach((track) => {
+      players.push(...track.players);
+    });
+    return players;
+  }
+
+  private _executeOnAllPLayers(command: Command): void {
+    this._allPLayers().forEach((player) => {
+      if (command === "stop" || command === "start") player.tone[command]();
+      if (command === "play") player.tone.start();
+      if (command === "play" || command === "clockSync") player.tone.seek(this.clock.seconds);
+    });
+  }
+
+  get context(): AudioContext {
+    return getContext().rawContext as AudioContext;
+  }
+
+  get duration(): number {
+    let duration = 0;
+    this._allPLayers().forEach((player) => {
+      let d = player.tone.buffer.duration;
+      if (d > duration) duration = d;
+    });
+    return duration;
+  }
+
+  get volume() {
+    return this.gain.gain.value;
+  }
+
+  setGain(gain: number) {
+    this.gain.gain.value = gain;
+  }
+
+  async rampGain(gain: number, time?: number): Promise<void> {
+    const milli = time || 100;
+    const waitForTheRamp: Promise<void> = new Promise((resolve) => {
+      this.gain.gain.rampTo(gain, milli / 1000);
+      setTimeout(() => {
+        resolve();
+      }, milli);
+    });
+    await waitForTheRamp;
+  }
+
+  async initPeaks(eventEmitter: EventEmitter) {
+    console.log(eventEmitter);
   }
 
   clear() {
@@ -34,42 +96,52 @@ class ToneMaster {
     this.connectEffects();
   }
 
+  async seek(time: number) {
+    this.seeking = true;
+    this.clock.seek(time);
+    if (this.playing) {
+      await this.pause();
+      await this.play();
+    }
+    this.seeking = false;
+  }
+
   trackFromId(trackId: number): ToneTrack | undefined {
     return this.tracks.find((track) => track.id === trackId);
+  }
+
+  playerFromIds(trackId: number, playerId: number): Player | undefined {
+    const track = this.trackFromId(trackId);
+    if (!track) return;
+    for (let i = 0; i < track.players.length; i++) {
+      const player = track.players[i];
+      if (playerId === player.id) return player.tone;
+    }
   }
 
   setSelections(selections: SelectionMap) {
     selections.forEach((s) => {
       const track = this.trackFromId(s[0]);
-      if (track)
+      if (track) {
         track.players.forEach((player) => {
-          if (player.id === s[1]) player.tone.mute = false;
+          player.selected = player.id === s[1];
+          if (player.selected) player.tone.mute = false;
           else player.tone.mute = true;
         });
+      }
     });
-  }
-
-  async startAllPlayers() {
-    await loaded();
-    this.tracks.forEach(track => {
-      track.players.forEach(player => {
-        console.log(player.tone.state);
-       if(player.tone.state === 'stopped') player.tone.start();
-      });
-    })
   }
 
   addTrack(track: ToneTrack) {
     track.players.forEach((player) => {
-      this._initTonePlayer(player.tone);
+      this._initTonePlayer(player);
     });
     this.tracks.push(track);
-    this.startAllPlayers();
   }
 
   addToneTrackFromTrack(track: Track) {
-    const players:ToneTrackPlayer[] = [];
-    track.files.forEach(f => {
+    const players: ToneTrackPlayer[] = [];
+    track.files.forEach((f) => {
       players.push({
         id: f.id,
         name: f.name,
@@ -78,50 +150,72 @@ class ToneMaster {
       });
     });
 
-    this.addTrack({id: track.id, name: track.name, players})
+    this.addTrack({ id: track.id, name: track.name, players });
   }
 
   addPlayer(trackId: number, player: ToneTrackPlayer) {
     const track = this.trackFromId(trackId);
     if (!track) return;
 
-    this._initTonePlayer(player.tone);
+    this._initTonePlayer(player);
     const trackIndex = track.players.findIndex((p) => p.id === player.id);
     trackIndex === -1 ? track.players.push(player) : (track.players[trackIndex] = player);
-    this.startAllPlayers();
   }
 
   async addEffect(effect: Effect) {
     this.effects.push(effect);
+    this.connectEffects();
   }
 
   connectEffects() {
     Destination.chain(...this.effects, new Limiter(-5));
   }
 
-  playOne() {
-    const player = this.tracks[0]?.players[0];
-    // const player = this.tracks[0]?.players[0]?.tone;
-    player.tone.sync();
-    console.log(player);
-    player.tone.toDestination();
-    player.tone.start();
-    Transport.start();
-  }
+  async play(callback?: PlayCallback) {
+    if (this.playing) return;
+    this.playing = true;
+    
+    if(callback) this.cachedCallback = callback;
+    const update = (iteration?: number) => {
+      const i = iteration || 0;
+      this.cachedCallback(this.clock.seconds, i);
+      if (this.clock.seconds >= this.duration) {
+        this.cachedCallback(0, i);
+        this.stop();
+      }
+      if (this.playing === true)
+        setTimeout(() => {
+          update(i + 1);
+        }, 50);
+    };
 
-  async play() {
-    this.connectEffects();
     await loaded();
-    console.log(this.tracks);
-    Transport.start();
+
+    this._executeOnAllPLayers("play");
+    this.clock.play();
+    update();
+
+    this.gain.gain.value = 0;
+    await this.rampGain(1);
   }
 
-  pause() {
-    Transport.pause();
+  async pause() {
+    this.playing = false;
+    this.clock.pause();
+
+    await this.rampGain(0);
+    this._executeOnAllPLayers("stop");
   }
 
   stop() {
-    Transport.stop();
+    this.playing = false;
+    this.clock.stop();
+    this.cachedCallback = () => {};
+
+    this.gain.gain.rampTo(0, 0.1);
+    setTimeout(() => {
+      this._executeOnAllPLayers("stop");
+    }, 10);
   }
 }
 

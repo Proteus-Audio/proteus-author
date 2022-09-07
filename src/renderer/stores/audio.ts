@@ -1,11 +1,9 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import PlayMaster from "../typings/playMaster";
 import { useAlertStore } from "./alerts";
 import { useTrackStore } from "./tracks";
 import * as Tone from "tone";
-import { Player, Players } from "tone";
-import ToneMaster from '../typings/tone';
+import { toneMaster } from "../public/toneMaster";
 
 export const useAudioStore = defineStore("prot", () => {
   const alert = useAlertStore();
@@ -17,11 +15,10 @@ export const useAudioStore = defineStore("prot", () => {
 
   const playing = ref(false);
   const currentTime = ref(0);
-  const master = ref(new ToneMaster());
-  // const master = ref(new PlayMaster());
-  const context = ref(new AudioContext());
   const scale = ref(20 as number);
   const zoom = ref(1 as number);
+  const duration = ref(0);
+  const znS = ref({ zoom: 1, scale: 20 });
   //   const group = ref(new Pizzicato.Group());
 
   /////////////
@@ -29,28 +26,11 @@ export const useAudioStore = defineStore("prot", () => {
   /////////////
 
   const isPlaying = computed((): boolean => playing.value);
+  const watch = computed(() => ({ playing: playing.value, zoom: zoom.value, scale: scale.value }));
   const getCurrentTime = computed((): number => currentTime.value);
-  const getScale = computed((): number => scale.value);
+  const getScale = computed((): number => znS.value.scale);
+  const context = computed((): AudioContext => toneMaster.context);
   const audioContext = computed((): AudioContext => context.value);
-  const players = computed((): Player[] => {
-    const players = [] as Player[];
-    track.selectedTracks.forEach((track) => {
-      const player = new Player(`file://${track.path}`).toDestination();
-      //   player.sync();
-      players.push(player);
-    });
-    return players;
-  });
-
-  const player = computed((): Players => {
-    const players = new Tone.Players();
-    track.allTracks.forEach((track) => {
-      track.files.forEach((file) => {
-        players.add(file.name, `file://${file.path}`);
-      });
-    });
-    return players;
-  });
 
   /////////////
   // SETTERS //
@@ -60,32 +40,21 @@ export const useAudioStore = defineStore("prot", () => {
     currentTime.value = time;
   };
 
-  const addFile = async (path: string) => {
-    // const reverb = new Tone.Reverb(20).toDestination();
-    // reverb.wet.value = 1;
-    // await reverb.ready;
-    // console.log(path);
-    // const sound = new Tone.Player("file://" + path).toDestination();
-    // await Tone.loaded();
-    // sound.connect(reverb);
-    // // const waveform = new Tone.Waveform();
-    // // console.log(sound.);
-    // console.log(sound.buffer.toArray());
-    // sound.start();
-  };
-
   const play = () => {
     if (!track.trackFilesExists) {
       alert.addAlert("There are no tracks to play", "warning");
       return;
     }
 
-    master.value.play();
+    toneMaster.play((time: number, i?: number) => {
+      if (time === 0 && i !== 0) stop();
+      else currentTime.value = time;
+    });
     setPlaying(true);
   };
 
   const pause = () => {
-    master.value.pause();
+    toneMaster.pause();
     setPlaying(false);
   };
 
@@ -94,7 +63,8 @@ export const useAudioStore = defineStore("prot", () => {
   };
 
   const stop = () => {
-    master.value.stop();
+    toneMaster.stop();
+    currentTime.value = 0;
     setPlaying(false);
   };
 
@@ -106,28 +76,29 @@ export const useAudioStore = defineStore("prot", () => {
     playing.value = !playing.value;
   };
 
-  const refreshContext = (): void => {
-    context.value = new AudioContext();
-  };
-
   const setScale = (newScale: number): void => {
-    scale.value  = newScale;
+    znS.value.scale = newScale;
   };
 
   const setZoom = (newZoom: number): void => {
-    zoom.value  = newZoom;
+    znS.value.zoom = newZoom;
   };
 
+  const setDuration = async () => {
+    await Tone.loaded();
+    duration.value = toneMaster.duration;
+  }
+
   return {
-    master,
     scale,
     zoom,
+    znS,
+    duration,
+    watch,
     isPlaying,
     getCurrentTime,
     getScale,
     audioContext,
-    player,
-    addFile,
     play,
     pause,
     playPause,
@@ -137,6 +108,6 @@ export const useAudioStore = defineStore("prot", () => {
     setPlaying,
     setCurrentTime,
     togglePlaying,
-    refreshContext,
+    setDuration
   };
 });

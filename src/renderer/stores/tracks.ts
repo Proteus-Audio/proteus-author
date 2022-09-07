@@ -6,6 +6,7 @@ import { TrackSkeleton } from "../typings/proteus";
 import { useAudioStore } from "./audio";
 import { SelectionMap, ToneTrackPlayer } from "../typings/tone.d";
 import { Player } from "tone";
+import {toneMaster} from '../public/toneMaster';
 
 export const useTrackStore = defineStore("track", () => {
   const audio = useAudioStore();
@@ -15,6 +16,7 @@ export const useTrackStore = defineStore("track", () => {
   /////////////
 
   const tracks = ref([] as Track[]);
+  const initialised = ref(true);
 
   /////////////
   // GETTERS //
@@ -65,7 +67,7 @@ export const useTrackStore = defineStore("track", () => {
 
   async function replaceTracksFromLoad(trackSkeletons: TrackSkeleton[]) {
     const buildTracks: Track[] = [];
-    audio.master.clear();
+    toneMaster.clear();
 
     for (let i = 0; i < trackSkeletons.length; i++) {
       const skeleton = trackSkeletons[i];
@@ -78,15 +80,16 @@ export const useTrackStore = defineStore("track", () => {
         players.push({
           id: f.id,
           name: f.name,
-          selected: false,
+          selected: f.id === track.selection,
           tone: new Player(`file://${f.path}`),
         });
       }
-      
-      audio.master.addTrack({id: track.id, name: track.name, players});
+
+      toneMaster.addTrack({ id: track.id, name: track.name, players });
       buildTracks.push(track);
     }
-
+    
+    audio.setDuration();
     tracks.value = buildTracks;
   }
 
@@ -104,8 +107,10 @@ export const useTrackStore = defineStore("track", () => {
       track.id = nextTrackId.value;
     }
 
-    audio.master.addToneTrackFromTrack(track);
+    toneMaster.addToneTrackFromTrack(track);
     tracks.value.push(track);
+
+    audio.setDuration();
     return track;
   }
 
@@ -116,10 +121,12 @@ export const useTrackStore = defineStore("track", () => {
   };
 
   function setSelections() {
-    const selectionMap:SelectionMap = [];
+    const selectionMap: SelectionMap = [];
     tracks.value.forEach((track, i) => {
       selectionMap.push([track.id, setTrackSelection(track.id, i)]);
     });
+    toneMaster.setSelections(selectionMap);
+    console.log("hello?");
   }
 
   function getTrackSelection(trackId: number): TrackFileSkeleton | undefined {
@@ -128,7 +135,7 @@ export const useTrackStore = defineStore("track", () => {
     return tracks.value[index].files.find((file) => file.id === selectionId);
   }
 
-  function setTrackSelection(trackId: number, index?: number):number {
+  function setTrackSelection(trackId: number, index?: number): number {
     index = index || tracks.value.findIndex((v) => v.id === trackId);
     const options = tracks.value[index].files.map((f) => f.id);
     const selection = sample(options);
@@ -145,6 +152,12 @@ export const useTrackStore = defineStore("track", () => {
         parentId: trackId,
       });
       tracks.value[index].files.push(trackFile);
+      toneMaster.addPlayer(trackId, {
+        id: trackFile.id,
+        selected: false,
+        name: trackFile.name,
+        tone: new Player(`file://${trackFile.path}`),
+      });
     });
   }
 
@@ -164,6 +177,7 @@ export const useTrackStore = defineStore("track", () => {
 
   return {
     tracks,
+    initialised,
     allTracks,
     nextTrackId,
     emptyTrackExists,

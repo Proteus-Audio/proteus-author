@@ -5,7 +5,7 @@
       :id="`overview-container-${identifier}`"
       class="overview-container"
     ></div>
-    <!-- <audio v-if="track" :class="`player ${selected ? 'playable' : 'non-playable'}`" :id="`audio-${identifier}`">
+    <!-- <audio v-if="track" :class="`player ${selected ? 'playable' : 'non-playable'}`" :id="`audio-${identifier}`" controls>
       <source :src="`file://${track.path}`" type="audio/mp3" />
     </audio> -->
   </div>
@@ -17,10 +17,11 @@ import { onMounted, computed, onUpdated, ref, onBeforeMount, onBeforeUnmount, wa
 
 import { useAudioStore } from "../../stores/audio";
 import { TrackFileSkeleton } from "../../typings/tracks";
-import WaveSurfer from "wavesurfer.js";
-import { useAlertStore } from '../../stores/alerts';
-
-// import playMaster from '../../public/playmaster';
+import Peaks, { PeaksOptions } from "peaks.js";
+import { toneMaster, PeaksPlayer } from "../../public/toneMaster";
+import * as Tone from "tone";
+import { cloneAudioBuffer } from "../../public/tools";
+import { useTrackStore } from '../../stores/tracks';
 
 interface Props {
   track: TrackFileSkeleton;
@@ -28,59 +29,60 @@ interface Props {
 }
 
 const audio = useAudioStore();
-const alertStore = useAlertStore();
-
+const trackStore = useTrackStore();
 const props = defineProps<Props>();
-
 const width = ref("100%");
 const duration = ref(0);
-
 const identifier = computed(() => `${props.track.parentId}-${props.track.id}`);
-
-const wavesurfer = ref(null as WaveSurfer | null);
 
 const clearContainer = () => {
   const container = document.getElementById(`overview-container-${identifier.value}`);
   if (container) container.innerHTML = "";
+  return container;
 };
 
-const initialisePeaks = () => {
-  clearContainer();
-  wavesurfer.value = WaveSurfer.create({
-    container: `#overview-container-${identifier.value}`,
-    audioContext: audio.audioContext,
-    cursorWidth: 0,
-    autoCenter: false,
-    barHeight: audio.zoom
-    // barHeight: 20,
-    // barWidth: 1,
-  });
+const initialisePeaks = async () => {
+  trackStore.initialised = false;
+  const player = toneMaster.playerFromIds(props.track.parentId, props.track.id);
+  if (!player) return;
+  const container = clearContainer();
 
-  wavesurfer.value.load(`file://${props.track.path}`);
+  await Tone.loaded();
+  duration.value = player.buffer.duration;
+  resizeWave();
+  const audioBuffer = cloneAudioBuffer((player.buffer as any)._buffer);
+  const options = {
+    overview: {
+      container: container,
+    },
+    // mediaElement: document.querySelector("audio"),
+    player: new PeaksPlayer(),
+    webAudio: {
+      // audioContext: new AudioContext(),
+      audioBuffer: audioBuffer,
+    },
+  };
 
-  wavesurfer.value.on("ready", () => {
-    duration.value = wavesurfer.value?.getDuration() || duration.value;
-    resizeWave();
+  Peaks.init(options as PeaksOptions, function (err, peaks) {
+    if (err) {
+      console.error("Failed to initialize Peaks instance: " + err.message);
+      return;
+    }
+    // Do something when the waveform is displayed and ready
   });
 };
 
 const resizeWave = () => {
-  if (wavesurfer.value) {
-      width.value = `${duration.value * audio.getScale}px`;
-      wavesurfer.value.zoom(audio.getScale - .1);
-      // wavesurfer.value.setHeight(audio.zoom * 128);
-      // console.log(wavesurfer.value.set())
-    }
-}
+  width.value = `${duration.value * audio.getScale}px`;
+};
 
 const onResize = () => {
+  console.log('resize')
   resizeWave();
-  // initialisePeaks();
 };
 
 onUpdated(() => {
   resizeWave();
-  // initialisePeaks();
 });
 
 onBeforeMount(() => {
@@ -88,12 +90,8 @@ onBeforeMount(() => {
 });
 
 onMounted(() => {
-  audio.addFile(props.track.path);
   initialisePeaks();
 });
-
-// watch(audio.scale, resizeWave);
-// watch(audio.zoom, resizeWave);
 
 onBeforeUnmount(() => {
   window.removeEventListener("resize", onResize);
@@ -102,17 +100,17 @@ onBeforeUnmount(() => {
 
 <style lang="scss" scoped>
 .track {
-  max-width: calc(100% - 44px);
+  // max-width: calc(100% - 44px);
   background-color: rgba(0, 0, 0, 0.1);
-  border-radius: 0.5em;
-  padding: 0 0.5em;
+  // border-radius: 0.5em;
+  // padding: 0 0.5em;
 
   .folder-button {
     margin-top: auto;
   }
 
   .overview-container {
-    min-height: 75px;
+    min-height: 150px;
     width: 100%;
   }
 }

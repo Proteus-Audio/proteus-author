@@ -1,5 +1,9 @@
 <template>
-  <div v-bind="getRootProps()" :class="`track-bin ${isDragActive ? 'drag' : ''}`">
+  <div
+    v-bind="getRootProps()"
+    :class="`track-bin ${isDragActive ? 'drag' : ''}`"
+    :style="`min-width: ${width}; ${padding}`"
+  >
     <div v-if="!fresh" class="bin">
       <div class="bin-name">
         <InputAutoSizedText
@@ -9,19 +13,6 @@
         />
         -
         <div type="text" class="selection-name">{{ selectedName }}</div>
-      </div>
-      <span class="flex">
-        <div class="waveforms">
-          <TrackPlayhead />
-          <TrackWaveform
-            v-for="file in track.files"
-            :class="`waveform ${file.id === track.selection ? 'visible' : 'hidden'}`"
-            :key="file.id"
-            :track="file"
-            :selected="file.id === track.selection"
-            >{{ file.name }}</TrackWaveform
-          >
-        </div>
 
         <el-button
           :icon="Folder"
@@ -29,7 +20,17 @@
           @click="() => (folderOpen = !folderOpen)"
           text
         />
-      </span>
+      </div>
+      <div class="waveforms">
+        <TrackWaveform
+          v-for="file in track.files"
+          :class="`waveform ${file.id === track.selection ? 'visible' : 'hidden'}`"
+          :key="file.id"
+          :track="file"
+          :selected="file.id === track.selection"
+          >{{ file.name }}</TrackWaveform
+        >
+      </div>
       <el-drawer
         ref="folderContents"
         v-model="folderOpen"
@@ -55,20 +56,23 @@
         <span class="error">{{ error }}</span>
       </p>
     </span>
-    <p class="error" v-else>{{ error }}</p>
+    <span v-else>
+      <p class="error" v-if="!!error">{{ error }}</p>
+    </span>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { useDropzone } from "vue3-dropzone";
-import { useTrackStore } from '../../stores/tracks';
+import { useTrackStore } from "../../stores/tracks";
 import TrackWaveform from "./TrackWaveform.vue";
 
 import { Folder, Delete } from "@element-plus/icons-vue";
 import InputAutoSizedText from "../input/InputAutoSizedText.vue";
-import TrackPlayhead from './TrackPlayhead.vue';
+import TrackPlayhead from "./TrackPlayhead.vue";
+import { useAudioStore } from "../../stores/audio";
 // import Button from "element-plus";
 
 interface Props {
@@ -78,8 +82,17 @@ interface Props {
 const props = defineProps<Props>();
 
 const trackStore = useTrackStore();
+const audio = useAudioStore();
 
 const track = computed(() => trackStore.getOrCreateTrackFromId(props.trackId));
+
+const width = computed((): string => {
+  return audio.duration === 0 ? "100%" : `${(audio.znS.scale * audio.duration) + 30}px`;
+});
+
+const padding = computed(():string => {
+  return track.value.files.length > 0 ? "" : "margin: 0;"
+})
 
 const folderOpen = ref(false);
 const error = ref("");
@@ -139,8 +152,8 @@ const { getRootProps, getInputProps, isDragActive, open, ...rest } = useDropzone
 .track-bin {
   background: rgba(0, 0, 0, 0.1);
   padding: 1em;
-  margin-bottom: 1em;
-  border-radius: 0.5em;
+  margin-bottom: 0.5em;
+  // border-radius: 0.5em;
   &.drag {
     background: rgba(0, 0, 0, 0.2);
   }
@@ -169,7 +182,7 @@ const { getRootProps, getInputProps, isDragActive, open, ...rest } = useDropzone
       display: inline-block;
       position: relative;
       width: 100%;
-      height: 128px;
+      height: 150px;
 
       .waveform {
         position: absolute;
@@ -184,6 +197,7 @@ const { getRootProps, getInputProps, isDragActive, open, ...rest } = useDropzone
     }
 
     .folder-button {
+      margin: 0 0.5em;
       margin-top: auto;
     }
 

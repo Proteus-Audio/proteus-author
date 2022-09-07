@@ -1,6 +1,6 @@
 <template>
   <div class="playhead-holder">
-    <div class="playhead" :style="`left:${leftPos}px`"></div>
+    <!-- <div class="playhead" :style="`left:${leftPos}px`"></div> -->
   </div>
 </template>
 

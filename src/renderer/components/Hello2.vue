@@ -1,29 +1,92 @@
 <template>
   <div>
-    <div id="visualise"></div>
+    <button v-on:click="playpause">{{ playing ? "Pause" : "Play" }}</button>
+    <button v-on:click="stop">Stop</button>
+    <el-slider v-model="slider" :show-tooltip="false" />
+    <div id="visualise1" class="visualise"></div>
+    <div id="visualise2" class="visualise"></div>
+    <div id="visualise3" class="visualise"></div>
+    <div id="visualise4" class="visualise"></div>
   </div>
 </template>
 
 <script setup lang="ts">
 import * as Tone from "tone";
 // import p5, {Element} from "p5";
-import { onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { SVG } from "@svgdotjs/svg.js";
 import type { PointArrayAlias, PointArray, ArrayXY } from "@svgdotjs/svg.js";
 import WaveSurfer from "wavesurfer.js";
+import Peaks, { PeaksInstance, PeaksOptions } from "peaks.js";
 import ToneMaster from "../typings/tone";
-const path = "file:///Users/innocentsmith/Sites/electron/proteus-author/dev-assets/op_piano1.mp3";
-const path2 = "file:///Users/innocentsmith/Sites/electron/proteus-author/dev-assets/op_rythmn2.mp3";
+import { EventEmitter } from "stream";
+import { cloneDeep } from "lodash";
+import { cloneAudioBuffer } from "../public/tools";
+import { Player } from "tone";
+const path1 = "file:///Users/innocentsmith/Sites/electron/proteus-author/dev-assets/op_piano1.mp3";
+const path2 = "file:///Users/innocentsmith/Sites/electron/proteus-author/dev-assets/op_rythmn3.mp3";
 const path3 = "file:///Users/innocentsmith/Sites/electron/proteus-author/dev-assets/op_clar2.mp3";
 const path4 = "file:///Users/innocentsmith/Sites/electron/proteus-author/dev-assets/op_bgclar3.mp3";
+const toneMaster = new ToneMaster();
+
+const playing = ref(false);
+const players: Player[] = [];
+const peaksPlayers: PeaksInstance[] = [];
+
+const sliderRef = ref(toneMaster.volume);
+
+const slider = computed({
+  get: () => sliderRef.value * 75,
+  set: (value: number) => {
+    sliderRef.value = value / 75;
+    toneMaster.setGain(value / 75);
+  },
+});
+
+const gain = new Tone.Gain(1).toDestination();
+
+const playpause = () => {
+  toneMaster.playing ? toneMaster.pause() : play();
+  // playing.value ? pause() : play();
+  playing.value = !playing.value;
+};
+
+const play = () => {
+  toneMaster.play();
+  peaksPlayers.forEach((pp) => pp.player.play());
+};
+
+const stop = () => {
+  toneMaster.stop();
+  playing.value = false;
+  // transport.stop();
+  // players.forEach((player) => {
+  //   player.stop();
+  // });
+};
+
+const initialize = () => {
+  players.push(
+    new Tone.Player(path1),
+    new Tone.Player(path2),
+    new Tone.Player(path3),
+    new Tone.Player(path4)
+  );
+
+  players.forEach((player) => {
+    player.connect(gain);
+    // player.sync();
+    // player.start(2);
+  });
+};
 
 onMounted(async () => {
-  const toneMaster = new ToneMaster();
+  toneMaster.clear();
 
   toneMaster.addTrack({
     id: 1,
     name: "piano",
-    players: [{ id: 1, selected: true, name: "op_piano1", tone: new Tone.Player(path) }],
+    players: [{ id: 1, selected: true, name: "op_piano1", tone: new Tone.Player(path1) }],
   });
 
   toneMaster.addTrack({
@@ -38,38 +101,25 @@ onMounted(async () => {
     players: [{ id: 1, selected: true, name: "op_bgclar3", tone: new Tone.Player(path4) }],
   });
 
-  const delayedBeats = new Tone.Player(path2);
-  // const delay = new Tone.Delay(5);
-  // delayedBeats.connect(delay);
-  // await Tone.loaded()
-  // delayedBeats.start(5);
-
   toneMaster.addTrack({
     id: 4,
     name: "rythmn",
-    players: [{ id: 1, selected: true, name: "op_rythmn2", tone: delayedBeats }],
+    players: [{ id: 1, selected: true, name: "op_rythmn3", tone: new Tone.Player(path2) }],
   });
 
   await Tone.loaded();
   const reverb = new Tone.Reverb(20);
-  reverb.wet.value = 1;
+  reverb.wet.value = 0.2;
   await reverb.ready;
   const compressor = new Tone.Compressor(-40, 2);
-  // toneMaster.addEffect(compressor);
-  // toneMaster.addEffect(reverb);
+  toneMaster.addEffect(compressor);
+  toneMaster.addEffect(reverb);
 
-  console.log("hello?");
-  toneMaster.play();
-  // toneMaster.playOne();
+  // ====================================================================================================== //
+  // ====================================================================================================== //
+  // ====================================================================================================== //
+  // ====================================================================================================== //
 
-  // Tone.Transport.stop();
-  // Tone.Transport.cancel();
-  // // Tone.Transport.setLoopPoints(0, 20);
-
-  // // const players = new Tone.Players()
-  // console.log(path);
-  const sound = new Tone.Player(path);
-  await Tone.loaded();
   // sound.connect(reverb);
   // const buf = sound.buffer.toArray();
 
@@ -85,56 +135,90 @@ onMounted(async () => {
   // sound.connect(compressor);
   // sound.sync();
 
-  console.log(sound);
-  // sound.start();
-  // // gain.gain.rampTo(1, 8)
-  // // setTimeout(() => {
-  // //   gain.gain.rampTo(0, 8)
+  // const options = {
+  //   overview: {
+  //     container: document.getElementById('visualise')
+  //   },
+  //   mediaElement: document.querySelector('audio'),
+  //   webAudio: {
+  //     AudioBuffer: (toneMaster.tracks[0].players[0].tone.buffer as any)._buffer
+  //   }
+  // };
 
-  // // }, 8000);
+  // Peaks.init(options as PeaksOptions, function(err, peaks) {
+  //   if (err) {
+  //     console.error('Failed to initialize Peaks instance: ' + err.message);
+  //     return;
+  //   }
 
-  // Tone.Transport.start();
-
-  // console.log(Tone.Transport.state);
-  // console.log(Tone.Transport.now());
-
-  // // buffer.connect(sound);
-
-  // const wavesurfer = WaveSurfer.create({
-  //   container: "#visualise",
+  //   // Do something when the waveform is displayed and ready
   // });
 
-  // // wavesurfer.load(path);
-  // wavesurfer.loadDecodedBuffer((sound.buffer as any)._buffer);
+  // ====================================================================================================== //
+  // ====================================================================================================== //
+  // ====================================================================================================== //
+  // ====================================================================================================== //
 
-  // wavesurfer.setVolume(0);
-  // wavesurfer.play();
+  class PeaksPlayer {
+    init: (eventEmitter: EventEmitter) => Promise<void>;
+    destroy: () => void;
+    play: () => void;
+    pause: () => void;
+    seek: (time: number) => void;
+    isPlaying: () => boolean;
+    isSeeking: () => boolean;
+    getCurrentTime: () => number;
+    getDuration: () => number;
 
-  // setTimeout(() => {
-  //   gain.gain.rampTo(0, 0.5);
-  //   setTimeout(() => {
-  //     wavesurfer.pause()
-  //     Tone.Transport.pause();
-  //     console.log(Tone.Transport.seconds)
-  //     setTimeout(() => {
-  //       wavesurfer.play();
-  //       Tone.Transport.start();
-  //       gain.gain.rampTo(0.8, 0.5);
-  //     }, 2000);
-  //   }, 600);
-  // }, 5789);
+    constructor() {
+      this.init = async (eventEmitter: EventEmitter) => await toneMaster.initPeaks(eventEmitter);
+      this.destroy = () => toneMaster.clear();
+      this.play = () => toneMaster.play();
+      this.pause = () => toneMaster.pause();
+      this.seek = (time: number) => toneMaster.seek(time);
+      this.isPlaying = () => toneMaster.playing;
+      this.isSeeking = () => toneMaster.seeking;
+      this.getCurrentTime = () => toneMaster.clock.seconds;
+      this.getDuration = () => toneMaster.duration;
+    }
+  }
 
-  // // sound.l
-  // wavesurfer.zoom();
+  console.log((toneMaster.tracks[0].players[0].tone.buffer as any)._buffer);
+  console.log(cloneDeep((toneMaster.tracks[0].players[0].tone.buffer as any)._buffer));
 
-  // wavesurfer.on("ready", () => {
-  //   wavesurfer.seekTo(0.5);
-  // });
+  const buffers = [
+    cloneAudioBuffer((toneMaster.tracks[0].players[0].tone.buffer as any)._buffer),
+    cloneAudioBuffer((toneMaster.tracks[1].players[0].tone.buffer as any)._buffer),
+    cloneAudioBuffer((toneMaster.tracks[2].players[0].tone.buffer as any)._buffer),
+    cloneAudioBuffer((toneMaster.tracks[3].players[0].tone.buffer as any)._buffer),
+  ];
+
+  buffers.forEach((buffer, index) => {
+    const options = {
+      overview: {
+        container: document.getElementById("visualise" + (index + 1)),
+      },
+      player: new PeaksPlayer(),
+      webAudio: {
+        audioBuffer: buffer,
+      },
+    };
+
+    Peaks.init(options as PeaksOptions, function (err, peaks) {
+      if (err) {
+        console.error("Failed to initialize Peaks instance: " + err.message);
+        return;
+      }
+
+      if (peaks) peaksPlayers.push(peaks);
+      // Do something when the waveform is displayed and ready
+    });
+  });
 });
 </script>
 
 <style lang="scss">
-#visualise {
+.visualise {
   min-height: 200px;
   min-width: 100%;
 
