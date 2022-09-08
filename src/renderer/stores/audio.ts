@@ -84,10 +84,24 @@ export const useAudioStore = defineStore("prot", () => {
     zoom.value.y = pageYOffset;
   };
 
+  const zoomIn = (axis?: "x" | "y" | "both", degree?: number) => {
+    axis = axis || "x";
+    const amount = degree ? degree / 100 : 1;
+    if (axis === "x" || axis === "both") setXScale(getXScale.value + 5 * amount);
+    if (axis === "y" || axis === "both") setYScale(getXScale.value + 1 * amount);
+  };
+
+  const zoomOut = (axis?: "x" | "y" | "both", degree?: number) => {
+    axis = axis || "x";
+    const amount = degree ? degree / 100 : 1;
+    if (axis === "x" || axis === "both") setXScale(getXScale.value - 5 * amount);
+    if (axis === "y" || axis === "both") setYScale(getXScale.value - 1 * amount);
+  };
+
   const setDuration = async () => {
     await Tone.loaded();
     duration.value = toneMaster.duration;
-  }
+  };
 
   return {
     scale,
@@ -105,9 +119,11 @@ export const useAudioStore = defineStore("prot", () => {
     stop,
     setXScale,
     setYScale,
+    zoomIn,
+    zoomOut,
     setPlaying,
     setCurrentTime,
     togglePlaying,
-    setDuration
+    setDuration,
   };
 });

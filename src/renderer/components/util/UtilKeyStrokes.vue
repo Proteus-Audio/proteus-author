@@ -5,14 +5,25 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount } from "vue";
 import { useAudioStore } from "../../stores/audio";
-import { useTrackStore } from '../../stores/tracks';
+import { useTrackStore } from "../../stores/tracks";
 
 const audio = useAudioStore();
 const track = useTrackStore();
 
 const keyListener = (e: KeyboardEvent) => {
   if ((e.target as HTMLElement).localName === "body") {
-    if(e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.metaKey) {
+      if (e.key === "=") {
+        e.preventDefault();
+        audio.zoomIn();
+      }
+      if (e.key === "-") {
+        e.preventDefault();
+        audio.zoomOut();
+      }
+    }
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+
     if (e.key === " ") {
       e.preventDefault();
       if (!audio.isPlaying && !track.initialised) {
