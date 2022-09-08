@@ -129,8 +129,6 @@ async function onDrop(acceptFiles: File[], rejectReasons: any) {
 
 const removeFile = (id: number) => trackStore.removeFileFromTrack(id, props.trackId);
 
-const binName = ref("");
-
 const selectedName = computed(() => {
   const filename: string | undefined = trackStore.getTrackSelection(props.trackId)?.name;
   return filename ? filename.replace(/\..*$/, "") : "";

@@ -4,6 +4,7 @@
 
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount } from "vue";
+import { toneMaster } from '../../public/toneMaster';
 import { useAudioStore } from "../../stores/audio";
 import { useTrackStore } from '../../stores/tracks';
 
@@ -24,6 +25,9 @@ const keyListener = (e: KeyboardEvent) => {
     if (e.key === "s") {
       e.preventDefault();
       track.shuffle();
+    }
+    if (e.key === "Enter") {
+      toneMaster.seek(0);
     }
   }
 };
