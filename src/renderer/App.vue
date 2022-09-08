@@ -1,13 +1,13 @@
 <template>
   <div id="proteus-author">
     <Teleport to="head">
-      <title>Proteus Author - {{windowTitle}}</title>
+      <title>Proteus Author - {{ windowTitle }}</title>
     </Teleport>
     <Util />
     <BaseContainer>
       <!-- <Hello2 /> -->
       <BaseAlertBox />
-      <h1 class="center">Proteus.play</h1>
+      <BaseTitle />
       <el-affix :offset="0">
         <BaseTransport />
       </el-affix>
@@ -33,23 +33,23 @@ import { useProteusStore } from "./stores/proteus";
 import BaseTransport from "./components/base/BaseTransport.vue";
 import BaseAlertBox from "./components/base/BaseAlertBox.vue";
 import Util from "./components/util/Util.vue";
-import { useHeadStore } from './stores/head';
-import { useTrackStore } from './stores/tracks';
-import { useAudioStore } from './stores/audio';
-import Hello2 from './components/Hello2.vue';
+import { useHeadStore } from "./stores/head";
+import { useTrackStore } from "./stores/tracks";
+import { useAudioStore } from "./stores/audio";
+import Hello2 from "./components/Hello2.vue";
+import BaseTitle from "./components/base/BaseTitle.vue";
 
 const head = useHeadStore();
 const trackStore = useTrackStore();
 const audio = useAudioStore();
 
 const windowTitle = computed(() => {
-  return (head.name).replace('.protproject', '');
-})
+  return head.name.replace(".protproject", "");
+});
 
 onMounted(() => {
   trackStore.addEmptyTrackIfNone();
 });
-
 
 watch(audio.zoom, () => {
   window.dispatchEvent(new Event("resize"));
@@ -61,15 +61,6 @@ body {
   margin: 0;
   font-family: "Silkscreen", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
-
-.center {
-  text-align: center;
-}
-
-// img.file {
-//   width: 100%;
-//   min-height: 300px;
-// }
 
 .shuffler {
   cursor: pointer;
@@ -90,6 +81,6 @@ body {
 .bin-container {
   width: 100%;
   overflow-x: scroll;
-  border-radius: .5em;
+  border-radius: 0.5em;
 }
 </style>
