@@ -127,13 +127,20 @@ export const useTrackStore = defineStore("track", () => {
     if (playing) await audio.play();
   };
 
+  const shuffleTrackBin = async (trackId: number, index?: number) => {
+    const playing = audio.isPlaying;
+    if (playing) await audio.pause();
+    const selection = setTrackSelection(trackId, index);
+    toneMaster.setTrackSelection(trackId, selection);
+    if (playing) await audio.play();
+  }
+
   const setSelections = () => {
     const selectionMap: SelectionMap = [];
     tracks.value.forEach((track, i) => {
       selectionMap.push([track.id, setTrackSelection(track.id, i)]);
     });
     toneMaster.setSelections(selectionMap);
-    console.log("hello?");
   };
 
   const getTrackSelection = (trackId: number): TrackFileSkeleton | undefined => {
@@ -200,6 +207,7 @@ export const useTrackStore = defineStore("track", () => {
     addEmptyTrackIfNone,
     addFileToTrack,
     shuffle,
+    shuffleTrackBin,
     setSelections,
     getTrackSelection,
     setTrackSelection,

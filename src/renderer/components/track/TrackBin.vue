@@ -122,7 +122,7 @@ async function onDrop(acceptFiles: File[], rejectReasons: any) {
 
   if (acceptFiles.length > 0) {
     trackStore.addFileToTrack(acceptFiles, props.trackId);
-    trackStore.setTrackSelection(props.trackId);
+    trackStore.shuffleTrackBin(props.trackId);
     trackStore.addEmptyTrackIfNone();
   }
 }
