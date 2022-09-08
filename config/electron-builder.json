@@ -1,6 +1,7 @@
 {
     "appId": "com.electron.app",
     "directories": {
+        "buildResources":"resources",
         "output": "dist"
     },
     "nsis": {
