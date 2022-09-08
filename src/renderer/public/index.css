@@ -9209,7 +9209,7 @@
   line-height: 1;
 }
 .el-progress__text i {
-  vertical-align: middle;
+  /* vertical-align: middle; */
   display: block;
 }
 .el-progress--circle,

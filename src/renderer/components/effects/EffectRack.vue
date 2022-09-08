@@ -86,8 +86,6 @@ const remove = (effect: Effect, index: number) => {
 
   &:hover {
     height: 6em;
-    .effect {
-    }
   }
   .no-effects {
     text-align: center;
