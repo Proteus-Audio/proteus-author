@@ -122,14 +122,12 @@ async function onDrop(acceptFiles: File[], rejectReasons: any) {
 
   if (acceptFiles.length > 0) {
     trackStore.addFileToTrack(acceptFiles, props.trackId);
-    trackStore.setTrackSelection(props.trackId);
+    trackStore.shuffleTrackBin(props.trackId);
     trackStore.addEmptyTrackIfNone();
   }
 }
 
 const removeFile = (id: number) => trackStore.removeFileFromTrack(id, props.trackId);
-
-const binName = ref("");
 
 const selectedName = computed(() => {
   const filename: string | undefined = trackStore.getTrackSelection(props.trackId)?.name;

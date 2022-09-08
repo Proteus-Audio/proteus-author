@@ -26,7 +26,7 @@ class ToneMaster {
     this.effects = [];
     this.gain = new Gain(1).toDestination();
     this.clock = new Clock();
-    this.cachedCallback = () => {}
+    this.cachedCallback = () => {};
     this.connectEffects();
   }
 
@@ -121,15 +121,19 @@ class ToneMaster {
 
   setSelections(selections: SelectionMap) {
     selections.forEach((s) => {
-      const track = this.trackFromId(s[0]);
-      if (track) {
-        track.players.forEach((player) => {
-          player.selected = player.id === s[1];
-          if (player.selected) player.tone.mute = false;
-          else player.tone.mute = true;
-        });
-      }
+      this.setTrackSelection(s[0], s[1]);
     });
+  }
+
+  setTrackSelection(trackId: number, selection: number) {
+    const track = this.trackFromId(trackId);
+    if (track) {
+      track.players.forEach((player) => {
+        player.selected = player.id === selection;
+        if (player.selected) player.tone.mute = false;
+        else player.tone.mute = true;
+      });
+    }
   }
 
   addTrack(track: ToneTrack) {
@@ -162,9 +166,9 @@ class ToneMaster {
     trackIndex === -1 ? track.players.push(player) : (track.players[trackIndex] = player);
   }
 
-  removeEffect(effectName:string) {
-    const index = this.effects.findIndex(effect => effect.name === effectName);
-    if(index !== -1) this.effects.splice(index, 1);
+  removeEffect(effectName: string) {
+    const index = this.effects.findIndex((effect) => effect.name === effectName);
+    if (index !== -1) this.effects.splice(index, 1);
     this.connectEffects();
   }
 
@@ -174,7 +178,6 @@ class ToneMaster {
   }
 
   async addEffect(effect: Effect) {
-
     this.effects.push(effect);
     this.connectEffects();
   }
@@ -186,8 +189,8 @@ class ToneMaster {
   async play(callback?: PlayCallback) {
     if (this.playing) return;
     this.playing = true;
-    
-    if(callback) this.cachedCallback = callback;
+
+    if (callback) this.cachedCallback = callback;
     const update = (iteration?: number) => {
       const i = iteration || 0;
       this.cachedCallback(this.clock.seconds, i);
