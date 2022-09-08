@@ -1,5 +1,6 @@
 {
-    "appId": "com.electron.app",
+    "appId": "com.proteus-auth.app",
+    "productName": "Proteus Author",
     "directories": {
         "buildResources":"resources",
         "output": "dist"
@@ -8,7 +9,7 @@
         "oneClick": false,
         "perMachine": false,
         "allowToChangeInstallationDirectory": true,
-        "shortcutName": "Electron App"
+        "shortcutName": "Proteus Author"
     },
     "win": {
         "target": "nsis"
