@@ -1,25 +1,28 @@
 <template>
-  <div class="fx-icon" @click.stop="doSomething">
+  <div class="fx-icon" @click.stop="toggleEdit">
     <el-icon class="inner" style="vertical-align: middle" :size="20" color="#ffffff">
-        <SuitcaseLine v-if="type === 'Compressor'" />
-        <Phone v-if="type === 'Reverb'" />
+      <SuitcaseLine v-if="type === 'Compressor'" />
+      <Phone v-if="type === 'Reverb'" />
       <!-- <QuestionFilled v-if="type " /> -->
     </el-icon>
+    <el-dialog v-model="editOpen" width="calc(100% - 4em)">
+      <EffectDialogCompressor v-if="type === 'Compressor'" />
+      <EffectDialogReverb v-if="type === 'Reverb'" />
+      <div>
+        <el-button :icon="Close" @click="toggleEdit">Close</el-button>
+        <el-button :icon="Delete" @click="removeEffect">Remove Effect</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from "vue";
-import Effect from "../../typings/effects";
-import {
-  SuitcaseLine,
-  Phone,
-  QuestionFilled,
-  Refresh,
-  ZoomOut,
-  ZoomIn,
-} from "@element-plus/icons-vue";
-import { toneMaster } from '../../public/toneMaster';
+import { Effect } from "../../typings/effects";
+import { SuitcaseLine, Phone, Close, Delete } from "@element-plus/icons-vue";
+import { toneMaster } from "../../public/toneMaster";
+import EffectDialogCompressor from "./EffectDialogCompressor.vue";
+import EffectDialogReverb from "./EffectDialogReverb.vue";
 
 interface Props {
   type: Effect;
@@ -29,9 +32,15 @@ const emit = defineEmits(["remove"]);
 
 const props = defineProps<Props>();
 
-const doSomething = () => {
-    toneMaster.removeEffect(props.type);
-    emit('remove');
+const editOpen = ref(false);
+
+const toggleEdit = () => {
+  editOpen.value = !editOpen.value;
+};
+
+const removeEffect = () => {
+  toneMaster.removeEffect(props.type);
+  emit("remove");
 };
 </script>
 

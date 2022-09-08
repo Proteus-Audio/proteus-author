@@ -168,6 +168,11 @@ class ToneMaster {
     this.connectEffects();
   }
 
+  getEffect(effectName:string):Effect|void {
+    const index = this.effects.findIndex(effect => effect.name === effectName);
+    if(index !== -1) return this.effects[index];
+  }
+
   async addEffect(effect: Effect) {
 
     this.effects.push(effect);

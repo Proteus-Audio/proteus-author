@@ -4,6 +4,7 @@ import { useAlertStore } from "./alerts";
 import { useTrackStore } from "./tracks";
 import * as Tone from "tone";
 import { toneMaster } from "../public/toneMaster";
+import { CompressorSettings, ReverbSettings } from "../typings/effects";
 
 export const useAudioStore = defineStore("prot", () => {
   const alert = useAlertStore();
@@ -18,6 +19,21 @@ export const useAudioStore = defineStore("prot", () => {
   const scale = ref(20 as number);
   const duration = ref(0);
   const zoom = ref({ y: 1, x: 20 });
+  const reverb = ref({
+    active: false,
+    decay: 20,
+    preDelay: 0,
+    mix: 0.2,
+    ready: false,
+  } as ReverbSettings);
+  const compressor = ref({
+    active: false,
+    threshold: -15,
+    attack: 0.2,
+    knee: 0,
+    ratio: 2,
+    release: 0.1,
+  } as CompressorSettings);
   //   const group = ref(new Pizzicato.Group());
 
   /////////////
@@ -106,6 +122,8 @@ export const useAudioStore = defineStore("prot", () => {
   return {
     scale,
     zoom,
+    reverb,
+    compressor,
     duration,
     watch,
     isPlaying,

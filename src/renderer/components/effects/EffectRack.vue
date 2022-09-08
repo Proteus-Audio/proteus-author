@@ -2,16 +2,23 @@
   <div id="effect-rack" :class="`${rackClass}`" @click="addEffect">
     <div class="no-effects" v-if="noEffects">There are no effects, click to add one</div>
     <div class="effects-list" v-else>
-      <EffectMini class="effect" v-for="(effect, i) in effects" @remove="() => remove(effect, i)" :key="i" :type="effect" />
+      <EffectMini
+        class="effect"
+        v-for="(effect, i) in effects"
+        @remove="() => remove(effect, i)"
+        :key="i"
+        :type="effect"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Compressor, Reverb } from 'tone';
+import { Compressor, Reverb } from "tone";
 import { computed, ref } from "vue";
-import { toneMaster } from '../../public/toneMaster';
-import Effect from "../../typings/effects";
+import { toneMaster } from "../../public/toneMaster";
+import { useAudioStore } from "../../stores/audio";
+import { Effect } from "../../typings/effects";
 import EffectMini from "./EffectMini.vue";
 
 const effects = ref([] as Effect[]);
@@ -21,18 +28,36 @@ const noEffects = computed(() => effects.value.length <= 0);
 
 const rackClass = computed(() => (noEffects.value ? "empty" : "full"));
 
+const audio = useAudioStore();
+
 const addEffect = () => {
   const toAdd = effectsToAdd.shift();
   if (toAdd) {
-    toAdd === "Compressor" ? toneMaster.addEffect(new Compressor(-100, 20)) : toneMaster.addEffect(new Reverb(20))
+    toAdd === "Compressor"
+      ? toneMaster.addEffect(
+          new Compressor({
+            threshold: audio.compressor.threshold,
+            ratio: audio.compressor.ratio,
+            knee: audio.compressor.knee,
+            attack: audio.compressor.attack,
+            release: audio.compressor.release
+          })
+        )
+      : toneMaster.addEffect(
+          new Reverb({
+            decay: audio.reverb.decay,
+            wet: audio.reverb.mix,
+            preDelay: audio.reverb.preDelay,
+          })
+        );
     effects.value.push(toAdd);
   }
 };
 
-const remove = (effect:Effect, index:number) => {
+const remove = (effect: Effect, index: number) => {
   effects.value.splice(index, 1);
-effectsToAdd.push(effect);
-}
+  effectsToAdd.push(effect);
+};
 </script>
 
 <style lang="scss" scoped>
