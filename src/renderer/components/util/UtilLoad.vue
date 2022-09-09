@@ -13,7 +13,6 @@ const track = useTrackStore();
 
 const load = async () => {
   const update: ProjectSkeleton = await ipcRenderer.invoke("load");
-  console.log(update);
 
   if (update.tracks) {
     !update.location || head.setFileLocation(update.location);
@@ -21,7 +20,6 @@ const load = async () => {
     track.setSelections();
     !update.location || head.setPath(update.location);
     !update.name || head.setName(update.name);
-    console.log(track);
   }
 };
 </script>

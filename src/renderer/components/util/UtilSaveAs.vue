@@ -18,7 +18,6 @@ const save = async () => {
     files: t.files.map((f) => ({ id: f.id, path: f.path, name: f.name })),
   }));
   const update:ProjectSkeleton = await ipcRenderer.invoke("save", { tracks });
-  console.log(update)
 
   if(update.tracks) {
     !update.location || head.setPath(update.location);

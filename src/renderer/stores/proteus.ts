@@ -66,9 +66,6 @@ export const useProteusStore = defineStore("prot", () => {
   };
 
   const setFileLocation = (location: string) => {
-    console.log(location);
-    console.log((location.match(/[^\/\\]*\.\w+$/) || [".jpg"])[0].replace(/\.\w+$/, ''));
-    
     head.value.name = (location.match(/[^\/\\]*\.\w+$/) || [".jpg"])[0].replace(/\.\w+$/, '');
     head.value.path = location;
   };
@@ -182,9 +179,7 @@ export const useProteusStore = defineStore("prot", () => {
       const fileIndex = tracks.value[index].files.findIndex((file) => file.id === id);
       if (fileIndex !== -1) tracks.value[index].files.splice(fileIndex, 1);
       if (fileIndex === tracks.value[index].selection) {
-        console.log(tracks.value[index]);
         setTrackSelection(tracks.value[index].id, index);
-        console.log(tracks.value[index]);
       }
     });
   }

@@ -85,7 +85,7 @@ class ToneMaster {
   }
 
   async initPeaks(eventEmitter: EventEmitter) {
-    console.log(eventEmitter);
+    // console.log(eventEmitter);
   }
 
   clear() {

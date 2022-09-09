@@ -41,7 +41,6 @@ const resize = () => {
 }
 
 onMounted(() => {
-  console.log(sizer.value);
   resize();
 });
 

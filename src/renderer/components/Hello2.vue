@@ -180,9 +180,6 @@ onMounted(async () => {
     }
   }
 
-  console.log((toneMaster.tracks[0].players[0].tone.buffer as any)._buffer);
-  console.log(cloneDeep((toneMaster.tracks[0].players[0].tone.buffer as any)._buffer));
-
   const buffers = [
     cloneAudioBuffer((toneMaster.tracks[0].players[0].tone.buffer as any)._buffer),
     cloneAudioBuffer((toneMaster.tracks[1].players[0].tone.buffer as any)._buffer),

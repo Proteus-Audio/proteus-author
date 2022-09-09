@@ -182,9 +182,7 @@ export const useTrackStore = defineStore("track", () => {
       const fileIndex = tracks.value[index].files.findIndex((file) => file.id === id);
       if (fileIndex !== -1) tracks.value[index].files.splice(fileIndex, 1);
       if (fileIndex === tracks.value[index].selection) {
-        console.log(tracks.value[index]);
         setTrackSelection(tracks.value[index].id, index);
-        console.log(tracks.value[index]);
       }
     });
   };
