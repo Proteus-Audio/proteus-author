@@ -20,6 +20,7 @@ function createWindow(data?: Project) {
       preload: join(__dirname, "preload.js"),
       nodeIntegration: false,
       // nodeIntegrationInWorker: true,
+      sandbox: false,
       contextIsolation: true,
       webSecurity: false,
     },
