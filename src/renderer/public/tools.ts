@@ -1,7 +1,6 @@
 // import axios from "axios";
 
 const arrRandom = (arr: any[]) => {
-  console.log(arr);
   if (arr.length === 0) return;
   return arr[Math.floor(Math.random() * arr.length)];
 };
@@ -14,7 +13,7 @@ const arrRandom = (arr: any[]) => {
 //   return new File([response.data], fileName, { type: mimeType });
 // };
 
-const cloneAudioBuffer = (fromAudioBuffer: AudioBuffer):AudioBuffer => {
+const cloneAudioBuffer = (fromAudioBuffer: AudioBuffer): AudioBuffer => {
   const audioBuffer = new AudioBuffer({
     length: fromAudioBuffer.length,
     numberOfChannels: fromAudioBuffer.numberOfChannels,
