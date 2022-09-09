@@ -20,7 +20,7 @@ import Peaks, { PeaksOptions } from "peaks.js";
 import { toneMaster, PeaksPlayer } from "../../public/toneMaster";
 import * as Tone from "tone";
 import { cloneAudioBuffer } from "../../public/tools";
-import { useTrackStore } from '../../stores/tracks';
+import { useTrackStore } from "../../stores/tracks";
 
 interface Props {
   track: TrackFileSkeleton;
@@ -30,9 +30,11 @@ interface Props {
 const audio = useAudioStore();
 const trackStore = useTrackStore();
 const props = defineProps<Props>();
-const width = ref("100%");
+
 const duration = ref(0);
 const identifier = computed(() => `${props.track.parentId}-${props.track.id}`);
+const widthVal = computed((): number => duration.value * audio.getXScale);
+const width = computed((): string => (widthVal.value > 0 ? `${widthVal.value}px` : "100%"));
 
 const clearContainer = () => {
   const container = document.getElementById(`overview-container-${identifier.value}`);
@@ -48,7 +50,6 @@ const initialisePeaks = async () => {
 
   await Tone.loaded();
   duration.value = player.buffer.duration;
-  resizeWave();
   const audioBuffer = cloneAudioBuffer((player.buffer as any)._buffer);
   const options = {
     overview: {
@@ -71,29 +72,8 @@ const initialisePeaks = async () => {
   });
 };
 
-const resizeWave = () => {
-  width.value = `${duration.value * audio.getXScale}px`;
-};
-
-const onResize = () => {
-  console.log('resize')
-  resizeWave();
-};
-
-onUpdated(() => {
-  resizeWave();
-});
-
-onBeforeMount(() => {
-  window.addEventListener("resize", onResize);
-});
-
 onMounted(() => {
   initialisePeaks();
-});
-
-onBeforeUnmount(() => {
-  window.removeEventListener("resize", onResize);
 });
 </script>
 
