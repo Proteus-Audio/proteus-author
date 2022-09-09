@@ -12,7 +12,7 @@ const audio = useAudioStore();
 const track = useTrackStore();
 
 const keyListener = (e: KeyboardEvent) => {
-  if ((e.target as HTMLElement).localName === "body") {
+  if ((e.target as HTMLElement).localName !== "input") {
     if (e.metaKey) {
       if (e.key === "=") {
         e.preventDefault();
@@ -38,6 +38,7 @@ const keyListener = (e: KeyboardEvent) => {
       track.shuffle();
     }
     if (e.key === "Enter") {
+      e.preventDefault();
       toneMaster.seek(0);
     }
   }
