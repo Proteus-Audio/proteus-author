@@ -1,15 +1,13 @@
 type Effect = "Compressor" | "Reverb";
 
-interface ReverbSettings {
-  active: boolean;
+interface ReverbSettingsInterface {
   decay: number;
   preDelay: number;
   mix: number;
   ready: boolean;
 }
 
-interface CompressorSettings {
-  active: boolean;
+interface CompressorSettingsInterface {
   attack: number;
   knee: number;
   ratio: number;
@@ -17,4 +15,6 @@ interface CompressorSettings {
   threshold: number;
 }
 
-export { Effect, ReverbSettings, CompressorSettings };
+type EffectSettings = ReverbSettingsInterface | CompressorSettingsInterface;
+
+export { Effect, ReverbSettingsInterface, CompressorSettingsInterface, EffectSettings };

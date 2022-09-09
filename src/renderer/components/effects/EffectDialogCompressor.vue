@@ -1,7 +1,7 @@
 <template>
   <div class="effects-controls">
     <h2>COMPRESSOR</h2>
-    <div class="control-bin">
+    <div v-if="exists" class="control-bin">
       <div>threshold</div>
       <el-slider v-model="threshold" :show-tooltip="false" :min="-100" :max="0" :step="0.1" size="small" />
 
@@ -23,65 +23,72 @@
 <script setup lang="ts">
 import { Compressor } from "tone";
 import { computed, onMounted } from "vue";
+import { CompressorSettings } from '../../public/effects';
 import { toneMaster } from "../../public/toneMaster";
 import { useAudioStore } from "../../stores/audio";
 
+interface Props {
+  effectIndex:number;
+}
+
 const audio = useAudioStore();
+const props = defineProps<Props>()
+const exists = computed((): boolean => audio.effects[props.effectIndex] !== undefined);
 
 let compressor: Compressor | undefined;
 
 const threshold = computed({
   get() {
-    return audio.compressor.threshold;
+    return (audio.effects[props.effectIndex].effect as CompressorSettings).threshold;
   },
   set(threshold: number) {
     if (compressor) compressor.threshold.value = threshold;
     else getcompressor();
-    audio.compressor.threshold = threshold;
+    (audio.effects[props.effectIndex].effect as CompressorSettings).threshold = threshold;
   },
 });
 
 const ratio = computed({
   get() {
-    return audio.compressor.ratio;
+    return (audio.effects[props.effectIndex].effect as CompressorSettings).ratio;
   },
   set(ratio: number) {
     if (compressor) compressor.ratio.value = ratio;
     else getcompressor();
-    audio.compressor.ratio = ratio;
+    (audio.effects[props.effectIndex].effect as CompressorSettings).ratio = ratio;
   },
 });
 
 const knee = computed({
   get() {
-    return audio.compressor.knee;
+    return (audio.effects[props.effectIndex].effect as CompressorSettings).knee;
   },
   set(knee: number) {
     if (compressor) compressor.knee.value = knee;
     else getcompressor();
-    audio.compressor.knee = knee;
+    (audio.effects[props.effectIndex].effect as CompressorSettings).knee = knee;
   },
 });
 
 const attack = computed({
   get() {
-    return audio.compressor.attack;
+    return (audio.effects[props.effectIndex].effect as CompressorSettings).attack;
   },
   set(attack: number) {
     if (compressor) compressor.attack.value = attack;
     else getcompressor();
-    audio.compressor.attack = attack;
+    (audio.effects[props.effectIndex].effect as CompressorSettings).attack = attack;
   },
 });
 
 const release = computed({
   get() {
-    return audio.compressor.release;
+    return (audio.effects[props.effectIndex].effect as CompressorSettings).release;
   },
   set(release: number) {
     if (compressor) compressor.release.value = release;
     else getcompressor();
-    audio.compressor.release = release;
+    (audio.effects[props.effectIndex].effect as CompressorSettings).release = release;
   },
 });
 

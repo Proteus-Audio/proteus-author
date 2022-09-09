@@ -166,8 +166,7 @@ class ToneMaster {
     trackIndex === -1 ? track.players.push(player) : (track.players[trackIndex] = player);
   }
 
-  removeEffect(effectName: string) {
-    const index = this.effects.findIndex((effect) => effect.name === effectName);
+  removeEffect(index: number) {
     if (index !== -1) this.effects.splice(index, 1);
     this.connectEffects();
   }

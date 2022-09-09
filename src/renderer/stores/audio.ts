@@ -4,7 +4,8 @@ import { useAlertStore } from "./alerts";
 import { useTrackStore } from "./tracks";
 import * as Tone from "tone";
 import { toneMaster } from "../public/toneMaster";
-import { CompressorSettings, ReverbSettings } from "../typings/effects";
+import { Effect } from "../typings/effects";
+import { EffectSettings } from "../public/effects";
 
 export const useAudioStore = defineStore("prot", () => {
   const alert = useAlertStore();
@@ -19,21 +20,7 @@ export const useAudioStore = defineStore("prot", () => {
   const scale = ref(20 as number);
   const duration = ref(0);
   const zoom = ref({ y: 1, x: 20 });
-  const reverb = ref({
-    active: false,
-    decay: 20,
-    preDelay: 0,
-    mix: 0.2,
-    ready: false,
-  } as ReverbSettings);
-  const compressor = ref({
-    active: false,
-    threshold: -15,
-    attack: 0.2,
-    knee: 0,
-    ratio: 2,
-    release: 0.1,
-  } as CompressorSettings);
+  const effects = ref([] as EffectSettings[]);
   //   const group = ref(new Pizzicato.Group());
 
   /////////////
@@ -119,11 +106,25 @@ export const useAudioStore = defineStore("prot", () => {
     duration.value = toneMaster.duration;
   };
 
+  const addEffect = (effectType: Effect) => {
+    const highestId =
+      effects.value
+        .map((e) => e.id)
+        .sort((a, b) => a - b)
+        .reverse()[0] || 0;
+    const effect = new EffectSettings(effectType, highestId + 1);
+    effects.value.push(effect);
+  };
+
+  const removeEffect = (id: number) => {
+    const index = effects.value.findIndex((e) => e.id === id);
+    if (index !== -1) effects.value.splice(index, 1);
+  };
+
   return {
     scale,
     zoom,
-    reverb,
-    compressor,
+    effects,
     duration,
     watch,
     isPlaying,
@@ -143,5 +144,7 @@ export const useAudioStore = defineStore("prot", () => {
     setCurrentTime,
     togglePlaying,
     setDuration,
+    addEffect,
+    removeEffect,
   };
 });
