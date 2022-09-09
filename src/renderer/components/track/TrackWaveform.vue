@@ -12,7 +12,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed, onUpdated, ref, onBeforeMount, onBeforeUnmount, watch } from "vue";
+import { onMounted, computed, ref } from "vue";
 
 import { useAudioStore } from "../../stores/audio";
 import { TrackFileSkeleton } from "../../typings/tracks";
