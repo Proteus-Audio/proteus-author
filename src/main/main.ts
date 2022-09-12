@@ -151,3 +151,13 @@ ipcMain.handle("load", async () => {
     return { tracks: await load(fileLocation, fileName), location: fileLocation, name: fileName };
   }
 });
+})
+
+app.on('open-file', async (_event, path) => {
+  const fileName = (path.match(/[^\\/]+$/) != null || [''])[0]
+  const fileLocation = path.replace(fileName, '')
+  const tracks = await load(fileLocation, fileName)
+  if (!tracks) return
+  const project = { tracks, location: fileLocation, name: fileName }
+  createWindow(project)
+})
