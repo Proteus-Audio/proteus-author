@@ -1,10 +1,10 @@
 // import axios from "axios";
 
+/* eslint-disable  @typescript-eslint/no-explicit-any */
 const arrRandom = (arr: any[]) => {
-  console.log(arr);
-  if (arr.length === 0) return;
-  return arr[Math.floor(Math.random() * arr.length)];
-};
+  if (arr.length === 0) return
+  return arr[Math.floor(Math.random() * arr.length)]
+}
 
 // const srcToFile = async (src: string, fileName: string): Promise<File> => {
 //   const response = await axios.get(src, {
@@ -14,18 +14,18 @@ const arrRandom = (arr: any[]) => {
 //   return new File([response.data], fileName, { type: mimeType });
 // };
 
-const cloneAudioBuffer = (fromAudioBuffer: AudioBuffer):AudioBuffer => {
+const cloneAudioBuffer = (fromAudioBuffer: AudioBuffer): AudioBuffer => {
   const audioBuffer = new AudioBuffer({
     length: fromAudioBuffer.length,
     numberOfChannels: fromAudioBuffer.numberOfChannels,
     sampleRate: fromAudioBuffer.sampleRate,
-  });
+  })
 
   for (let channelI = 0; channelI < audioBuffer.numberOfChannels; ++channelI) {
-    const samples = fromAudioBuffer.getChannelData(channelI);
-    audioBuffer.copyToChannel(samples, channelI);
+    const samples = fromAudioBuffer.getChannelData(channelI)
+    audioBuffer.copyToChannel(samples, channelI)
   }
-  return audioBuffer;
-};
+  return audioBuffer
+}
 
-export { arrRandom, cloneAudioBuffer };
+export { arrRandom, cloneAudioBuffer }

@@ -3,9 +3,8 @@
     <Teleport to="head">
       <title>Proteus Author - {{ windowTitle }}</title>
     </Teleport>
-    <Util />
+    <UtilBase />
     <BaseContainer>
-      <!-- <Hello2 /> -->
       <BaseAlertBox />
       <BaseTitle />
       <el-affix :offset="0">
@@ -23,43 +22,39 @@
 </template>
 
 <script setup lang="ts">
-import Hello from "./components/Hello.vue";
-import { computed, onMounted, watch } from "vue";
-import EffectRack from "./components/effects/EffectRack.vue";
-import BaseContainer from "./components/base/BaseContainer.vue";
-import TrackBin from "./components/track/TrackBin.vue";
+import { computed, onMounted, watch } from 'vue'
+import EffectRack from './components/effects/EffectRack.vue'
+import BaseContainer from './components/base/BaseContainer.vue'
+import TrackBin from './components/track/TrackBin.vue'
+import BaseTransport from './components/base/BaseTransport.vue'
+import BaseAlertBox from './components/base/BaseAlertBox.vue'
+import UtilBase from './components/util/UtilBase.vue'
+import { useHeadStore } from './stores/head'
+import { useTrackStore } from './stores/tracks'
+import { useAudioStore } from './stores/audio'
+import BaseTitle from './components/base/BaseTitle.vue'
 
-import { useProteusStore } from "./stores/proteus";
-import BaseTransport from "./components/base/BaseTransport.vue";
-import BaseAlertBox from "./components/base/BaseAlertBox.vue";
-import Util from "./components/util/Util.vue";
-import { useHeadStore } from "./stores/head";
-import { useTrackStore } from "./stores/tracks";
-import { useAudioStore } from "./stores/audio";
-import Hello2 from "./components/Hello2.vue";
-import BaseTitle from "./components/base/BaseTitle.vue";
-
-const head = useHeadStore();
-const trackStore = useTrackStore();
-const audio = useAudioStore();
+const head = useHeadStore()
+const trackStore = useTrackStore()
+const audio = useAudioStore()
 
 const windowTitle = computed(() => {
-  return head.name.replace(".protproject", "");
-});
+  return head.name.replace('.protproject', '')
+})
 
 onMounted(() => {
-  trackStore.addEmptyTrackIfNone();
-});
+  trackStore.addEmptyTrackIfNone()
+})
 
 watch(audio.zoom, () => {
-  window.dispatchEvent(new Event("resize"));
-});
+  window.dispatchEvent(new Event('resize'))
+})
 </script>
 
 <style lang="scss">
 body {
   margin: 0;
-  font-family: "Silkscreen", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-family: 'Silkscreen', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .shuffler {

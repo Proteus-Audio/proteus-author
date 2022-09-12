@@ -15,34 +15,34 @@
 </template>
 
 <script setup lang="ts">
-import { useAudioStore } from "../../stores/audio";
-import { useTrackStore } from "../../stores/tracks";
-import { VideoPlay, VideoPause, Close, Refresh, ZoomOut, ZoomIn } from "@element-plus/icons-vue";
-import { toneMaster } from "../../public/toneMaster";
-import { computed, ref } from "vue";
+import { useAudioStore } from '../../stores/audio'
+import { useTrackStore } from '../../stores/tracks'
+import { VideoPlay, VideoPause, Close, Refresh, ZoomOut, ZoomIn } from '@element-plus/icons-vue'
+import { toneMaster } from '../../public/toneMaster'
+import { computed, ref } from 'vue'
 
-const audio = useAudioStore();
-const track = useTrackStore();
-const volumeRef = ref(toneMaster.volume);
+const audio = useAudioStore()
+const track = useTrackStore()
+const volumeRef = ref(toneMaster.volume)
 
 const volume = computed({
   get: () => volumeRef.value * 75,
   set: (value: number) => {
-    volumeRef.value = value / 75;
-    toneMaster.setGain(value / 75);
+    volumeRef.value = value / 75
+    toneMaster.setGain(value / 75)
   },
-});
+})
 
 const play = () => {
-  audio.play();
+  audio.play()
   if (!track.initialised) {
-    window.dispatchEvent(new Event("resize"));
-    track.initialised = true;
+    window.dispatchEvent(new Event('resize'))
+    track.initialised = true
   }
-};
+}
 
-const zoomIn = () => audio.zoomIn();
-const zoomOut = () => audio.zoomOut();
+const zoomIn = () => audio.zoomIn()
+const zoomOut = () => audio.zoomOut()
 </script>
 
 <style lang="scss" scoped>

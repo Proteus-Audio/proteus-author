@@ -1,20 +1,30 @@
 interface Track {
-  id: number;
-  name: string;
-  selection?: number;
-  files: TrackFileSkeleton[];
+  id: number
+  name: string
+  selection?: number
+  files: TrackFileSkeleton[]
 }
 
 interface TrackFileSkeleton {
-  id: number;
-  parentId: number;
-  name: string;
-  path: string;
+  id: number
+  parentId: number
+  name: string
+  path: string
 }
 
-interface TrackFile extends File {
-  id: number;
-  parentId: number;
+interface DropFile {
+  lastModified: number
+  lastModifiedDate: Date
+  name: string
+  path: string
+  size: number
+  type: string
+  webkitRelativePath: string
 }
 
-export { Track, TrackFile, TrackFileSkeleton };
+interface TrackFile extends DropFile {
+  id: number
+  parentId: number
+}
+
+export { Track, TrackFile, TrackFileSkeleton, DropFile }

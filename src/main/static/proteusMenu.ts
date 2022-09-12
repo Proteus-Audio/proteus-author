@@ -1,97 +1,97 @@
-import { app, ipcMain } from "electron";
+import { ipcMain } from 'electron'
 
-const isMac = process.platform === "darwin";
+// const isMac = process.platform === 'darwin'
 
 const proteusMenu: Electron.MenuItemConstructorOptions[] = [
   {
-    label: "Title",
+    label: 'Title',
     submenu: [
       {
-        label: "About Proteus",
+        label: 'About Proteus',
         click() {
-          require("electron").shell.openExternal("https://prot.dev/");
+          require('electron').shell.openExternal('https://prot.dev/')
         },
       },
-      { type: "separator" },
-      { role: "quit" },
+      { type: 'separator' },
+      { role: 'quit' },
     ],
   },
   {
-    label: "File",
+    label: 'File',
     submenu: [
       {
-        label: "New Window",
+        label: 'New Window',
         click() {
-          ipcMain.emit("newWindow")
+          ipcMain.emit('newWindow')
         },
         accelerator: 'CmdOrCtrl+N',
       },
-      { type: "separator" },
+      { type: 'separator' },
       {
-        label: "Load Project",
+        label: 'Load Project',
         click() {
-          ipcMain.emit("load")
+          ipcMain.emit('load')
         },
         accelerator: 'CmdOrCtrl+O',
       },
       {
-        label: "Save Project",
+        label: 'Save Project',
         click() {
-          ipcMain.emit("save")
+          ipcMain.emit('save')
         },
         accelerator: 'CmdOrCtrl+S',
       },
       {
-        label: "Save Project As",
+        label: 'Save Project As',
         click() {
-          ipcMain.emit("saveAs")
+          ipcMain.emit('saveAs')
         },
         accelerator: 'CmdOrCtrl+Shift+S',
       },
-      { type: "separator" },
-      { role: "close" },
+      { type: 'separator' },
+      { role: 'close' },
     ],
   },
   {
-    label: "Edit",
+    label: 'Edit',
     submenu: [
-      { role: "undo" },
-      { role: "redo" },
-      { type: "separator" },
-      { role: "cut" },
-      { role: "copy" },
-      { role: "paste" },
-      { role: "pasteAndMatchStyle" },
-      { role: "delete" },
-      { role: "selectAll" },
+      { role: 'undo' },
+      { role: 'redo' },
+      { type: 'separator' },
+      { role: 'cut' },
+      { role: 'copy' },
+      { role: 'paste' },
+      { role: 'pasteAndMatchStyle' },
+      { role: 'delete' },
+      { role: 'selectAll' },
     ],
   },
   {
-    label: "View",
+    label: 'View',
     submenu: [
-      { role: "reload" },
-      { role: "forceReload" },
-      { role: "toggleDevTools" },
-      { type: "separator" },
-      { role: "resetZoom" },
-      { role: "zoomIn" },
-      { role: "zoomOut" },
-      { type: "separator" },
-      { role: "togglefullscreen" },
+      { role: 'reload' },
+      { role: 'forceReload' },
+      { role: 'toggleDevTools' },
+      { type: 'separator' },
+      { role: 'resetZoom' },
+      { role: 'zoomIn' },
+      { role: 'zoomOut' },
+      { type: 'separator' },
+      { role: 'togglefullscreen' },
     ],
   },
-  { role: "window", submenu: [{ role: "minimize" }, { role: "close" }] },
+  { role: 'window', submenu: [{ role: 'minimize' }, { role: 'close' }] },
   {
-    role: "help",
+    role: 'help',
     submenu: [
       {
-        label: "Learn More",
+        label: 'Learn More',
         click() {
-          require("electron").shell.openExternal("https://electron.atom.io");
+          require('electron').shell.openExternal('https://electron.atom.io')
         },
       },
     ],
   },
-];
+]
 
-export default proteusMenu;
+export default proteusMenu

@@ -1,9 +1,9 @@
-import PlayMaster from './playMaster';
+import PlayMaster from './playMaster'
 
 interface Transport {
-  playing: boolean;
-  currentTime: number;
-  master: PlayMaster;
+  playing: boolean
+  currentTime: number
+  master: PlayMaster
 }
 
-export { Transport };
+export { Transport }

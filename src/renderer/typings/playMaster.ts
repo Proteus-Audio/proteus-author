@@ -1,15 +1,15 @@
 interface GetPlayersOptions {
-  all?: boolean;
+  all?: boolean
 }
 
 class PlayMaster {
-  playing: boolean;
-  currentTime: number;
-  currentPlayers: HTMLCollectionOf<HTMLAudioElement> | undefined;
+  playing: boolean
+  currentTime: number
+  currentPlayers: HTMLCollectionOf<HTMLAudioElement> | undefined
 
   constructor() {
-    this.playing = false;
-    this.currentTime = 0;
+    this.playing = false
+    this.currentTime = 0
   }
 
   // get currentTime(): number {
@@ -17,70 +17,70 @@ class PlayMaster {
   // }
 
   play() {
-    const players = this.getPlayers();
+    const players = this.getPlayers()
     for (let i = 0; i < players.length; i++) {
-      const player = players[i];
-      player.play();
+      const player = players[i]
+      player.play()
     }
   }
 
-  playTime(callback:(time:number)=>void, time?:number) {
-    this.playing = true;
-    const newTime = time || this.currentTime;
-    this.currentTime = newTime;
+  playTime(callback: (time: number) => void, time?: number) {
+    this.playing = true
+    const newTime = time || this.currentTime
+    this.currentTime = newTime
     setTimeout(() => {
-      callback(newTime);
-      if(this.playing) this.playTime(callback, (newTime + .05));
-    }, 50);
+      callback(newTime)
+      if (this.playing) this.playTime(callback, newTime + 0.05)
+    }, 50)
   }
 
   pauseTime() {
-    this.playing = false;
+    this.playing = false
   }
 
   stopTime() {
-    this.playing = false;
-    this.currentTime = 0;
+    this.playing = false
+    this.currentTime = 0
   }
-  
+
   pause() {
-    const currentTime = this.currentTime;
-    const players = this.getPlayers({ all: true });
+    const currentTime = this.currentTime
+    const players = this.getPlayers({ all: true })
     for (let i = 0; i < players.length; i++) {
-      const player = players[i];
-      player.pause();
-      player.currentTime = currentTime;
+      const player = players[i]
+      player.pause()
+      player.currentTime = currentTime
     }
   }
   stop() {
-    const players = this.getPlayers({ all: true });
+    const players = this.getPlayers({ all: true })
     for (let i = 0; i < players.length; i++) {
-      const player = players[i];
-      player.pause();
-      player.currentTime = 0;
+      const player = players[i]
+      player.pause()
+      player.currentTime = 0
     }
   }
 
   setCurrentTime(currentTime?: number): void {
-    currentTime = currentTime || this.currentTime;
-    const players = this.getPlayers({ all: true });
+    currentTime = currentTime || this.currentTime
+    const players = this.getPlayers({ all: true })
     for (let i = 0; i < players.length; i++) {
-      const player = players[i];
-      player.currentTime = currentTime;
+      const player = players[i]
+      player.currentTime = currentTime
     }
   }
 
   updateCurrentPlayers(): void {
-    this.currentPlayers = this.getPlayers();
+    this.currentPlayers = this.getPlayers()
   }
 
   getPlayers(options?: GetPlayersOptions): HTMLCollectionOf<HTMLAudioElement> {
-    const all = options?.all || false;
+    const all = options?.all || false
     const players = document.getElementsByClassName(
-      all ? "player" : "playable"
-    ) as HTMLCollectionOf<HTMLAudioElement>;
-    return players;
+      all ? 'player' : 'playable',
+    ) as HTMLCollectionOf<HTMLAudioElement>
+    return players
   }
 }
 
-export default PlayMaster;
+export default PlayMaster

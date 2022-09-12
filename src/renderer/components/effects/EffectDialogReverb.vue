@@ -1,7 +1,7 @@
 <template>
   <div class="effects-controls">
     <h2>REVERB</h2>
-    <div class="control-bin">
+    <div v-if="exists" class="control-bin">
       <div>decay</div>
       <el-slider v-model="decay" :show-tooltip="false" :max="70" :step="0.1" size="small" />
 
@@ -15,58 +15,65 @@
 </template>
 
 <script setup lang="ts">
-import { Reverb } from "tone";
-import { computed, onMounted } from "vue";
-import { toneMaster } from "../../public/toneMaster";
-import { useAudioStore } from "../../stores/audio";
+import { Reverb } from 'tone'
+import { computed, onMounted } from 'vue'
+import { ReverbSettings } from '../../public/effects'
+import { toneMaster } from '../../public/toneMaster'
+import { useAudioStore } from '../../stores/audio'
 
-const audio = useAudioStore();
+interface Props {
+  effectIndex: number
+}
 
-let reverb: Reverb | undefined;
+const audio = useAudioStore()
+const props = defineProps<Props>()
+const exists = computed((): boolean => audio.effects[props.effectIndex] !== undefined)
+
+let reverb: Reverb | undefined
 
 const decay = computed({
   get() {
-    return audio.reverb.decay;
+    return (audio.effects[props.effectIndex].effect as ReverbSettings).decay
   },
   set(decay: number) {
-    if (reverb) reverb.decay = decay;
-    else getReverb();
-    audio.reverb.decay = decay;
+    if (reverb) reverb.decay = decay
+    else getReverb()
+    ;(audio.effects[props.effectIndex].effect as ReverbSettings).decay = decay
   },
-});
+})
 
 const preDelay = computed({
   get() {
-    return audio.reverb.preDelay;
+    return (audio.effects[props.effectIndex].effect as ReverbSettings).preDelay
   },
   set(preDelay: number) {
-    if (reverb) reverb.preDelay = preDelay;
-    else getReverb();
-    audio.reverb.preDelay = preDelay;
+    if (reverb) reverb.preDelay = preDelay
+    else getReverb()
+    ;(audio.effects[props.effectIndex].effect as ReverbSettings).preDelay = preDelay
   },
-});
+})
 
 const mix = computed({
   get() {
-    return audio.reverb.mix;
+    return (audio.effects[props.effectIndex].effect as ReverbSettings).mix
   },
   set(mix: number) {
-    if (reverb) reverb.wet.value = mix;
-    else getReverb();
-    audio.reverb.mix = mix;
+    if (reverb) reverb.wet.value = mix
+    else getReverb()
+    ;(audio.effects[props.effectIndex].effect as ReverbSettings).mix = mix
   },
-});
+})
 
 const getReverb = () => {
   if (!reverb) {
-    const tentativeReverb = toneMaster.getEffect("Reverb");
-    if (tentativeReverb instanceof Reverb) reverb = tentativeReverb;
+    const tentativeReverb = toneMaster.getEffect('Reverb')
+    if (tentativeReverb instanceof Reverb) reverb = tentativeReverb
   }
-};
+}
 
 onMounted(() => {
-  getReverb();
-});
+  getReverb()
+})
 </script>
 
 <style lang="scss" scoped>

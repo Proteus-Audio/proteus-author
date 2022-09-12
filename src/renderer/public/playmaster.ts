@@ -1,5 +1,5 @@
-import PlayMaster from '../typings/playMaster';
+import PlayMaster from '../typings/playMaster'
 
-const playMaster = new PlayMaster();
+const playMaster = new PlayMaster()
 
-export default playMaster;
+export default playMaster

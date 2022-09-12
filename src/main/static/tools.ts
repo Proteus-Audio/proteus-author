@@ -1,7 +1,7 @@
+/* eslint-disable  @typescript-eslint/no-explicit-any */
 const arrRandom = (arr: any[]) => {
-  console.log(arr);
-  if (arr.length === 0) return;
-  return arr[Math.floor(Math.random() * arr.length)];
-};
+  if (arr.length === 0) return
+  return arr[Math.floor(Math.random() * arr.length)]
+}
 
-export default { arrRandom };
+export default { arrRandom }
