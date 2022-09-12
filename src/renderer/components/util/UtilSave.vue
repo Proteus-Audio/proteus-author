@@ -23,12 +23,6 @@ const save = async () => {
     tracks,
   })
 
-  if (update.tracks) {
-    !update.location || head.setPath(update.location)
-    !update.name || head.setName(update.name)
-    track.replaceTracksFromLoad(update.tracks)
-    track.setSelections()
-    track.initialised = false
-  }
+  head.load(update)
 }
 </script>

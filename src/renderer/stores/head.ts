@@ -1,8 +1,10 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { ProjectHead } from '../typings/proteus'
+import { ProjectHead, ProjectSkeleton } from '../typings/proteus'
+import { useTrackStore } from './tracks'
 
 export const useHeadStore = defineStore('head', () => {
+  const track = useTrackStore()
   /////////////
   //  STORE  //
   /////////////
@@ -32,11 +34,22 @@ export const useHeadStore = defineStore('head', () => {
     head.value.path = location
   }
 
+  const load = (project: ProjectSkeleton) => {
+    if (project.tracks.length > 0) {
+      !project.location || setFileLocation(project.location)
+      track.replaceTracksFromLoad(project.tracks)
+      track.setSelections()
+      !project.location || setPath(project.location)
+      !project.name || setName(project.name)
+    }
+  }
+
   return {
     name,
     path,
     setFileLocation,
     setName,
     setPath,
+    load,
   }
 })

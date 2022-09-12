@@ -1,3 +1,4 @@
+import { dialog } from 'electron'
 import { existsSync, mkdirSync, writeFile } from 'fs'
 import { readJson } from 'fs-extra'
 import { copyFile } from 'node:fs/promises'
@@ -74,7 +75,7 @@ const save = async (
   return { location: fileLocation, tracks: exitTracks }
 }
 
-const load = async (fileLocation: string, fileName: string): Promise<TrackSkeleton[] | false> => {
+const loadData = async (fileLocation: string, fileName: string): Promise<TrackSkeleton[]> => {
   if (!/\.protproject/i.test(fileName)) fileName += '.protproject'
   try {
     const trackDir = fileLocation.replace(/[\\/]$/, '')
@@ -88,8 +89,26 @@ const load = async (fileLocation: string, fileName: string): Promise<TrackSkelet
     return details
   } catch (err) {
     console.error(err)
-    return false
+    return []
   }
 }
 
-export { save, load, Project }
+const load = async (filePath?: string): Promise<Project> => {
+  let fileLocation = filePath
+
+  if (!fileLocation) {
+    const chosenLocation = await dialog.showOpenDialog({
+      filters: [{ name: 'Prot Project', extensions: ['.protproject'] }],
+      properties: ['openFile'],
+    })
+    fileLocation = chosenLocation.filePaths[0]
+    if (chosenLocation.canceled) return { tracks: [], location: fileLocation }
+  }
+
+  const fileName = (fileLocation.match(/[^\\/]+$/) || [''])[0]
+  const fileDir = fileLocation.replace(fileName, '')
+
+  return { tracks: await loadData(fileDir, fileName), location: fileLocation, name: fileName }
+}
+
+export { save, loadData, load, Project }

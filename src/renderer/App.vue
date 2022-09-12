@@ -23,6 +23,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue'
+import { ipcRenderer } from './electron'
 import EffectRack from './components/effects/EffectRack.vue'
 import BaseContainer from './components/base/BaseContainer.vue'
 import TrackBin from './components/track/TrackBin.vue'
@@ -33,6 +34,7 @@ import { useHeadStore } from './stores/head'
 import { useTrackStore } from './stores/tracks'
 import { useAudioStore } from './stores/audio'
 import BaseTitle from './components/base/BaseTitle.vue'
+import { ProjectSkeleton } from './typings/proteus'
 
 const head = useHeadStore()
 const trackStore = useTrackStore()
@@ -42,7 +44,13 @@ const windowTitle = computed(() => {
   return head.name.replace('.protproject', '')
 })
 
-onMounted(() => {
+onMounted(async () => {
+  const urlSearchParams = new URLSearchParams(window.location.search)
+  const params = Object.fromEntries(urlSearchParams.entries())
+
+  const data: ProjectSkeleton | undefined = await ipcRenderer.invoke('init', params.id)
+  if (data) head.load(data)
+
   trackStore.addEmptyTrackIfNone()
 })
 

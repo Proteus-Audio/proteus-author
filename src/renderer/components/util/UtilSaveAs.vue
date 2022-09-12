@@ -19,10 +19,6 @@ const save = async () => {
   }))
   const update: ProjectSkeleton = await ipcRenderer.invoke('save', { tracks })
 
-  if (update.tracks) {
-    !update.location || head.setPath(update.location)
-    !update.name || head.setName(update.name)
-    track.replaceTracksFromLoad(update.tracks)
-  }
+  head.load(update)
 }
 </script>

@@ -31,7 +31,7 @@ interface TrackSkeleton {
 interface ProjectSkeleton {
   location?: string
   name?: string
-  tracks: TrackSkeleton[] | false
+  tracks: TrackSkeleton[]
 }
 
 export { Alert, AlertType, AlertClass, AlertView, ProjectSkeleton, TrackSkeleton, ProjectHead }

@@ -2074,6 +2074,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/electron@npm:^1.6.10":
+  version: 1.6.10
+  resolution: "@types/electron@npm:1.6.10"
+  dependencies:
+    electron: "*"
+  checksum: 1194d023d425fad826d719b761c67022ef97a4d3bea40ce6a3ac36aa40f913e3714775ef816744ec61214ab49b0ca377a939b18a8c29bfd76285011c21e2de76
+  languageName: node
+  linkType: hard
+
 "@types/express-serve-static-core@npm:4.17.30, @types/express-serve-static-core@npm:^4.17.18":
   version: 4.17.30
   resolution: "@types/express-serve-static-core@npm:4.17.30"
@@ -2656,7 +2665,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vue/devtools-api@npm:^6.2.1":
+"@vue/devtools-api@npm:^6.1.4, @vue/devtools-api@npm:^6.2.1":
   version: 6.2.1
   resolution: "@vue/devtools-api@npm:6.2.1"
   checksum: 34765af0be9b0cc7e3def73b2792b1514e3c348852c5a7503fe07d013f0e907af6c27c0a32c0637dd748caf37c075af8e53ca3220433e0bd34b6f3405f358272
@@ -4767,6 +4776,19 @@ __metadata:
   version: 1.4.233
   resolution: "electron-to-chromium@npm:1.4.233"
   checksum: 5cf2bdad13a66453303891adaf1b8e4aa649b161309c51d41e65192958876042289fd73abdb7c75274ca903b86a26d9c71f20baad0575988255593a4be5e6905
+  languageName: node
+  linkType: hard
+
+"electron@npm:*":
+  version: 20.1.3
+  resolution: "electron@npm:20.1.3"
+  dependencies:
+    "@electron/get": ^1.14.1
+    "@types/node": ^16.11.26
+    extract-zip: ^2.0.1
+  bin:
+    electron: cli.js
+  checksum: 53b1b153dd3ff30a2a5d6cfd4fa5561449403161bb358e29d9d1f16407131f67715afde9a4d5467be1acee7b7cc044a29c10b2d96ad51dc1a4c575af5574689d
   languageName: node
   linkType: hard
 
@@ -9164,6 +9186,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "proteus-author@workspace:."
   dependencies:
+    "@types/electron": ^1.6.10
     "@types/fs-extra": ^9.0.13
     "@types/lodash": ^4.14.184
     "@types/node": ^18.7.13
@@ -9206,6 +9229,7 @@ __metadata:
     typescript: "*"
     vite: ^3.0.9
     vue: ^3.2.36
+    vue-router: ^4.1.5
     vue3-dropzone: ^2.0.1
     vuedraggable: ^4.1.0
     waveform-data: ^4.3.0
@@ -11187,6 +11211,17 @@ __metadata:
   peerDependencies:
     eslint: ">=6.0.0"
   checksum: e2e6b05989294c4439d91283a78a0cb444cfba30f2715a5be1950d7815cadb5c8f449d9362a92bdd163cb8944abaac73bb076ce3c27b27586eaa4560002e6dfd
+  languageName: node
+  linkType: hard
+
+"vue-router@npm:^4.1.5":
+  version: 4.1.5
+  resolution: "vue-router@npm:4.1.5"
+  dependencies:
+    "@vue/devtools-api": ^6.1.4
+  peerDependencies:
+    vue: ^3.2.0
+  checksum: cafa2f4e14188bca0d4d45e05a901b6ff7bb3933010a6b2c9372bed7fa872bb2e18f1f033b23f540d3a75e1ecd6840b79a5ba5a714de01942d02e1e6cce88dec
   languageName: node
   linkType: hard
 

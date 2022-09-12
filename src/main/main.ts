@@ -2,8 +2,10 @@ import { app, BrowserWindow, ipcMain, dialog, Menu } from 'electron'
 import { join } from 'path'
 import { readFileSync } from 'fs'
 import proteusMenu from './static/proteusMenu'
-import { save, load, Project } from './static/fileOptions'
+import { save, load, Project, loadData } from './static/fileOptions'
 import mime from 'mime'
+import { entryData } from './static/global'
+import { randomUUID } from 'crypto'
 
 function createWindow(data?: Project) {
   // We cannot require the screen module until the app is ready.
@@ -12,6 +14,9 @@ function createWindow(data?: Project) {
   // Create a window that fills the screen's available work area.
   const primaryDisplay = screen.getPrimaryDisplay()
   const { width, height } = primaryDisplay.workAreaSize
+
+  const id = randomUUID()
+  entryData.projects[id] = data
 
   const mainWindow = new BrowserWindow({
     width: Math.min(width - 200, 1240),
@@ -28,11 +33,9 @@ function createWindow(data?: Project) {
 
   if (process.env.NODE_ENV === 'development') {
     const rendererPort = process.argv[2]
-    mainWindow.loadURL(`http://localhost:${rendererPort}`)
+    mainWindow.loadURL(`http://localhost:${rendererPort}?id=${id}`)
   } else {
-    mainWindow.loadFile(join(app.getAppPath(), 'renderer', 'index.html'))
-    // TODO: send data to window on init.
-    if (data) mainWindow.emit('initialData', data)
+    mainWindow.loadFile(join(app.getAppPath(), 'renderer', 'index.html'), { query: { id } })
   }
 }
 
@@ -58,6 +61,11 @@ app.on('window-all-closed', function () {
 
 ipcMain.on('message', async (_event, message) => {
   console.log(message)
+})
+
+ipcMain.handle('init', async (_event, id) => {
+  console.log(id)
+  return entryData.projects[id]
 })
 
 ipcMain.handle('openFile', async (_event, ...args) => {
@@ -122,41 +130,33 @@ ipcMain.handle('save', async (_event, project: Project) => {
   if (fileLocation !== '') {
     if (fileLocation.includes('.protproject')) fileLocation = fileLocation.replace(fileName, '')
     await save(project.tracks, fileLocation, fileName)
-    return { tracks: await load(fileLocation, fileName), location: fileLocation, name: fileName }
+    return {
+      tracks: await loadData(fileLocation, fileName),
+      location: fileLocation,
+      name: fileName,
+    }
   }
   return { tracks: false, location: fileLocation }
 })
 
-ipcMain.on('load', () => {
-  if (BrowserWindow.getAllWindows().length === 0) createWindow()
-  console.log(
-    BrowserWindow.getFocusedWindow()?.webContents.executeJavaScript(
-      "document.getElementById('loadButton').click()",
-    ),
-  )
-})
-
-ipcMain.handle('load', async () => {
-  const chosenLocation = await dialog.showOpenDialog({
-    filters: [{ name: 'Prot Project', extensions: ['.protproject'] }],
-    properties: ['openFile'],
-  })
-
-  let fileLocation = chosenLocation.filePaths[0]
-  if (chosenLocation.canceled) return { tracks: false, location: fileLocation }
-  const fileName = (fileLocation.match(/[^\\/]+$/) || [''])[0]
-  fileLocation = fileLocation.replace(fileName, '')
-
-  if (fileName.includes('.protproject')) {
-    return { tracks: await load(fileLocation, fileName), location: fileLocation, name: fileName }
+ipcMain.on('load', async () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    const data = await load()
+    createWindow(data)
+  } else {
+    console.log(
+      BrowserWindow.getFocusedWindow()?.webContents.executeJavaScript(
+        "document.getElementById('loadButton').click()",
+      ),
+    )
   }
 })
 
+ipcMain.handle('load', async () => {
+  return await load()
+})
+
 app.on('open-file', async (_event, path) => {
-  const fileName = (path.match(/[^\\/]+$/) != null || [''])[0]
-  const fileLocation = path.replace(fileName, '')
-  const tracks = await load(fileLocation, fileName)
-  if (!tracks) return
-  const project = { tracks, location: fileLocation, name: fileName }
-  createWindow(project)
+  const data = await load(path)
+  createWindow(data)
 })
