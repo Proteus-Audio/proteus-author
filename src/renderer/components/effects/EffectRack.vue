@@ -23,20 +23,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { useAudioStore } from "../../stores/audio";
-import EffectMini from "./EffectMini.vue";
+import { computed } from 'vue'
+import { useAudioStore } from '../../stores/audio'
+import EffectMini from './EffectMini.vue'
 
 const effects = computed(() => audio.effects)
-const noEffects = computed(() => effects.value.length <= 0);
-const rackClass = computed(() => (noEffects.value ? "empty" : "full"));
+const noEffects = computed(() => effects.value.length <= 0)
+const rackClass = computed(() => (noEffects.value ? 'empty' : 'full'))
 
-const audio = useAudioStore();
+const audio = useAudioStore()
 
-const addEffect = (toAdd: "Reverb" | "Compressor") => {
-  if (toAdd === "Compressor") audio.addEffect("Compressor");
-  else if (toAdd === "Reverb") audio.addEffect("Reverb");
-};
+const addEffect = (toAdd: 'Reverb' | 'Compressor') => {
+  if (toAdd === 'Compressor') audio.addEffect('Compressor')
+  else if (toAdd === 'Reverb') audio.addEffect('Reverb')
+}
 </script>
 
 <style lang="scss" scoped>

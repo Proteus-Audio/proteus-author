@@ -1,103 +1,95 @@
-import { existsSync, mkdirSync, writeFile } from "fs";
-import { readJson } from "fs-extra";
-import { copyFile } from "node:fs/promises";
-import { sep } from "path";
+import { existsSync, mkdirSync, writeFile } from 'fs'
+import { readJson } from 'fs-extra'
+import { copyFile } from 'node:fs/promises'
+import { sep } from 'path'
 
 interface TrackSkeleton {
-  id: number;
-  name: string;
+  id: number
+  name: string
   files: {
-    id: number;
-    path: string;
-    name: string;
-  }[];
+    id: number
+    path: string
+    name: string
+  }[]
 }
 
 interface Project {
-  location?: string;
-  name?: string;
-  tracks: TrackSkeleton[];
+  location?: string
+  name?: string
+  tracks: TrackSkeleton[]
 }
 
-const copyFilesMakeDirs = async (src, dest): Promise<void> => {
-  const destArr = dest.split(sep);
-  let dirString = "";
-  for (let i = 0; i < destArr.length - 1; i++) {
-    const dir = destArr[i];
-    dirString += sep + dir;
-    if (!existsSync(dirString)) {
-      mkdirSync(dirString);
-    }
-  }
+const copyFilesMakeDirs = async (src: string, dest: string): Promise<void> => {
+  mkdirIfNone(dest)
 
   try {
-    await copyFile(src, dest);
+    await copyFile(src, dest)
   } catch (error) {
-    console.log("ERROR COPYING FILE:", error);
+    console.log('ERROR COPYING FILE:', error)
   }
-};
+}
 
-const mkdirIfNone = (dir): void => {
-  const destArr = dir.split(sep);
-  let dirString = "";
+const mkdirIfNone = (dir: string): void => {
+  const destArr = dir.split(sep)
+  let dirString = ''
   for (let i = 0; i < destArr.length; i++) {
-    const dir = destArr[i];
-    dirString += sep + dir;
+    const dir = destArr[i]
+    dirString += sep + dir
     if (!existsSync(dirString)) {
-      mkdirSync(dirString);
+      mkdirSync(dirString)
     }
   }
-};
+}
 
 const save = async (
   tracks: TrackSkeleton[],
   fileLocation: string,
-  fileName: string
+  fileName: string,
 ): Promise<Project> => {
-  const exitTracks: TrackSkeleton[] = [];
-  const promises: Promise<void>[] = [];
-  const trackDir = fileLocation.replace(/[\\\/]$/, "");
+  const exitTracks: TrackSkeleton[] = []
+  const promises: Promise<void>[] = []
+  const trackDir = fileLocation.replace(/[\\/]$/, '')
 
   if (tracks && tracks.length > 0) {
-    console.log(trackDir);
+    console.log(trackDir)
     tracks.forEach((t) => {
-      const track: TrackSkeleton = { id: t.id, name: t.name, files: [] };
+      const track: TrackSkeleton = { id: t.id, name: t.name, files: [] }
       t.files.forEach((file) => {
-        const filePath = `/track${track.id}/${file.name}`;
+        const filePath = `/track${track.id}/${file.name}`
         console.log(`Saving ${trackDir}${filePath}`)
-        promises.push(copyFilesMakeDirs(file.path, `${trackDir}${filePath}`));
-        track.files.push({ id: file.id, name: file.name, path: filePath });
-      });
-      exitTracks.push(track);
-    });
+        promises.push(copyFilesMakeDirs(file.path, `${trackDir}${filePath}`))
+        track.files.push({ id: file.id, name: file.name, path: filePath })
+      })
+      exitTracks.push(track)
+    })
   }
 
-  await Promise.all(promises);
+  await Promise.all(promises)
 
-  if(!(/\.protproject/i.test(fileName))) fileName += '.protproject';
+  if (!/\.protproject/i.test(fileName)) fileName += '.protproject'
   writeFile(fileLocation + sep + fileName, JSON.stringify(exitTracks), () => {
-    console.log("created");
-  });
+    console.log('created')
+  })
 
-  return { location: fileLocation, tracks: exitTracks };
-};
+  return { location: fileLocation, tracks: exitTracks }
+}
 
 const load = async (fileLocation: string, fileName: string): Promise<TrackSkeleton[] | false> => {
-  if(!(/\.protproject/i.test(fileName))) fileName += '.protproject';
+  if (!/\.protproject/i.test(fileName)) fileName += '.protproject'
   try {
-    const trackDir = fileLocation.replace(/[\\\/]$/, "");
-    const details: TrackSkeleton[] = await readJson(fileLocation + sep + fileName);
+    const trackDir = fileLocation.replace(/[\\/]$/, '')
+    const details: TrackSkeleton[] = await readJson(fileLocation + sep + fileName)
 
     details.forEach((skeleton) => {
       skeleton.files.forEach((f) => {
-        f.path = trackDir + f.path;
-      });
-    });
-    return details;
+        f.path = trackDir + f.path
+      })
+    })
+    return details
   } catch (err) {
-    console.error(err);
-    return false;
+    console.error(err)
+    return false
   }
-};
+}
 
-export { save, load, Project };
+export { save, load, Project }

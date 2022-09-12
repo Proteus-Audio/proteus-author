@@ -1,13 +1,13 @@
-import { defineStore } from "pinia";
-import { ref } from "vue";
-import { Alert, AlertType } from "../typings/proteus";
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
+import { Alert, AlertType } from '../typings/proteus'
 
-export const useAlertStore = defineStore("alert", () => {
+export const useAlertStore = defineStore('alert', () => {
   /////////////
   //  STORE  //
   /////////////
 
-  const alerts = ref([] as Alert[]);
+  const alerts = ref([] as Alert[])
 
   /////////////
   // GETTERS //
@@ -18,12 +18,12 @@ export const useAlertStore = defineStore("alert", () => {
   /////////////
 
   const addAlert = (contents: string, type?: AlertType) => {
-    type = type || "info";
-    alerts.value.push({ contents, type, autoClose: type !== "error" });
-  };
+    type = type || 'info'
+    alerts.value.push({ contents, type, autoClose: type !== 'error' })
+  }
 
   return {
     alerts,
     addAlert,
-  };
-});
+  }
+})

@@ -38,7 +38,7 @@
         custom-class="drawer"
       >
         <div class="tracklist">
-          <div v-for="file in track.files">
+          <div v-for="file in track.files" :key="file.id">
             {{ file.name }}
 
             <el-button :icon="Delete" class="closeButton" @click="() => removeFile(file.id)" text />
@@ -63,87 +63,90 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, ref } from 'vue'
 
-import { useDropzone } from "vue3-dropzone";
-import { useTrackStore } from "../../stores/tracks";
-import TrackWaveform from "./TrackWaveform.vue";
+import { useDropzone } from 'vue3-dropzone'
+import { useTrackStore } from '../../stores/tracks'
+import TrackWaveform from './TrackWaveform.vue'
 
-import { Folder, Delete } from "@element-plus/icons-vue";
-import InputAutoSizedText from "../input/InputAutoSizedText.vue";
-import TrackPlayhead from "./TrackPlayhead.vue";
-import { useAudioStore } from "../../stores/audio";
+import { Folder, Delete } from '@element-plus/icons-vue'
+import InputAutoSizedText from '../input/InputAutoSizedText.vue'
+import { useAudioStore } from '../../stores/audio'
+import { DropFile } from '../../typings/tracks'
 // import Button from "element-plus";
 
 interface Props {
-  trackId: number;
+  trackId: number
 }
 
-const props = defineProps<Props>();
+const props = defineProps<Props>()
 
-const trackStore = useTrackStore();
-const audio = useAudioStore();
+const trackStore = useTrackStore()
+const audio = useAudioStore()
 
-const track = computed(() => trackStore.getOrCreateTrackFromId(props.trackId));
+const track = computed(() => trackStore.getOrCreateTrackFromId(props.trackId))
 
 const width = computed((): string => {
-  return audio.duration === 0 ? "100%" : `${(audio.zoom.x * audio.duration) + 30}px`;
-});
-
-const padding = computed(():string => {
-  return track.value.files.length > 0 ? "" : "margin: 0;"
+  return audio.duration === 0 ? '100%' : `${audio.zoom.x * audio.duration + 30}px`
 })
 
-const folderOpen = ref(false);
-const error = ref("");
+const padding = computed((): string => {
+  return track.value.files.length > 0 ? '' : 'margin: 0;'
+})
+
+const folderOpen = ref(false)
+const error = ref('')
 const trackName = computed({
   get: () => {
-    const index = trackStore.getTrackIndexFromId(props.trackId);
-    return trackStore.tracks[index].name || "";
+    const index = trackStore.getTrackIndexFromId(props.trackId)
+    return trackStore.tracks[index].name || ''
   },
   set: (name: string) => {
-    const index = trackStore.getTrackIndexFromId(props.trackId);
-    return (trackStore.tracks[index].name = name);
+    const index = trackStore.getTrackIndexFromId(props.trackId)
+    return (trackStore.tracks[index].name = name)
   },
-});
+})
 
 const errorMessage = (code: string): string => {
-  type Lookup = { [key: string]: string };
+  type Lookup = { [key: string]: string }
   const messages: Lookup = {
-    "file-invalid-type": "Please Choose a WAV or MP3 File",
-  };
-  if (messages[code]) return messages[code];
-  return "File Error";
-};
+    'file-invalid-type': 'Please Choose a WAV or MP3 File',
+  }
+  if (messages[code]) return messages[code]
+  return 'File Error'
+}
 
-async function onDrop(acceptFiles: File[], rejectReasons: any) {
-  if (rejectReasons.length > 0) error.value = errorMessage(rejectReasons[0].errors[0].code);
-  else error.value = "";
+/* eslint-disable  @typescript-eslint/no-explicit-any */
+async function onDrop(acceptFiles: DropFile[], rejectReasons: any[]) {
+  if (rejectReasons.length > 0) error.value = errorMessage(rejectReasons[0].errors[0].code)
+  else error.value = ''
+
+  console.log(acceptFiles[0])
 
   if (acceptFiles.length > 0) {
-    trackStore.addFileToTrack(acceptFiles, props.trackId);
-    trackStore.shuffleTrackBin(props.trackId);
-    trackStore.addEmptyTrackIfNone();
+    trackStore.addFileToTrack(acceptFiles, props.trackId)
+    trackStore.shuffleTrackBin(props.trackId)
+    trackStore.addEmptyTrackIfNone()
   }
 }
 
-const removeFile = (id: number) => trackStore.removeFileFromTrack(id, props.trackId);
+const removeFile = (id: number) => trackStore.removeFileFromTrack(id, props.trackId)
 
 const selectedName = computed(() => {
-  const filename: string | undefined = trackStore.getTrackSelection(props.trackId)?.name;
-  return filename ? filename.replace(/\..*$/, "") : "";
-});
+  const filename: string | undefined = trackStore.getTrackSelection(props.trackId)?.name
+  return filename ? filename.replace(/\..*$/, '') : ''
+})
 
 const fresh = computed(() => {
-  const isFresh = track.value.files.length === 0;
-  return isFresh;
-});
+  const isFresh = track.value.files.length === 0
+  return isFresh
+})
 
-const { getRootProps, getInputProps, isDragActive, open, ...rest } = useDropzone({
+const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
   onDrop,
-  accept: ["audio/mpeg", "audio/wav"],
+  accept: ['audio/mpeg', 'audio/wav'],
   noClick: true,
-});
+})
 </script>
 
 <style lang="scss" scoped>

@@ -1,13 +1,13 @@
-import { defineStore } from "pinia";
-import { computed, ref } from "vue";
-import { ProjectHead } from "../typings/proteus";
+import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
+import { ProjectHead } from '../typings/proteus'
 
-export const useHeadStore = defineStore("head", () => {
+export const useHeadStore = defineStore('head', () => {
   /////////////
   //  STORE  //
   /////////////
 
-  const head = ref({ name: "untitled", path: "" } as ProjectHead);
+  const head = ref({ name: 'untitled', path: '' } as ProjectHead)
 
   /////////////
   // GETTERS //
@@ -21,18 +21,22 @@ export const useHeadStore = defineStore("head", () => {
   /////////////
 
   const setFileLocation = (location: string) => {
-    head.value.name = (location.match(/[^\/\\]*\.\w+$/) || [".jpg"])[0].replace(/\.\w+$/, "");
-    head.value.path = location;
-  };
+    head.value.name = (location.match(/[^/\\]*\.\w+$/) || ['.jpg'])[0].replace(/\.\w+$/, '')
+    head.value.path = location
+  }
 
-  const setName = (name:string) => {head.value.name = name}
-  const setPath = (location:string) => {head.value.path = location}
+  const setName = (name: string) => {
+    head.value.name = name
+  }
+  const setPath = (location: string) => {
+    head.value.path = location
+  }
 
   return {
     name,
-    path, 
+    path,
     setFileLocation,
     setName,
-    setPath
-  };
-});
+    setPath,
+  }
+})

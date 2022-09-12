@@ -17,57 +17,56 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from "vue";
-import { Effect } from "../../typings/effects";
-import { SuitcaseLine, Phone, Close, Delete } from "@element-plus/icons-vue";
-import { toneMaster } from "../../public/toneMaster";
-import EffectDialogCompressor from "./EffectDialogCompressor.vue";
-import EffectDialogReverb from "./EffectDialogReverb.vue";
-import { useAudioStore } from "../../stores/audio";
-import { Compressor, Reverb } from 'tone';
-import { CompressorSettings, ReverbSettings } from '../../public/effects';
+import { onMounted, onUnmounted, ref } from 'vue'
+import { Effect } from '../../typings/effects'
+import { SuitcaseLine, Phone, Close, Delete } from '@element-plus/icons-vue'
+import { toneMaster } from '../../public/toneMaster'
+import EffectDialogCompressor from './EffectDialogCompressor.vue'
+import EffectDialogReverb from './EffectDialogReverb.vue'
+import { useAudioStore } from '../../stores/audio'
+import { Compressor, Reverb } from 'tone'
+import { CompressorSettings, ReverbSettings } from '../../public/effects'
 
 interface Props {
-  id: number;
-  type: Effect;
-  index: number;
+  id: number
+  type: Effect
+  index: number
 }
 
-const emit = defineEmits(["remove"]);
-const audio = useAudioStore();
+const audio = useAudioStore()
 
-const props = defineProps<Props>();
+const props = defineProps<Props>()
 
-const editOpen = ref(false);
+const editOpen = ref(false)
 
 const toggleEdit = () => {
-  editOpen.value = !editOpen.value;
-};
+  editOpen.value = !editOpen.value
+}
 
 const removeEffect = () => {
   console.log(`Deleting #${props.id}`)
-  audio.removeEffect(props.id);
+  audio.removeEffect(props.id)
   // toneMaster.removeEffect(props.type);
   // emit("remove");
-};
+}
 
 onMounted(() => {
-  const instance = audio.effects[props.index];
+  const instance = audio.effects[props.index]
   console.log(instance, props.index, props.id, props.type)
   if (instance.effect instanceof CompressorSettings) {
-    const { threshold, ratio, knee, attack, release } = instance.effect;
-    toneMaster.addEffect(new Compressor({ threshold, ratio, knee, attack, release }));
+    const { threshold, ratio, knee, attack, release } = instance.effect
+    toneMaster.addEffect(new Compressor({ threshold, ratio, knee, attack, release }))
   } else if (instance.effect instanceof ReverbSettings) {
-    const { decay, wet, preDelay } = instance.effect;
-    toneMaster.addEffect(new Reverb({ decay, wet, preDelay }));
+    const { decay, wet, preDelay } = instance.effect
+    toneMaster.addEffect(new Reverb({ decay, wet, preDelay }))
   }
-  console.log(toneMaster.effects);
-});
+  console.log(toneMaster.effects)
+})
 
 onUnmounted(() => {
-  console.log('destroy', props.id, props.index);
-  toneMaster.removeEffect(props.index);
-});
+  console.log('destroy', props.id, props.index)
+  toneMaster.removeEffect(props.index)
+})
 </script>
 
 <style lang="scss" scoped>

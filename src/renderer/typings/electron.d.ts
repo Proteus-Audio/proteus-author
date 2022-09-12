@@ -3,17 +3,17 @@
  */
 
 export default interface ElectronApi {
-  ipcRenderer: Electron.IpcRenderer;
-  fs: typeof import("fs");
-  path: typeof import("path");
+  ipcRenderer: Electron.IpcRenderer
+  fs: typeof import('fs')
+  path: typeof import('path')
   // tools: { [key: string]: any };
 }
 
 declare global {
   interface Window {
-    electron: ElectronApi;
-    fs: ElectronApi;
-    path: ElectronApi;
+    electron: ElectronApi
+    fs: ElectronApi
+    path: ElectronApi
     // tools: ElectronApi;
   }
 }

@@ -3,26 +3,26 @@
 </template>
 
 <script setup lang="ts">
-import { ipcRenderer } from "../../electron";
-import { useHeadStore } from '../../stores/head';
-import { useTrackStore } from '../../stores/tracks';
-import { ProjectSkeleton } from '../../typings/proteus';
+import { ipcRenderer } from '../../electron'
+import { useHeadStore } from '../../stores/head'
+import { useTrackStore } from '../../stores/tracks'
+import { ProjectSkeleton } from '../../typings/proteus'
 
-const track = useTrackStore();
-const head = useHeadStore();
+const track = useTrackStore()
+const head = useHeadStore()
 
 const save = async () => {
   const tracks = track.tracks.map((t) => ({
     id: t.id,
     name: t.name,
     files: t.files.map((f) => ({ id: f.id, path: f.path, name: f.name })),
-  }));
-  const update:ProjectSkeleton = await ipcRenderer.invoke("save", { tracks });
+  }))
+  const update: ProjectSkeleton = await ipcRenderer.invoke('save', { tracks })
 
-  if(update.tracks) {
-    !update.location || head.setPath(update.location);
-    !update.name || head.setName(update.name);
-    track.replaceTracksFromLoad(update.tracks);
+  if (update.tracks) {
+    !update.location || head.setPath(update.location)
+    !update.name || head.setName(update.name)
+    track.replaceTracksFromLoad(update.tracks)
   }
-};
+}
 </script>

@@ -14,41 +14,41 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUpdated, ref } from "vue";
+import { computed, onMounted, onUpdated, ref } from 'vue'
 
 interface Props {
-  placeholder?: string;
-  modelValue: string;
+  placeholder?: string
+  modelValue: string
 }
 
-const emit = defineEmits(["update:modelValue"]);
+const emit = defineEmits(['update:modelValue'])
 
-const props = defineProps<Props>();
+const props = defineProps<Props>()
 
 const updateValue = (event: Event) => {
-  emit("update:modelValue", (event.target as HTMLTextAreaElement).value);
-};
+  emit('update:modelValue', (event.target as HTMLTextAreaElement).value)
+}
 
-const textInput = ref(null as HTMLElement | null);
-const sizer = ref(null as HTMLElement | null);
-const width = ref(0);
+const textInput = ref(null as HTMLElement | null)
+const sizer = ref(null as HTMLElement | null)
+const width = ref(0)
 
-const sizerText = computed(() => props.modelValue !== "" ? props.modelValue : (props.placeholder || ""))
+const sizerText = computed(() =>
+  props.modelValue !== '' ? props.modelValue : props.placeholder || '',
+)
 
 const resize = () => {
-  width.value = (sizer.value?.offsetWidth) || width.value;
-//   txt.style.width = hide.offsetWidth + "px";
+  width.value = sizer.value?.offsetWidth || width.value
+  //   txt.style.width = hide.offsetWidth + "px";
 }
 
 onMounted(() => {
-  resize();
-});
-
-onUpdated(() => {
-    resize();
+  resize()
 })
 
-
+onUpdated(() => {
+  resize()
+})
 
 // const hide = document.getElementById("hide");
 // const txt = document.getElementById("txt");

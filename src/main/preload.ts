@@ -1,11 +1,9 @@
-import {contextBridge, ipcRenderer} from 'electron';
-import fs from 'fs';
-import path from 'path';
-// import tools from './static/tools';
+import { contextBridge, ipcRenderer } from 'electron'
+import fs from 'fs'
+import path from 'path'
 
 contextBridge.exposeInMainWorld('electron', {
-  ipcRenderer: ipcRenderer,
-  // tools: tools,
-  fs: fs,
-  path: path
+  ipcRenderer,
+  fs,
+  path,
 })

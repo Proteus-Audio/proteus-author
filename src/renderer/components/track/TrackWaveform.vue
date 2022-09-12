@@ -12,45 +12,46 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed, ref } from "vue";
+import { onMounted, computed, ref } from 'vue'
 
-import { useAudioStore } from "../../stores/audio";
-import { TrackFileSkeleton } from "../../typings/tracks";
-import Peaks, { PeaksOptions } from "peaks.js";
-import { toneMaster, PeaksPlayer } from "../../public/toneMaster";
-import * as Tone from "tone";
-import { cloneAudioBuffer } from "../../public/tools";
-import { useTrackStore } from "../../stores/tracks";
+import { useAudioStore } from '../../stores/audio'
+import { TrackFileSkeleton } from '../../typings/tracks'
+import { ExposedBuffer } from '../../typings/tone.d'
+import Peaks, { PeaksOptions } from 'peaks.js'
+import { toneMaster, PeaksPlayer } from '../../public/toneMaster'
+import * as Tone from 'tone'
+import { cloneAudioBuffer } from '../../public/tools'
+import { useTrackStore } from '../../stores/tracks'
 
 interface Props {
-  track: TrackFileSkeleton;
-  selected: boolean;
+  track: TrackFileSkeleton
+  selected: boolean
 }
 
-const audio = useAudioStore();
-const trackStore = useTrackStore();
-const props = defineProps<Props>();
+const audio = useAudioStore()
+const trackStore = useTrackStore()
+const props = defineProps<Props>()
 
-const duration = ref(0);
-const identifier = computed(() => `${props.track.parentId}-${props.track.id}`);
-const widthVal = computed((): number => duration.value * audio.getXScale);
-const width = computed((): string => (widthVal.value > 0 ? `${widthVal.value}px` : "100%"));
+const duration = ref(0)
+const identifier = computed(() => `${props.track.parentId}-${props.track.id}`)
+const widthVal = computed((): number => duration.value * audio.getXScale)
+const width = computed((): string => (widthVal.value > 0 ? `${widthVal.value}px` : '100%'))
 
 const clearContainer = () => {
-  const container = document.getElementById(`overview-container-${identifier.value}`);
-  if (container) container.innerHTML = "";
-  return container;
-};
+  const container = document.getElementById(`overview-container-${identifier.value}`)
+  if (container) container.innerHTML = ''
+  return container
+}
 
 const initialisePeaks = async () => {
-  trackStore.initialised = false;
-  const player = toneMaster.playerFromIds(props.track.parentId, props.track.id);
-  if (!player) return;
-  const container = clearContainer();
+  trackStore.initialised = false
+  const player = toneMaster.playerFromIds(props.track.parentId, props.track.id)
+  if (!player) return
+  const container = clearContainer()
 
-  await Tone.loaded();
-  duration.value = player.buffer.duration;
-  const audioBuffer = cloneAudioBuffer((player.buffer as any)._buffer);
+  await Tone.loaded()
+  duration.value = player.buffer.duration
+  const audioBuffer = cloneAudioBuffer((player.buffer as unknown as ExposedBuffer)._buffer)
   const options = {
     overview: {
       container: container,
@@ -61,20 +62,21 @@ const initialisePeaks = async () => {
       // audioContext: new AudioContext(),
       audioBuffer: audioBuffer,
     },
-  };
+  }
 
   Peaks.init(options as PeaksOptions, function (err, peaks) {
     if (err) {
-      console.error("Failed to initialize Peaks instance: " + err.message);
-      return;
+      console.error('Failed to initialize Peaks instance: ' + err.message)
+      console.log(peaks)
+      return
     }
     // Do something when the waveform is displayed and ready
-  });
-};
+  })
+}
 
 onMounted(() => {
-  initialisePeaks();
-});
+  initialisePeaks()
+})
 </script>
 
 <style lang="scss" scoped>
