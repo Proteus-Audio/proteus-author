@@ -1,6 +1,6 @@
 {
   "name": "proteus-author",
-  "version": "0.1.0",
+  "version": "0.5.0",
   "description": "A minimal Electron + Vue application",
   "main": "build/main/main.js",
   "scripts": {

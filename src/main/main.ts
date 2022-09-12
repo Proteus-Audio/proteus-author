@@ -113,7 +113,7 @@ ipcMain.handle('save', async (_event, project: Project) => {
     })
 
     fileLocation = chosenLocation.filePath || fileLocation
-    fileName = ((chosenLocation.filePath || '').match(/[^\\/]+$/) != null || [''])[0] || fileName
+    fileName = ((chosenLocation.filePath || '').match(/[^\\/]+$/) || [''])[0] || fileName
     if (chosenLocation.canceled) return { tracks: false, location: fileLocation }
   }
 
@@ -144,7 +144,7 @@ ipcMain.handle('load', async () => {
 
   let fileLocation = chosenLocation.filePaths[0]
   if (chosenLocation.canceled) return { tracks: false, location: fileLocation }
-  const fileName = (fileLocation.match(/[^\\/]+$/) != null || [''])[0]
+  const fileName = (fileLocation.match(/[^\\/]+$/) || [''])[0]
   fileLocation = fileLocation.replace(fileName, '')
 
   if (fileName.includes('.protproject')) {
