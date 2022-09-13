@@ -9,7 +9,6 @@
     "build:win": "node scripts/build.js && electron-builder -c config/electron-builder.json --win",
     "build:mac": "node scripts/build.js && electron-builder -c config/electron-builder.json --mac",
     "build:linux": "node scripts/build.js && electron-builder -c config/electron-builder.json --linux",
-    "postinstall": "husky install",
     "lint": "eslint src/renderer/**/*.{ts,vue} && eslint src/main/**/*.ts",
     "lint:fix": "eslint --fix src/renderer/**/*.{ts,vue} && eslint --fix src/main/**/*.ts"
   },
@@ -42,7 +41,6 @@
     "eslint-plugin-promise": "^6.0.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-vue": "^9.4.0",
-    "husky": "^8.0.1",
     "prettier": "^2.7.1",
     "sass": "^1.54.5",
     "typescript": "*",
@@ -65,6 +63,5 @@
     "vue3-dropzone": "^2.0.1",
     "vuedraggable": "^4.1.0",
     "waveform-data": "^4.3.0"
-  },
-  "packageManager": "yarn@3.2.3"
+  }
 }
