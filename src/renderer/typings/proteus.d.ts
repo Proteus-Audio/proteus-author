@@ -1,3 +1,5 @@
+import { EffectSettings } from '../public/effects'
+
 type AlertType = 'success' | 'warning' | 'info' | 'error'
 
 interface Alert {
@@ -32,6 +34,7 @@ interface ProjectSkeleton {
   location?: string
   name?: string
   tracks: TrackSkeleton[]
+  effects: EffectSettings[]
 }
 
 export { Alert, AlertType, AlertClass, AlertView, ProjectSkeleton, TrackSkeleton, ProjectHead }

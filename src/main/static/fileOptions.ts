@@ -21,22 +21,25 @@ const mkdirIfNone = (dir: string): void => {
   for (let i = 0; i < destArr.length; i++) {
     const dir = destArr[i]
     dirString += sep + dir
-    if (!existsSync(dirString)) {
+    const nonExistantDirectory = !existsSync(dirString) && !/\.[^/\\]+$/.test(dir)
+    if (nonExistantDirectory) {
       mkdirSync(dirString)
     }
   }
 }
 
-const save = async (
-  tracks: TrackSkeleton[],
-  fileLocation: string,
-  fileName: string,
-): Promise<Project> => {
-  const exitTracks: TrackSkeleton[] = []
+const save = async (project: Project, fileLocation: string, fileName: string): Promise<Project> => {
+  const fileData: Project = {
+    name: fileName,
+    location: fileLocation,
+    tracks: [],
+    effects: project.effects,
+  }
   const promises: Promise<void>[] = []
   const trackDir = fileLocation.replace(/[\\/]$/, '')
+  const tracks = project.tracks
 
-  if (tracks && tracks.length > 0) {
+  if (tracks.length > 0) {
     console.log(trackDir)
     tracks.forEach((t) => {
       const track: TrackSkeleton = { id: t.id, name: t.name, files: [] }
@@ -46,39 +49,42 @@ const save = async (
         promises.push(copyFilesMakeDirs(file.path, `${trackDir}${filePath}`))
         track.files.push({ id: file.id, name: file.name, path: filePath })
       })
-      exitTracks.push(track)
+      fileData.tracks.push(track)
     })
   }
 
   await Promise.all(promises)
 
   if (!/\.protproject/i.test(fileName)) fileName += '.protproject'
-  writeFile(fileLocation + sep + fileName, JSON.stringify(exitTracks), () => {
+  writeFile(fileLocation + sep + fileName, JSON.stringify(fileData), () => {
     console.log('created')
   })
 
-  return { location: fileLocation, tracks: exitTracks }
+  return fileData
 }
 
-const loadData = async (fileLocation: string, fileName: string): Promise<TrackSkeleton[]> => {
-  if (!/\.protproject/i.test(fileName)) fileName += '.protproject'
-  try {
-    const trackDir = fileLocation.replace(/[\\/]$/, '')
-    const details: TrackSkeleton[] = await readJson(fileLocation + sep + fileName)
+const loadData = async (fileLocation: string): Promise<Project | undefined> => {
+  if (!/\.protproject/i.test(fileLocation)) fileLocation += '.protproject'
 
-    details.forEach((skeleton) => {
+  const fileName = (fileLocation.match(/[^\\/]+$/) || [''])[0]
+  const fileDir = fileLocation.replace(fileName, '')
+
+  try {
+    const fileData: Project = await readJson(fileDir + sep + fileName)
+
+    fileData.tracks.forEach((skeleton) => {
       skeleton.files.forEach((f) => {
-        f.path = trackDir + f.path
+        f.path = fileDir + f.path
       })
     })
-    return details
+    return fileData
   } catch (err) {
     console.error(err)
-    return []
+    return
   }
 }
 
-const load = async (filePath?: string): Promise<Project> => {
+const load = async (filePath?: string): Promise<Project | undefined> => {
   let fileLocation = filePath
 
   if (!fileLocation) {
@@ -87,13 +93,10 @@ const load = async (filePath?: string): Promise<Project> => {
       properties: ['openFile'],
     })
     fileLocation = chosenLocation.filePaths[0]
-    if (chosenLocation.canceled) return { tracks: [], location: fileLocation }
+    if (chosenLocation.canceled) return { tracks: [], effects: [], location: fileLocation }
   }
 
-  const fileName = (fileLocation.match(/[^\\/]+$/) || [''])[0]
-  const fileDir = fileLocation.replace(fileName, '')
-
-  return { tracks: await loadData(fileDir, fileName), location: fileLocation, name: fileName }
+  return await loadData(fileLocation)
 }
 
 export { save, loadData, load, Project }

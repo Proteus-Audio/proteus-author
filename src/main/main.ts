@@ -1,5 +1,5 @@
 import { app, BrowserWindow, ipcMain, dialog, Menu } from 'electron'
-import { join } from 'path'
+import { join, sep } from 'path'
 import { readFileSync } from 'fs'
 import proteusMenu from './static/proteusMenu'
 import { save, load, loadData } from './static/fileOptions'
@@ -65,13 +65,12 @@ ipcMain.on('message', async (_event, message) => {
 })
 
 ipcMain.handle('init', async (_event, id) => {
-  console.log(id)
   return entryData.projects[id]
 })
 
 ipcMain.handle('openFile', async (_event, ...args) => {
   const file = await dialog.showOpenDialog({ properties: ['openFile'] })
-  console.log(args)
+  // console.log(args)
   if (file.canceled) return 'canceled'
   const filePath = file.filePaths[0]
   const fileName = (filePath.match(/[\w]*\..*$/) != null || [''])[0]
@@ -84,7 +83,6 @@ ipcMain.handle('openFile', async (_event, ...args) => {
 ipcMain.handle('chooseDir', async () => {
   const file = await dialog.showOpenDialog({ properties: ['openDirectory', 'createDirectory'] })
   if (file.canceled) return 'canceled'
-  console.log(file)
   const filePath = file.filePaths[0] + '/'
   return filePath
 })
@@ -94,25 +92,25 @@ ipcMain.on('newWindow', () => {
 })
 
 ipcMain.on('save', () => {
-  console.log(
-    BrowserWindow.getFocusedWindow()?.webContents.executeJavaScript(
-      "document.getElementById('saveButton').click()",
-    ),
+  BrowserWindow.getFocusedWindow()?.webContents.executeJavaScript(
+    "document.getElementById('saveButton').click()",
   )
 })
 
 ipcMain.on('saveAs', () => {
-  console.log(
-    BrowserWindow.getFocusedWindow()?.webContents.executeJavaScript(
-      "document.getElementById('saveAsButton').click()",
-    ),
+  BrowserWindow.getFocusedWindow()?.webContents.executeJavaScript(
+    "document.getElementById('saveAsButton').click()",
   )
 })
 
-ipcMain.handle('save', async (_event, project: Project) => {
+ipcMain.handle('save', async (_event, project: Project): Promise<Project | undefined> => {
   project.location = project.location || ''
   let fileLocation = project.location
   let fileName = project.name || ''
+
+  console.log('project')
+  console.log(project)
+  console.log(fileLocation, fileName)
 
   if (fileLocation === '') {
     const chosenLocation = await dialog.showSaveDialog({
@@ -123,21 +121,17 @@ ipcMain.handle('save', async (_event, project: Project) => {
 
     fileLocation = chosenLocation.filePath || fileLocation
     fileName = ((chosenLocation.filePath || '').match(/[^\\/]+$/) || [''])[0] || fileName
-    if (chosenLocation.canceled) return { tracks: false, location: fileLocation }
+    if (chosenLocation.canceled) return { tracks: [], effects: [], location: fileLocation }
+    fileLocation = fileLocation.replace('.protproject', '')
   }
 
   console.log(fileLocation, fileName)
 
   if (fileLocation !== '') {
-    if (fileLocation.includes('.protproject')) fileLocation = fileLocation.replace(fileName, '')
-    await save(project.tracks, fileLocation, fileName)
-    return {
-      tracks: await loadData(fileLocation, fileName),
-      location: fileLocation,
-      name: fileName,
-    }
+    await save(project, fileLocation, fileName)
+    return loadData(fileLocation + sep + fileName)
   }
-  return { tracks: false, location: fileLocation }
+  return { tracks: [], effects: [], location: fileLocation }
 })
 
 ipcMain.on('load', async () => {
@@ -145,10 +139,8 @@ ipcMain.on('load', async () => {
     const data = await load()
     createWindow(data)
   } else {
-    console.log(
-      BrowserWindow.getFocusedWindow()?.webContents.executeJavaScript(
-        "document.getElementById('loadButton').click()",
-      ),
+    BrowserWindow.getFocusedWindow()?.webContents.executeJavaScript(
+      "document.getElementById('loadButton').click()",
     )
   }
 })

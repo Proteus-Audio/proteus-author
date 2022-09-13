@@ -3,13 +3,16 @@
 </template>
 
 <script setup lang="ts">
+import { cloneDeep } from 'lodash'
 import { ipcRenderer } from '../../electron'
+import { useAudioStore } from '../../stores/audio'
 import { useHeadStore } from '../../stores/head'
 import { useTrackStore } from '../../stores/tracks'
 import { ProjectSkeleton } from '../../typings/proteus'
 
-const track = useTrackStore()
 const head = useHeadStore()
+const track = useTrackStore()
+const audio = useAudioStore()
 
 const save = async () => {
   const tracks = track.tracks.map((t) => ({
@@ -17,11 +20,17 @@ const save = async () => {
     name: t.name,
     files: t.files.map((f) => ({ id: f.id, path: f.path, name: f.name })),
   }))
-  const update: ProjectSkeleton = await ipcRenderer.invoke('save', {
+
+  const projectToSave: ProjectSkeleton = {
     location: head.path,
     name: head.name,
     tracks,
-  })
+    effects: cloneDeep(audio.effects),
+  }
+
+  console.log(projectToSave)
+
+  const update: ProjectSkeleton = await ipcRenderer.invoke('save', { projectToSave })
 
   head.load(update)
 }
