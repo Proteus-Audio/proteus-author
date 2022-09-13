@@ -62,5 +62,6 @@
     "vue3-dropzone": "^2.0.1",
     "vuedraggable": "^4.1.0",
     "waveform-data": "^4.3.0"
-  }
+  },
+  "packageManager": "yarn@3.2.3"
 }
