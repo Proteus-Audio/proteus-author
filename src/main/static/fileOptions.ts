@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, writeFile } from 'fs'
 import { readJson } from 'fs-extra'
 import { copyFile } from 'node:fs/promises'
 import { sep } from 'path'
-import { ProjectSkeleton as Project, TrackSkeleton } from '../../renderer/typings/proteus'
+import { Project, TrackSkeleton } from './typings'
 
 const copyFilesMakeDirs = async (src: string, dest: string): Promise<void> => {
   mkdirIfNone(dest)
