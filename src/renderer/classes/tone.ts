@@ -1,5 +1,5 @@
 import EventEmitter from 'events'
-import { Destination, Gain, getContext, Limiter, loaded, Player } from 'tone'
+import { Destination, Gain, getContext, Limiter, loaded, Player, Transport } from 'tone'
 import { Clock } from './clock'
 import { ToneTrack, Effect, SelectionMap, ToneTrackPlayer } from '../typings/tone'
 import { Track } from '../typings/tracks'
@@ -34,6 +34,7 @@ class ToneMaster {
     player.tone.connect(this.gain)
     player.tone.mute = !player.selected
     player.tone.sync()
+    player.tone.start()
   }
 
   private _allPLayers(): ToneTrackPlayer[] {
@@ -99,6 +100,7 @@ class ToneMaster {
   async seek(time: number) {
     this.seeking = true
     this.clock.seek(time)
+    Transport.seconds = time
     if (this.playing) {
       await this.pause()
       await this.play()
@@ -205,7 +207,8 @@ class ToneMaster {
 
     await loaded()
 
-    this._executeOnAllPLayers('play')
+    // this._executeOnAllPLayers('play')
+    Transport.start()
     this.clock.play()
     update()
 
@@ -218,7 +221,8 @@ class ToneMaster {
     this.clock.pause()
 
     await this.rampGain(0)
-    this._executeOnAllPLayers('stop')
+    Transport.pause()
+    // this._executeOnAllPLayers('stop')
   }
 
   async stop() {
@@ -227,6 +231,7 @@ class ToneMaster {
     this.cachedCallback = () => {}
 
     await this.rampGain(0)
+    Transport.stop()
   }
 }
 
