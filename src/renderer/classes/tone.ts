@@ -15,6 +15,7 @@ class ToneMaster {
   tracks: ToneTrack[]
   effects: Effect[]
   gain: Gain
+  lastGain: number
   clock: Clock
   cachedCallback: PlayCallback
 
@@ -25,6 +26,7 @@ class ToneMaster {
     this.tracks = []
     this.effects = []
     this.gain = new Gain(1).toDestination()
+    this.lastGain = 1
     this.clock = new Clock()
     this.cachedCallback = () => {}
     this.connectEffects()
@@ -213,13 +215,14 @@ class ToneMaster {
     update()
 
     this.gain.gain.value = 0
-    await this.rampGain(1)
+    await this.rampGain(this.lastGain)
   }
 
   async pause() {
     this.playing = false
     this.clock.pause()
 
+    this.lastGain = this.gain.gain.value
     await this.rampGain(0)
     Transport.pause()
     // this._executeOnAllPLayers('stop')
@@ -230,6 +233,7 @@ class ToneMaster {
     this.clock.stop()
     this.cachedCallback = () => {}
 
+    this.lastGain = this.gain.gain.value
     await this.rampGain(0)
     Transport.stop()
   }
