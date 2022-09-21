@@ -30,7 +30,7 @@ const save = async () => {
 
   console.log(projectToSave)
 
-  const update: ProjectSkeleton = await ipcRenderer.invoke('save', { projectToSave })
+  const update: ProjectSkeleton = await ipcRenderer.invoke('save', projectToSave)
 
   head.load(update)
 }

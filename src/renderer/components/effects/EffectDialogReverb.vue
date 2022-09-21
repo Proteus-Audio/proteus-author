@@ -4,12 +4,15 @@
     <div v-if="exists" class="control-bin">
       <div>decay</div>
       <el-slider v-model="decay" :show-tooltip="false" :max="70" :step="0.1" size="small" />
+      <el-input type="text" v-model="decay" disabled="true" />
 
       <div>pre delay</div>
       <el-slider v-model="preDelay" :show-tooltip="false" :max="2" :step="0.005" size="small" />
+      <el-input type="text" v-model="preDelay" disabled="true" />
 
       <div>mix</div>
       <el-slider v-model="mix" :show-tooltip="false" :max="1" :step="0.001" size="small" />
+      <el-input type="text" v-model="mix" disabled="true" />
     </div>
   </div>
 </template>
@@ -85,7 +88,7 @@ onMounted(() => {
   }
   .control-bin {
     display: grid;
-    grid-template-columns: 100px 1fr;
+    grid-template-columns: 100px 1fr 100px;
     column-gap: 1em;
     row-gap: 1em;
     text-align: right;

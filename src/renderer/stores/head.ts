@@ -1,10 +1,13 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { ProjectHead, ProjectSkeleton } from '../typings/proteus'
+import { useAudioStore } from './audio'
 import { useTrackStore } from './tracks'
 
 export const useHeadStore = defineStore('head', () => {
   const track = useTrackStore()
+  const audio = useAudioStore()
+
   /////////////
   //  STORE  //
   /////////////
@@ -41,6 +44,7 @@ export const useHeadStore = defineStore('head', () => {
       track.setSelections()
       !project.location || setPath(project.location)
       !project.name || setName(project.name)
+      if (project.effects.length > 0) audio.replaceEffects(project.effects)
     }
   }
 

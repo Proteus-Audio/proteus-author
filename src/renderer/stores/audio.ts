@@ -121,6 +121,15 @@ export const useAudioStore = defineStore('prot', () => {
     if (index !== -1) effects.value.splice(index, 1)
   }
 
+  const replaceEffects = (input: EffectSettings[]) => {
+    const newEffects: EffectSettings[] = []
+    input.forEach((effect) => {
+      newEffects.push(new EffectSettings(effect.type, effect.id, effect.effect))
+    })
+
+    effects.value = newEffects
+  }
+
   return {
     scale,
     zoom,
@@ -146,5 +155,6 @@ export const useAudioStore = defineStore('prot', () => {
     setDuration,
     addEffect,
     removeEffect,
+    replaceEffects,
   }
 })

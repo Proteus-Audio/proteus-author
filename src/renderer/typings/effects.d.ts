@@ -4,7 +4,7 @@ interface ReverbSettingsInterface {
   decay: number
   preDelay: number
   mix: number
-  ready: boolean
+  active: boolean
 }
 
 interface CompressorSettingsInterface {
@@ -13,6 +13,7 @@ interface CompressorSettingsInterface {
   ratio: number
   release: number
   threshold: number
+  active: boolean
 }
 
 type EffectSettings = ReverbSettingsInterface | CompressorSettingsInterface

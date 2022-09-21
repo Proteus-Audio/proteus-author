@@ -11,6 +11,7 @@
         :step="0.1"
         size="small"
       />
+      <el-input type="text" v-model="threshold" disabled="true" />
 
       <div>ratio</div>
       <el-slider
@@ -21,15 +22,19 @@
         :step="0.005"
         size="small"
       />
+      <el-input type="text" v-model="ratio" disabled="true" />
 
       <div>knee</div>
       <el-slider v-model="knee" :show-tooltip="false" :max="40" :step="0.01" size="small" />
+      <el-input type="text" v-model="knee" disabled="true" />
 
       <div>attack</div>
       <el-slider v-model="attack" :show-tooltip="false" :max="1" :step="0.001" size="small" />
+      <el-input type="text" v-model="attack" disabled="true" />
 
       <div>release</div>
       <el-slider v-model="release" :show-tooltip="false" :max="1" :step="0.001" size="small" />
+      <el-input type="text" v-model="release" disabled="true" />
     </div>
   </div>
 </template>
@@ -127,7 +132,7 @@ onMounted(() => {
   }
   .control-bin {
     display: grid;
-    grid-template-columns: 100px 1fr;
+    grid-template-columns: 100px 1fr 100px;
     column-gap: 1em;
     row-gap: 1em;
     text-align: right;
