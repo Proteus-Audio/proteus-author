@@ -1,39 +1,38 @@
 {
   "name": "proteus-author",
-  "version": "0.5.0",
-  "description": "A minimal Electron + Vue application",
-  "main": "build/main/main.js",
+  "version": "0.6.0",
+  "description": "An authoring application for .prot files.",
+  "type": "module",
   "scripts": {
-    "dev": "node scripts/dev-server.js",
-    "build": "node scripts/build.js && electron-builder -c config/electron-builder.json",
-    "build:win": "node scripts/build.js && electron-builder -c config/electron-builder.json --win",
-    "build:mac": "node scripts/build.js && electron-builder -c config/electron-builder.json --mac",
-    "build:linux": "node scripts/build.js && electron-builder -c config/electron-builder.json --linux",
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
     "postinstall": "husky install",
-    "lint": "",
-    "lint:twice": "eslint src/renderer/**/*.{ts,vue} && eslint src/main/**/*.ts",
-    "lint:fix": "eslint --fix src/**/*.{ts,vue}"
+    "lint": ""
   },
-  "repository": "https://github.com/deluze/electron-vue-template",
+  "repository": "https://github.com/howardah/proteus-author",
   "author": {
     "name": "Adam Howard",
     "url": "https://github.com/howardah"
   },
+  "dependencies": {
+    "@tauri-apps/api": "^1.1.0",
+    "element-plus": "^2.2.17",
+    "konva": "^8.3.12",
+    "lodash": "^4.17.21",
+    "peaks.js": "^2.0.6",
+    "pinia": "^2.0.22",
+    "tone": "^14.7.77",
+    "vue": "^3.2.37",
+    "vue3-dropzone": "^2.0.1",
+    "vuedraggable": "^2.24.3",
+    "waveform-data": "^4.3.0",
+    "electron-is-dev": "^2.0.0"
+  },
   "devDependencies": {
-    "@types/fs-extra": "^9.0.13",
     "@types/lodash": "^4.14.184",
-    "@types/node": "^18.7.13",
-    "@types/p5": "^1.4.2",
-    "@types/uuid": "^8.3.4",
-    "@typescript-eslint/eslint-plugin": "^5.36.2",
-    "@typescript-eslint/parser": "^5.36.2",
-    "@vitejs/plugin-vue": "^2.2.4",
-    "@vue/cli": "^5.0.1",
-    "@vue/eslint-config-typescript": "^11.0.1",
-    "chalk": "^4.1.2",
-    "chokidar": "^3.5.3",
-    "electron": "^20.1.0",
-    "electron-builder": "^23.3.3",
+    
     "eslint": "^8.23.1",
     "eslint-config-prettier": "^8.5.0",
     "eslint-config-standard-with-typescript": "^22.0.0",
@@ -43,28 +42,17 @@
     "eslint-plugin-promise": "^6.0.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-vue": "^9.4.0",
+
     "husky": "^8.0.1",
     "prettier": "^2.7.1",
-    "sass": "^1.54.5",
-    "typescript": "*",
-    "vite": "^3.0.9"
-  },
-  "dependencies": {
-    "electron-is-dev": "^2.0.0",
-    "element-plus": "^2.2.15",
-    "fs-extra": "^10.1.0",
-    "get-file-object-from-local-path": "^1.0.2",
-    "konva": "^8.3.12",
-    "lodash": "^4.17.21",
-    "mime": "^3.0.0",
-    "peaks.js": "^2.0.5",
-    "pinia": "^2.0.21",
-    "primeicons": "^5.0.0",
-    "tone": "^14.7.77",
-    "vue": "^3.2.36",
-    "vue3-dropzone": "^2.0.1",
-    "vuedraggable": "^4.1.0",
-    "waveform-data": "^4.3.0"
+
+    "@tauri-apps/cli": "^1.1.0",
+    "@types/node": "^18.7.10",
+    "@vitejs/plugin-vue": "^3.0.1",
+    "sass": "^1.55.0",
+    "typescript": "^4.6.4",
+    "vite": "^3.0.2",
+    "vue-tsc": "^0.40.0"
   },
   "packageManager": "yarn@3.2.3"
 }

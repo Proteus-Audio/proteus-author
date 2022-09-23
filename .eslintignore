@@ -1,8 +1,1 @@
-/src/renderer/public/images/*
-/src/renderer/public/inter-v2-latin/*
-/src/renderer/public/js/*
-/src/renderer/public/silkscreen-v1-latin/*
-/src/renderer/typings/shims-vue.d.ts
-
-
-/src/renderer/components/playground/*
+/src/components/playground/*
