@@ -24,4 +24,10 @@ interface EffectSkeleton {
   effect: ReverbSettingsInterface | CompressorSettingsInterface | undefined
 }
 
-export { Effect, ReverbSettingsInterface, CompressorSettingsInterface, EffectSettings, EffectSkeleton }
+export {
+  Effect,
+  ReverbSettingsInterface,
+  CompressorSettingsInterface,
+  EffectSettings,
+  EffectSkeleton,
+}

@@ -6,7 +6,7 @@
 // import { ipcRenderer } from '../../electron'
 import { useHeadStore } from '../../stores/head'
 import { useTrackStore } from '../../stores/track'
-import { ProjectSkeleton } from '../../typings/proteus'
+// import { ProjectSkeleton } from '../../typings/proteus'
 
 const track = useTrackStore()
 const head = useHeadStore()
@@ -17,6 +17,8 @@ const save = async () => {
     name: t.name,
     files: t.files.map((f) => ({ id: f.id, path: f.path, name: f.name })),
   }))
+
+  console.log(head, tracks)
   // const update: ProjectSkeleton = await ipcRenderer.invoke('save', { tracks })
 
   // head.load(update)

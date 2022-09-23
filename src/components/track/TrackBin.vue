@@ -64,84 +64,84 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-import { useDropzone } from "vue3-dropzone";
-import { useTrackStore } from "../../stores/track";
-import TrackWaveform from "./TrackWaveform.vue";
+import { useDropzone } from 'vue3-dropzone'
+import { useTrackStore } from '../../stores/track'
+import TrackWaveform from './TrackWaveform.vue'
 
-import { Folder, Delete } from "@element-plus/icons-vue";
-import InputAutoSizedText from "../input/InputAutoSizedText.vue";
-import { useAudioStore } from "../../stores/audio";
-import { DropFile, DropFileSkeleton } from "../../typings/tracks";
-import { readBinaryFile } from "@tauri-apps/api/fs";
-import { open } from "@tauri-apps/api/dialog";
-import { listen, UnlistenFn } from "@tauri-apps/api/event";
-import { appWindow } from "@tauri-apps/api/window";
-import BaseLoadingSpinner from "../base/BaseLoadingSpinner.vue";
+import { Folder, Delete } from '@element-plus/icons-vue'
+import InputAutoSizedText from '../input/InputAutoSizedText.vue'
+import { useAudioStore } from '../../stores/audio'
+import { DropFile, DropFileSkeleton } from '../../typings/tracks'
+import { readBinaryFile } from '@tauri-apps/api/fs'
+import { open } from '@tauri-apps/api/dialog'
+import { listen, UnlistenFn } from '@tauri-apps/api/event'
+import { appWindow } from '@tauri-apps/api/window'
+import BaseLoadingSpinner from '../base/BaseLoadingSpinner.vue'
 // import Button from "element-plus";
 
 interface Props {
-  trackId: number;
+  trackId: number
 }
 
-let unlisten: UnlistenFn | undefined;
+let unlisten: UnlistenFn | undefined
 
-const props = defineProps<Props>();
+const props = defineProps<Props>()
 
-const trackStore = useTrackStore();
-const audio = useAudioStore();
+const trackStore = useTrackStore()
+const audio = useAudioStore()
 
-const track = computed(() => trackStore.getOrCreateTrackFromId(props.trackId));
+const track = computed(() => trackStore.getOrCreateTrackFromId(props.trackId))
 
 const width = computed((): string => {
-  return audio.duration === 0 ? "100%" : `${audio.zoom.x * audio.duration + 30}px`;
-});
+  return audio.duration === 0 ? '100%' : `${audio.zoom.x * audio.duration + 30}px`
+})
 
 const padding = computed((): string => {
-  return track.value.files.length > 0 ? "" : "margin: 0;";
-});
+  return track.value.files.length > 0 ? '' : 'margin: 0;'
+})
 
-const folderOpen = ref(false);
-const error = ref("");
-const windowHover = ref(false);
-const loading = ref(false);
+const folderOpen = ref(false)
+const error = ref('')
+const windowHover = ref(false)
+const loading = ref(false)
 
 const hovering = computed(() => {
-  return isDragActive.value && windowHover.value;
-});
+  return isDragActive.value && windowHover.value
+})
 
 const trackName = computed({
   get: () => {
-    const index = trackStore.getTrackIndexFromId(props.trackId);
-    return trackStore.tracks[index].name || "";
+    const index = trackStore.getTrackIndexFromId(props.trackId)
+    return trackStore.tracks[index].name || ''
   },
   set: (name: string) => {
-    const index = trackStore.getTrackIndexFromId(props.trackId);
-    return (trackStore.tracks[index].name = name);
+    const index = trackStore.getTrackIndexFromId(props.trackId)
+    return (trackStore.tracks[index].name = name)
   },
-});
+})
 
 const errorMessage = (code: string): string => {
-  type Lookup = { [key: string]: string };
+  type Lookup = { [key: string]: string }
   const messages: Lookup = {
-    "file-invalid-type": "Please Choose a WAV or MP3 File",
-  };
-  if (messages[code]) return messages[code];
-  return "File Error";
-};
+    'file-invalid-type': 'Please Choose a WAV or MP3 File',
+  }
+  if (messages[code]) return messages[code]
+  return 'File Error'
+}
 
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 async function onDrop(acceptFiles: DropFile[], rejectReasons: any[]) {
-  if (rejectReasons.length > 0) error.value = errorMessage(rejectReasons[0].errors[0].code);
-  else error.value = "";
+  if (rejectReasons.length > 0) error.value = errorMessage(rejectReasons[0].errors[0].code)
+  else error.value = ''
 
-  console.log(acceptFiles, rejectReasons);
+  console.log(acceptFiles, rejectReasons)
 
   acceptFiles.forEach((file) => {
-    console.log(file);
+    console.log(file)
     // console.log(readBinaryFile(file));
-  });
+  })
 
   if (acceptFiles.length > 0) {
     // trackStore.addFileToTrack(acceptFiles, props.trackId)
@@ -151,73 +151,73 @@ async function onDrop(acceptFiles: DropFile[], rejectReasons: any[]) {
 }
 
 const loadFiles = async (files: string[]) => {
-  loading.value = true;
-  const acceptFiles = files.filter((file) => /(?:.mp3|.wav)$/.test(file));
+  loading.value = true
+  const acceptFiles = files.filter((file) => /(?:.mp3|.wav)$/.test(file))
   if (acceptFiles.length > 0) {
-    const fileData: DropFileSkeleton[] = [];
+    const fileData: DropFileSkeleton[] = []
     for (let i = 0; i < acceptFiles.length; i++) {
-      const filePath = acceptFiles[i];
-      const name = filePath.replace(/^.*[\\/]/, "");
-      const extension = filePath.replace(/^.*\./, "");
-      const data = await readBinaryFile(filePath);
-      fileData.push({ name, path: filePath, data, extension });
+      const filePath = acceptFiles[i]
+      const name = filePath.replace(/^.*[\\/]/, '')
+      const extension = filePath.replace(/^.*\./, '')
+      const data = await readBinaryFile(filePath)
+      fileData.push({ name, path: filePath, data, extension })
     }
 
-    console.log("starting processing");
-    await trackStore.addFileToTrackBinary(fileData, props.trackId);
-    console.log("finished processing");
-    trackStore.shuffleTrackBin(props.trackId);
-    trackStore.addEmptyTrackIfNone();
+    console.log('starting processing')
+    await trackStore.addFileToTrackBinary(fileData, props.trackId)
+    console.log('finished processing')
+    trackStore.shuffleTrackBin(props.trackId)
+    trackStore.addEmptyTrackIfNone()
   }
-  loading.value = false;
-};
+  loading.value = false
+}
 
-const removeFile = (id: number) => trackStore.removeFileFromTrack(id, props.trackId);
+const removeFile = (id: number) => trackStore.removeFileFromTrack(id, props.trackId)
 
 const selectedName = computed(() => {
-  const filename: string | undefined = trackStore.getTrackSelection(props.trackId)?.name;
-  return filename ? filename.replace(/\..*$/, "") : "";
-});
+  const filename: string | undefined = trackStore.getTrackSelection(props.trackId)?.name
+  return filename ? filename.replace(/\..*$/, '') : ''
+})
 
 const fresh = computed(() => {
-  const isFresh = track.value.files.length === 0;
-  return isFresh;
-});
+  const isFresh = track.value.files.length === 0
+  return isFresh
+})
 
 const { getRootProps, getInputProps, isDragActive } = useDropzone({
   onDrop,
-  accept: ["audio/mpeg", "audio/wav"],
+  accept: ['audio/mpeg', 'audio/wav'],
   noClick: true,
-});
+})
 
 const openFiles = async () => {
   const files = await open({
     multiple: true,
-    filters: [{ name: "Audio Files", extensions: ["wav", "mp3"] }],
-  });
-  if (!files) return;
-  loadFiles(typeof files === "string" ? [files] : files);
-};
+    filters: [{ name: 'Audio Files', extensions: ['wav', 'mp3'] }],
+  })
+  if (!files) return
+  loadFiles(typeof files === 'string' ? [files] : files)
+}
 
 onMounted(async () => {
-  unlisten = await listen<string>("tauri://file-drop", async (event) => {
-    if (isDragActive.value) loadFiles(event.payload as unknown as string[]);
-  });
+  unlisten = await listen<string>('tauri://file-drop', async (event) => {
+    if (isDragActive.value) loadFiles(event.payload as unknown as string[])
+  })
   unlisten = await appWindow.onFileDropEvent((event) => {
-    if (event.payload.type === "hover") {
-      windowHover.value = true;
-    } else if (event.payload.type === "drop") {
-      windowHover.value = false;
-      if (isDragActive.value) loadFiles(event.payload as unknown as string[]);
+    if (event.payload.type === 'hover') {
+      windowHover.value = true
+    } else if (event.payload.type === 'drop') {
+      windowHover.value = false
+      if (isDragActive.value) loadFiles(event.payload as unknown as string[])
     } else {
-      windowHover.value = false;
+      windowHover.value = false
     }
-  });
-});
+  })
+})
 
 onUnmounted(() => {
-  if (unlisten) unlisten();
-});
+  if (unlisten) unlisten()
+})
 </script>
 
 <style lang="scss" scoped>

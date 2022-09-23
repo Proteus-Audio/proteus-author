@@ -1,7 +1,7 @@
-import { createApp } from "vue";
-import "./assets/theme.css";
-import "./assets/index.css";
-import "./assets/fonts.css";
+import { createApp } from 'vue'
+import './assets/theme.css'
+import './assets/index.css'
+import './assets/fonts.css'
 import { createPinia } from 'pinia'
 import App from './App.vue'
 

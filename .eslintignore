@@ -1,1 +1,2 @@
-/src/components/playground/*
+/src/components/playground/
+/src/vite-env.d.ts

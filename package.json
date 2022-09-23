@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "postinstall": "husky install",
-    "lint": ""
+    "lint": "eslint src/ --ext .vue --ext .ts"
   },
   "repository": "https://github.com/howardah/proteus-author",
   "author": {
@@ -33,7 +33,10 @@
     "@tauri-apps/cli": "^1.1.0",
     "@types/lodash": "^4.14.184",
     "@types/node": "^18.7.10",
+    "@typescript-eslint/eslint-plugin": "^5.38.0",
+    "@typescript-eslint/parser": "^5.38.0",
     "@vitejs/plugin-vue": "^3.0.1",
+    "@vue/eslint-config-typescript": "^11.0.2",
     "eslint": "^8.23.1",
     "eslint-config-prettier": "^8.5.0",
     "eslint-config-standard-with-typescript": "^22.0.0",
