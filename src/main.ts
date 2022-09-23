@@ -1,5 +1,4 @@
 import { createApp } from "vue";
-import "./style.css";
 import "./assets/theme.css";
 import "./assets/index.css";
 import "./assets/fonts.css";
