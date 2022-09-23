@@ -10,7 +10,7 @@
     "build:mac": "node scripts/build.js && electron-builder -c config/electron-builder.json --mac",
     "build:linux": "node scripts/build.js && electron-builder -c config/electron-builder.json --linux",
     "postinstall": "husky install",
-    "lint": "eslint src/**/*.{ts,vue}",
+    "lint": "",
     "lint:twice": "eslint src/renderer/**/*.{ts,vue} && eslint src/main/**/*.ts",
     "lint:fix": "eslint --fix src/**/*.{ts,vue}"
   },
