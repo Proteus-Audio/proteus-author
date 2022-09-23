@@ -72,6 +72,10 @@ class ToneMaster {
     return this.gain.gain.value
   }
 
+  get seconds() {
+    return Transport.seconds
+  }
+
   setGain(gain: number) {
     this.gain.gain.value = gain
   }
@@ -196,8 +200,8 @@ class ToneMaster {
     if (callback) this.cachedCallback = callback
     const update = (iteration?: number) => {
       const i = iteration || 0
-      this.cachedCallback(this.clock.seconds, i)
-      if (this.clock.seconds >= this.duration) {
+      this.cachedCallback(Transport.seconds, i)
+      if (Transport.seconds >= this.duration) {
         this.cachedCallback(0, i)
         this.stop()
       }
@@ -209,7 +213,6 @@ class ToneMaster {
 
     await loaded()
 
-    // this._executeOnAllPLayers('play')
     Transport.start()
     this.clock.play()
     update()
@@ -225,7 +228,6 @@ class ToneMaster {
     this.lastGain = this.gain.gain.value
     await this.rampGain(0)
     Transport.pause()
-    // this._executeOnAllPLayers('stop')
   }
 
   async stop() {

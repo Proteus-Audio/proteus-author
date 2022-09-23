@@ -21,7 +21,7 @@ class PeaksPlayer {
     this.seek = (time: number) => toneMaster.seek(time)
     this.isPlaying = () => toneMaster.playing
     this.isSeeking = () => toneMaster.seeking
-    this.getCurrentTime = () => toneMaster.clock.seconds
+    this.getCurrentTime = () => toneMaster.seconds
     this.getDuration = () => toneMaster.duration
   }
 }
