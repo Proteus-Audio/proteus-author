@@ -7,7 +7,7 @@
     "withGlobalTauri": false
   },
   "package": {
-    "productName": "Proteus Author - Tauri",
+    "productName": "Proteus Author",
     "version": "0.5.0"
   },
   "tauri": {
@@ -52,15 +52,6 @@
     },
     "updater": {
       "active": false
-    },
-    "windows": [
-      {
-        "fullscreen": false,
-        "height": 800,
-        "resizable": true,
-        "title": "Proteus Author",
-        "width": 1000
-      }
-    ]
+    }
   }
 }
