@@ -1,8 +1,9 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { ProjectHead, ProjectSkeleton } from '../typings/proteus'
+import { ProjectHead, ProjectSkeleton, TrackSkeleton } from '../typings/proteus'
 import { useAudioStore } from './audio'
 import { useTrackStore } from './track'
+import { invoke } from '@tauri-apps/api/tauri'
 
 export const useHeadStore = defineStore('head', () => {
   const track = useTrackStore()
@@ -12,7 +13,7 @@ export const useHeadStore = defineStore('head', () => {
   //  STORE  //
   /////////////
 
-  const head = ref({ name: 'untitled', path: '' } as ProjectHead)
+  const head = ref({ name: 'untitled', path: undefined } as ProjectHead)
 
   /////////////
   // GETTERS //
@@ -37,15 +38,46 @@ export const useHeadStore = defineStore('head', () => {
     head.value.path = location
   }
 
-  const load = (project: ProjectSkeleton) => {
+  const load = async (project: ProjectSkeleton) => {
     if (project.tracks.length > 0) {
       !project.location || setFileLocation(project.location)
-      track.replaceTracksFromLoad(project.tracks)
+      await track.replaceTracksFromLoad(project.tracks)
       track.setSelections()
       !project.location || setPath(project.location)
       !project.name || setName(project.name)
       if (project.effects.length > 0) audio.replaceEffects(project.effects)
     }
+  }
+
+  const projectState = (): ProjectSkeleton => {
+    const tracks = track.tracks.map((t) => ({
+      id: t.id,
+      name: t.name,
+      files: t.files.map((f) => ({ id: f.id, path: f.path, name: f.name })),
+    })) as TrackSkeleton[]
+
+    const project = {
+      name: head.value.name,
+      location: head.value.path,
+      tracks: tracks,
+      effects: audio.effects,
+    } as ProjectSkeleton
+
+    return project
+  }
+
+  const logChanges = async (): Promise<boolean> => {
+    const project = projectState()
+
+    return await invoke('project_changes', { newProject: project })
+  }
+
+  const save = (): ProjectSkeleton => {
+    const project = projectState()
+
+    // invoke('auto_save', { newProject: JSON.stringify(project) })
+
+    return project
   }
 
   return {
@@ -55,5 +87,8 @@ export const useHeadStore = defineStore('head', () => {
     setName,
     setPath,
     load,
+    save,
+    projectState,
+    logChanges,
   }
 })

@@ -17,7 +17,7 @@ interface AlertView extends Alert {
 
 interface ProjectHead {
   name: string
-  path: string
+  path?: string
 }
 
 interface TrackSkeleton {

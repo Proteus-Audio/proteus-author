@@ -8,11 +8,38 @@
   },
   "package": {
     "productName": "Proteus Author",
-    "version": "0.5.0"
+    "version": "0.5.2"
   },
   "tauri": {
     "allowlist": {
-      "all": true
+      "all": true,
+      "shell": {
+        "sidecar": true,
+        "scope": [
+          {
+            "name": "/Users/innocentsmith/Dev/tauri/proteus-author/ffmpeg/ffmpeg",
+            "sidecar": true
+          }
+        ]
+      },
+      "fs": {
+        "all": true,
+        "readFile": true,
+        "writeFile": true,
+        "readDir": true,
+        "copyFile": true,
+        "createDir": true,
+        "removeDir": true,
+        "removeFile": true,
+        "renameFile": true,
+        "exists": true,
+        "scope": ["$HOME/**"]
+      },
+      "protocol": {
+        "all": true,
+        "asset": true,
+        "assetScope": ["$HOME/**/*"]
+      }
     },
     "bundle": {
       "active": true,
@@ -21,7 +48,9 @@
       "deb": {
         "depends": []
       },
-      "externalBin": [],
+      "externalBin": [
+        "/Users/innocentsmith/Dev/tauri/proteus-author/ffmpeg/ffmpeg"
+      ],
       "icon": [
         "icons/32x32.png",
         "icons/128x128.png",
@@ -48,7 +77,7 @@
       }
     },
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; img-src 'self' asset: https://asset.localhost; worker-src * data: blob:; child-src * data: blob:; connect-src 'self' asset: https://asset.localhost"
     },
     "updater": {
       "active": false

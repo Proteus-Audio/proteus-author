@@ -28,4 +28,21 @@ const cloneAudioBuffer = (fromAudioBuffer: AudioBuffer): AudioBuffer => {
   return audioBuffer
 }
 
-export { arrRandom, cloneAudioBuffer }
+const getAudioBuffer = async (srcPath: string): Promise<AudioBuffer> => {
+  const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+
+  const audioData = (await new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest()
+    request.open('GET', srcPath, true)
+    request.responseType = 'arraybuffer'
+    request.onload = () => resolve(request.response as ArrayBuffer)
+    request.onerror = (e) => reject(e)
+    request.send()
+  })) as ArrayBuffer
+
+  const buffer = await audioContext.decodeAudioData(audioData)
+
+  return buffer
+}
+
+export { arrRandom, cloneAudioBuffer, getAudioBuffer }

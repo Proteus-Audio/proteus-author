@@ -23,6 +23,7 @@ const keyListener = (e: KeyboardEvent) => {
         audio.zoomOut()
       }
     }
+
     if (e.metaKey || e.ctrlKey || e.altKey) return
 
     if (e.key === ' ') {

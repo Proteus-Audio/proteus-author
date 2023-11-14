@@ -1,15 +1,21 @@
 import { defineStore } from 'pinia'
 import { DropFile, DropFileSkeleton, Track, TrackFile, TrackFileSkeleton } from '../typings/tracks'
-import { sample, assignIn } from 'lodash'
+import { sample, assignIn, head } from 'lodash'
 import { computed, ref } from 'vue'
 import { TrackSkeleton } from '../typings/proteus'
 import { useAudioStore } from './audio'
 import { SelectionMap, ToneTrackPlayer } from '../typings/tone'
 import { Player, context } from 'tone'
 import { toneMaster } from '../assets/toneMaster'
+import { useHeadStore } from './head'
+import { fs } from '@tauri-apps/api'
+import { system } from '../assets/system'
+import { convertFileSrc } from '@tauri-apps/api/tauri'
+import { getAudioBuffer } from '../assets/tools'
 
 export const useTrackStore = defineStore('track', () => {
   const audio = useAudioStore()
+  const head = useHeadStore()
 
   /////////////
   //  STORE  //
@@ -61,6 +67,16 @@ export const useTrackStore = defineStore('track', () => {
     return getTrackFromId(trackId) || addTrack({ id: nextTrackId.value, name: '', files: [] })
   }
 
+  function setTrackName(trackId: number, name: string) {
+    const track = getTrackFromId(trackId)
+    if (track) {
+      track.name = name
+      head.logChanges()
+    }
+
+    return name
+  }
+
   function clearTracks(): void {
     tracks.value = []
   }
@@ -77,11 +93,16 @@ export const useTrackStore = defineStore('track', () => {
       for (let j = 0; j < skeleton.files.length; j++) {
         const f = skeleton.files[j]
         track.files.push({ ...f, parentId: track.id })
+
+        const fileSrc = convertFileSrc(f.path)
+
+        const buffer = await getAudioBuffer(fileSrc)
+
         players.push({
           id: f.id,
           name: f.name,
           selected: f.id === track.selection,
-          tone: new Player(`file://${f.path}`),
+          tone: new Player(buffer),
         })
       }
 
@@ -111,6 +132,7 @@ export const useTrackStore = defineStore('track', () => {
     tracks.value.push(track)
 
     audio.setDuration()
+    head.logChanges()
     return track
   }
 
@@ -198,6 +220,8 @@ export const useTrackStore = defineStore('track', () => {
       })
       tracks.value[index].files.push(trackFile)
     }
+
+    head.logChanges()
   }
 
   const removeFileFromTrack = (fileIds: number | number[], trackId: number) => {
@@ -210,6 +234,8 @@ export const useTrackStore = defineStore('track', () => {
         setTrackSelection(tracks.value[index].id, index)
       }
     })
+
+    head.logChanges()
   }
 
   return {
@@ -223,6 +249,7 @@ export const useTrackStore = defineStore('track', () => {
     getTrackFromId,
     getTrackIndexFromId,
     getOrCreateTrackFromId,
+    setTrackName,
     clearTracks,
     replaceTracksFromLoad,
     nextFileId,

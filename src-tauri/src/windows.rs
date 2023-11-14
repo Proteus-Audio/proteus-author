@@ -1,10 +1,11 @@
-use tauri::{App, AppHandle, LogicalPosition, LogicalSize, Position, Size, Window, WindowBuilder, WindowUrl};
+use tauri::{App, LogicalPosition, LogicalSize, Position, Size, Window, WindowBuilder, WindowUrl, Manager};
+use crate::{file::*, project::{self, PROJECT}};
 
-pub fn create_main_window(app: &App) {
+pub fn create_main_window(app: &App) -> Window {
     create_window(app, 1)
 }
 
-pub fn create_window(app: &App, count:i32) {
+pub fn create_window(app: &App, count:i32) -> Window {
     let handle = app.handle();
     let window = WindowBuilder::new(
         &handle,
@@ -48,30 +49,44 @@ pub fn create_window(app: &App, count:i32) {
         monitor_size.height, monitor_size.width
     );
     println!("Height: {} Width: {}", height, width);
-    println!("COME ON");
+
+    let label = String::from(window.label());
 
     window.on_menu_event(move |event| match event.menu_item_id() {
         "save" => {
-            // &window.emit("window_commands", "SAVE");
-            println!("SAVED! {}", count);
+            let window = handle.get_window(&label).unwrap();
+            window
+                .emit("SAVE_FILE", "")
+                .expect("failed to emit event");
+            // let new_handle = app.handle();
+            // save_file();
         }
         "save_as" => {
-            println!("SAVED AS! {}", count);
+            let window = handle.get_window(&label).unwrap();
+            window
+                .emit("SAVE_FILE_AS", "")
+                .expect("failed to emit event");
+            // save_file_as();
         }
         "load" => {
-            println!("LOAD! {}", count);
-            // create_window(&app);
+            load_file(&handle, &label);
+        }
+        "export_prot" => {
+            println!("EXPORT!");
+            export_prot(&handle);
         }
         _ => {}
     });
+
+    window
 }
 
-pub fn create_docs_window(app: &AppHandle) {
-    let window = WindowBuilder::new(
-        app,
-        "label",
-        WindowUrl::External("https://tauri.app/".parse().unwrap()),
-    )
-    .build()
-    .unwrap();
-}
+// pub fn create_docs_window(app: &AppHandle) {
+//     let window = WindowBuilder::new(
+//         app,
+//         "label",
+//         WindowUrl::External("https://tauri.app/".parse().unwrap()),
+//     )
+//     .build()
+//     .unwrap();
+// }

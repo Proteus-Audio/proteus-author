@@ -117,8 +117,7 @@ const trackName = computed({
     return trackStore.tracks[index].name || ''
   },
   set: (name: string) => {
-    const index = trackStore.getTrackIndexFromId(props.trackId)
-    return (trackStore.tracks[index].name = name)
+    return trackStore.setTrackName(props.trackId, name)
   },
 })
 
