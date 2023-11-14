@@ -14,14 +14,7 @@ use project::*;
 fn main() {
     let app = tauri::Builder::default()
         .manage(project::create_project())
-        .invoke_handler(tauri::generate_handler![project_changes, auto_save, save_file, save_file_as, check_status])
-        .on_menu_event(move |event| match event.menu_item_id() {
-            "new_window" => {
-                // let application = tauri::Builder::default().build(t)
-                println!("NEW WINDOW!");
-            }
-            _ => {}
-        })
+        .invoke_handler(tauri::generate_handler![project_changes, auto_save, save_file, save_file_as, check_status, export_prot])
         .menu(menu::get_menu())
         .build(tauri::generate_context!())
         .expect("error while running tauri application");

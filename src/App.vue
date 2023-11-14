@@ -75,24 +75,52 @@ onMounted(async () => {
   // listen to the `click` event and get a function to remove the event listener
   // there's also a `once` function that subscribes to an event and automatically unsubscribes the listener on the first event
   const fileLoaded = await listen('FILE_LOADED', (event) => {
-    head.load(event.payload as ProjectSkeleton)
+    const project = event.payload as ProjectSkeleton
+    if (project.location) alerts.addAlert('Loading project…', 'info')
+    head.load(project)
   })
   unlisteners.value.push(fileLoaded)
 
-  const saveFile = await listen('SAVE_FILE', async (event) => {
+  const saveFile = await listen('SAVE_FILE', async () => {
     console.log('saving file')
-    await invoke('save_file', { newProject: head.projectState() })
+    const response = (await invoke('save_file', {
+      newProject: head.projectState(),
+    })) as ProjectSkeleton | undefined
+
+    if (response) {
+      head.name = response.name || head.name
+      head.path = response.location
+      alerts.addAlert('Saved file', 'success')
+    } else alerts.addAlert('Failed to save file', 'error')
   })
   unlisteners.value.push(saveFile)
 
-  const saveFileAs = await listen('SAVE_FILE_AS', async (event) => {
-    await invoke('save_file_as', { newProject: head.projectState() })
+  const saveFileAs = await listen('SAVE_FILE_AS', async () => {
+    const response = (await invoke('save_file_as', {
+      newProject: head.projectState(),
+    })) as ProjectSkeleton | undefined
+
+    if (response) {
+      head.name = response.name || head.name
+      head.path = response.location
+      alerts.addAlert('Saved file', 'success')
+    } else alerts.addAlert('Failed to save file', 'error')
   })
   unlisteners.value.push(saveFileAs)
 
-  trackStore.addEmptyTrackIfNone()
+  const startExport = await listen('START_EXPORT', async () => {
+    console.log('exporting')
+    await invoke('export_prot', { project: head.projectState() })
+  })
+  unlisteners.value.push(startExport)
 
-  alerts.addAlert('Welcome to Proteus Author!', 'success')
+  const exporting = await listen('EXPORTING', async (event) => {
+    const message = event.payload as string
+    alerts.addAlert(message, 'info')
+  })
+  unlisteners.value.push(exporting)
+
+  trackStore.addEmptyTrackIfNone()
 })
 
 onUnmounted(() => {

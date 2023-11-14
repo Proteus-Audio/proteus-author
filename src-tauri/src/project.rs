@@ -84,8 +84,8 @@ pub struct PlaySettings {
     pub tracks: Vec<SettingsTrack>,
 }
 
-pub fn create_project() -> Arc<Mutex<ProjectSkeleton>> {
-    Arc::new(Mutex::new(ProjectSkeleton {
+pub fn empty_project() -> ProjectSkeleton {
+    ProjectSkeleton {
         name: Some("untitled".to_string()),
         location: None,
         tracks: vec![TrackSkeleton {
@@ -94,7 +94,11 @@ pub fn create_project() -> Arc<Mutex<ProjectSkeleton>> {
             files: Vec::new(),
         }],
         effects: Vec::new(),
-    }))
+    }
+}
+
+pub fn create_project() -> Arc<Mutex<ProjectSkeleton>> {
+    Arc::new(Mutex::new(empty_project()))
 }
 
 pub static PROJECT: Lazy<Arc<Mutex<ProjectSkeleton>>> = Lazy::new(|| {

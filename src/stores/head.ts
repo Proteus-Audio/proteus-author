@@ -19,8 +19,18 @@ export const useHeadStore = defineStore('head', () => {
   // GETTERS //
   /////////////
 
-  const name = computed(() => head.value.name)
-  const path = computed(() => head.value.path)
+  const name = computed({
+    get: () => head.value.name,
+    set: (name: string) => {
+      head.value.name = name
+    },
+  })
+  const path = computed({
+    get: () => head.value.path,
+    set: (location: string | undefined) => {
+      head.value.path = location
+    },
+  })
 
   /////////////
   // SETTERS //

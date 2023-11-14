@@ -1,11 +1,16 @@
-use tauri::{App, LogicalPosition, LogicalSize, Position, Size, Window, WindowBuilder, WindowUrl, Manager};
-use crate::{file::*, project::{self, PROJECT}};
+use crate::{
+    file::*,
+    project::{self, PROJECT},
+};
+use tauri::{
+    App, LogicalPosition, LogicalSize, Manager, Position, Size, Window, WindowBuilder, WindowUrl,
+};
 
 pub fn create_main_window(app: &App) -> Window {
     create_window(app, 1)
 }
 
-pub fn create_window(app: &App, count:i32) -> Window {
+pub fn create_window(app: &App, count: i32) -> Window {
     let handle = app.handle();
     let window = WindowBuilder::new(
         &handle,
@@ -42,7 +47,9 @@ pub fn create_window(app: &App, count:i32) -> Window {
 
     window.set_position(window_position).unwrap();
 
-    if count < 1 {create_window(app, count + 1);}
+    if count < 1 {
+        create_window(app, count + 1);
+    }
 
     println!(
         "M Height: {} M Width: {}",
@@ -55,9 +62,7 @@ pub fn create_window(app: &App, count:i32) -> Window {
     window.on_menu_event(move |event| match event.menu_item_id() {
         "save" => {
             let window = handle.get_window(&label).unwrap();
-            window
-                .emit("SAVE_FILE", "")
-                .expect("failed to emit event");
+            window.emit("SAVE_FILE", "").expect("failed to emit event");
             // let new_handle = app.handle();
             // save_file();
         }
@@ -72,8 +77,13 @@ pub fn create_window(app: &App, count:i32) -> Window {
             load_file(&handle, &label);
         }
         "export_prot" => {
-            println!("EXPORT!");
-            export_prot(&handle);
+            let window = handle.get_window(&label).unwrap();
+            window
+                .emit("START_EXPORT", "")
+                .expect("failed to emit event");
+        }
+        "new_window" => {
+            load_empty_project(&handle);
         }
         _ => {}
     });

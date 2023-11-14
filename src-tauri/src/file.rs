@@ -11,12 +11,7 @@ use tauri::Manager;
 use tauri::State;
 use tauri::Window;
 
-use crate::project::PlaySettings;
-use crate::project::ProjectSkeleton;
-use crate::project::SettingsEncoder;
-use crate::project::SettingsTrack;
-use crate::project::PROJECT;
-use crate::project::UNSAVED_CHANGES;
+use crate::project::*;
 use crate::windows;
 
 #[tauri::command]
@@ -51,27 +46,26 @@ pub fn auto_save(new_project: ProjectSkeleton) {
 }
 
 #[tauri::command]
-pub fn save_file(new_project: ProjectSkeleton, window: Window) {
-    let project = PROJECT.lock().unwrap();
-
+pub async fn save_file(new_project: ProjectSkeleton, window: Window) -> Option<ProjectSkeleton> {
+    
     if UNSAVED_CHANGES.load(std::sync::atomic::Ordering::Relaxed) == false {
+        let project = PROJECT.lock().unwrap();
         auto_save(new_project.clone());
         println!("No changes to save");
         if !project.location.is_none() {
-            return;
+            return None;
         }
-    }
-    println!("Window: {:?}", window);
-    println!("Saving File");
-
-    if project.location.is_none() {
-        println!("No file location, saving as");
         drop(project);
-        save_file_as(new_project, window);
-        return;
     }
 
-    println!("File location found, saving from json");
+    let project_already_saved = new_project.location.is_some();
+    
+    if !project_already_saved {
+        return save_file_as(new_project, window).await;
+    }
+
+
+    let project = PROJECT.lock().unwrap();
     let project_json = serde_json::to_string(&*project).unwrap();
 
     let mut file = File::create(project.location.clone().unwrap()).unwrap();
@@ -81,107 +75,48 @@ pub fn save_file(new_project: ProjectSkeleton, window: Window) {
     UNSAVED_CHANGES.store(false, std::sync::atomic::Ordering::Relaxed);
     window.set_title(&format!("{}", file_name)).unwrap();
 
-    drop(project);
-
-    println!("File Saved");
+    Some(project.clone())
 }
 
 #[tauri::command]
-pub fn save_file_as(new_project: ProjectSkeleton, window: Window) {
-    println!("Saving File To New Object");
+pub async fn save_file_as(new_project: ProjectSkeleton, window: Window) -> Option<ProjectSkeleton> {
     let file_name = new_project.name.clone().unwrap_or("untitled".to_string()) + ".protproject";
     auto_save(new_project);
-    println!("Saving File As");
-    let save_dialog = dialog::FileDialogBuilder::new()
+    let save_dialog = dialog::blocking::FileDialogBuilder::new()
         .add_filter("Proteus Author Project", &["protproject"])
         .set_title("Save Project")
         .set_file_name(&file_name.as_str());
 
-    println!("Getting Window Handle");
     let handle = window.app_handle();
-    println!("Getting Window Label");
     let window_label = String::from(window.label());
     
-    println!("Opening Save Dialog");
-    save_dialog.save_file(move |file_path| {
-        if file_path.is_none() {
-            println!("No file selected");
-            ()
-        }
+    let file_path = save_dialog.save_file();
+    
+    if file_path.is_none() {
+        println!("No file selected");
+        return None;
+    }
 
-        println!("File Path: {:?}", file_path);
+    let path_buff = file_path.unwrap();
+    let file_name = String::from(path_buff.file_name().unwrap().to_str().unwrap()).replace(".protproject", "");
 
-        let path_buff = file_path.unwrap();
-        let file_name = String::from(path_buff.file_name().unwrap().to_str().unwrap()).replace(".protproject", "");
+    let mut project = PROJECT.lock().unwrap();
 
-        println!("File Name: {:?}", file_name);
+    project.name = Some(file_name.clone());
+    project.location = Some(path_buff.to_str().unwrap().to_string());
 
-        let mut project = PROJECT.lock().unwrap();
+    let project_json = serde_json::to_string(&*project).unwrap();
 
-        project.name = Some(file_name.clone());
-        project.location = Some(path_buff.to_str().unwrap().to_string());
+    let mut file = File::create(path_buff).unwrap();
+    file.write_all(project_json.as_bytes()).unwrap();
 
-        let project_json = serde_json::to_string(&*project).unwrap();
+    UNSAVED_CHANGES.store(false, std::sync::atomic::Ordering::Relaxed);
+    let window = handle.get_window(&window_label).unwrap();
+    window.set_title(&file_name).unwrap();
 
-        let mut file = File::create(path_buff).unwrap();
-        file.write_all(project_json.as_bytes()).unwrap();
+    Some(project.clone())
 
-        UNSAVED_CHANGES.store(false, std::sync::atomic::Ordering::Relaxed);
-        let window = handle.get_window(&window_label).unwrap();
-        window.set_title(&file_name).unwrap();
-
-        drop(project);
-    });
 }
-
-// #[tauri::command]
-// pub async fn load_file(handle: &AppHandle) -> Result<String, String> {
-//     let open_dialog = dialog::blocking::FileDialogBuilder::new();
-
-//     println!("Opening File Dialog");
-
-//     let file_path = open_dialog.pick_file();
-
-//     if file_path.is_none() {
-//         println!("No file selected");
-//         return Err("No file selected".to_string());
-//     }
-
-//     // If file extension is not .protproject, return error
-//     let path_buff = file_path.unwrap();
-
-//     if path_buff.extension().unwrap() != "protproject" {
-//         println!("File extension is not .protproject");
-//         return Err("File extension is not .protproject".to_string());
-//     }
-
-//     let file_name = path_buff.file_name().unwrap().to_str().unwrap();
-//     let project_location = path_buff.to_str().unwrap().to_string();
-
-//     let file_contents = std::fs::read_to_string(path_buff.clone()).unwrap();
-//     let project_result: Result<ProjectSkeleton, serde_json::Error> =
-//         serde_json::from_str(&file_contents);
-
-//     let mut project = PROJECT.lock().unwrap();
-
-//     match project_result {
-//         Ok(new_project) => {
-//             project.name = Some(file_name.to_string());
-//             project.location = Some(project_location.to_string());
-//             project.tracks = new_project.tracks.clone();
-//             project.effects = new_project.effects.clone();
-//         }
-//         Err(e) => {
-//             println!("Error: {:?}", e);
-//         }
-//     }
-
-//     handle.emit_all("FILE_LOADED", project.clone());
-
-//     drop(project);
-
-//     Ok("File Loaded".to_string())
-// }
 
 #[tauri::command]
 pub fn load_file(handle: &AppHandle, label: &String) {
@@ -243,28 +178,45 @@ pub fn load_file(handle: &AppHandle, label: &String) {
     });
 }
 
-pub fn export_prot(handle: &AppHandle) {
-    let project = PROJECT.lock().unwrap();
-    let file_name = project.name.clone().unwrap_or("export".to_string()) + ".prot";
+pub fn load_empty_project(handle: &AppHandle) {
+    let empty_project = empty_project();
+
+    let mut project = PROJECT.lock().unwrap();
+    project.name = empty_project.name;
+    project.location = empty_project.location;
+    project.tracks = empty_project.tracks;
+    project.effects = empty_project.effects;
+
+    let window = handle.get_window(&"main-window-1".to_string()).unwrap();
+    window.set_title(&project.name.clone().unwrap_or("untitled".to_string()).as_str()).unwrap();
+    window.emit("FILE_LOADED", project.clone())
+        .expect("failed to emit event");
     drop(project);
+}
+
+#[tauri::command]
+pub fn export_prot(project: ProjectSkeleton, window: Window) {
+    let file_name = project.name.clone().unwrap_or("export".to_string()) + ".prot";
     let save_dialog = dialog::FileDialogBuilder::new()
             .add_filter("Proteus Audio", &["prot"])
             .set_title("Save Project")
             .set_file_name(file_name.as_str());
 
-    let handle = handle.clone();
-    handle.emit_all("EXPORTING", true).unwrap();
+    let handle = window.app_handle().clone();
 
     save_dialog.save_file(move |file_path| {
         if file_path.is_none() {
             println!("No file selected");
-            handle.emit_all("EXPORTING", false).unwrap();
+            handle.emit_all("EXPORTING", "Cancelled").unwrap();
             ()
         }
+
+        let file_path = file_path.clone().unwrap();
+        let file_name = file_path.file_name().unwrap().to_str().unwrap();
+
+        handle.emit_all("EXPORTING", format!("Exporting {}", file_name)).unwrap();
         // `new_sidecar()` expects just the filename, NOT the whole path like in JavaScript
         let mut reduced_file_list = Vec::new();
-
-        let project = PROJECT.lock().unwrap();
 
         let mut play_settings = PlaySettings {
             effects: project.effects.clone(),
@@ -311,14 +263,14 @@ pub fn export_prot(handle: &AppHandle) {
 
         let json_settings = serde_json::to_string(&settings_encoder).unwrap();
 
-        let output_dir = file_path.clone().unwrap().parent().unwrap().to_str().unwrap().to_string();
+        let output_dir = file_path.clone().parent().unwrap().to_str().unwrap().to_string();
         let settings_file_path = format!("{}/play_settings.json", output_dir);
         let mut settings_file = File::create(settings_file_path.clone()).unwrap();
         settings_file.write_all(json_settings.as_bytes()).unwrap();
 
         // Replace extension .prot with .mka
         // TODO: Replace with regex
-        let output_file = file_path.clone().unwrap().to_str().unwrap().to_string().replace(".prot", ".mka");
+        let output_file = file_path.clone().to_str().unwrap().to_string().replace(".prot", ".mka");
 
         let out_command = format!(
             "-y {}{}{}{}{}",
@@ -361,7 +313,7 @@ pub fn export_prot(handle: &AppHandle) {
                 std::fs::rename(output_file.clone(), output_file.replace(".mka", ".prot")).unwrap();
             }
 
-            handle.emit_all("EXPORTING", false).unwrap();
+            handle.emit_all("EXPORTING", "Export Finished").unwrap();
         });
     });
 }
