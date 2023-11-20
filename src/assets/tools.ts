@@ -15,22 +15,26 @@ const arrRandom = (arr: any[]) => {
 // };
 
 const cloneAudioBuffer = (fromAudioBuffer: AudioBuffer): AudioBuffer => {
-  const audioBuffer = new AudioBuffer({
-    length: fromAudioBuffer.length,
-    numberOfChannels: fromAudioBuffer.numberOfChannels,
-    sampleRate: fromAudioBuffer.sampleRate,
-  })
+  const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+  const audioBuffer = audioContext.createBuffer(
+    fromAudioBuffer.numberOfChannels,
+    fromAudioBuffer.length,
+    fromAudioBuffer.sampleRate,
+  )
+
+  console.log('audioBuffer', audioBuffer)
+  console.log('fromAudioBuffer', fromAudioBuffer)
 
   for (let channelI = 0; channelI < audioBuffer.numberOfChannels; ++channelI) {
-    const samples = fromAudioBuffer.getChannelData(channelI)
-    audioBuffer.copyToChannel(samples, channelI)
+    const oldChannelData = fromAudioBuffer.getChannelData(channelI)
+    const newChannelData = audioBuffer.getChannelData(channelI)
+    newChannelData.set(oldChannelData)
   }
   return audioBuffer
 }
 
 const getAudioBuffer = async (srcPath: string): Promise<AudioBuffer> => {
   const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-
   const audioData = (await new Promise((resolve, reject) => {
     const request = new XMLHttpRequest()
     request.open('GET', srcPath, true)
@@ -40,9 +44,18 @@ const getAudioBuffer = async (srcPath: string): Promise<AudioBuffer> => {
     request.send()
   })) as ArrayBuffer
 
-  const buffer = await audioContext.decodeAudioData(audioData)
-
-  return buffer
+  return new Promise((resolve, reject) => {
+    audioContext.decodeAudioData(
+      audioData,
+      (buffer) => {
+        resolve(buffer)
+      },
+      (e) => {
+        console.log('Error with decoding audio data', e)
+        reject(e)
+      },
+    )
+  })
 }
 
 export { arrRandom, cloneAudioBuffer, getAudioBuffer }

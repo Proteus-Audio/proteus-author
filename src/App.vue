@@ -75,7 +75,8 @@ onMounted(async () => {
   // listen to the `click` event and get a function to remove the event listener
   // there's also a `once` function that subscribes to an event and automatically unsubscribes the listener on the first event
   const fileLoaded = await listen('FILE_LOADED', (event) => {
-    const project = event.payload as ProjectSkeleton
+    console.log('file loaded', event)
+    const project = event?.payload as ProjectSkeleton
     if (project.location) alerts.addAlert('Loading project…', 'info')
     head.load(project)
   })

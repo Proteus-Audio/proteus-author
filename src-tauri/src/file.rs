@@ -47,10 +47,10 @@ pub fn auto_save(new_project: ProjectSkeleton) {
 
 #[tauri::command]
 pub async fn save_file(new_project: ProjectSkeleton, window: Window) -> Option<ProjectSkeleton> {
+    auto_save(new_project.clone());
     
     if UNSAVED_CHANGES.load(std::sync::atomic::Ordering::Relaxed) == false {
         let project = PROJECT.lock().unwrap();
-        auto_save(new_project.clone());
         println!("No changes to save");
         if !project.location.is_none() {
             return None;

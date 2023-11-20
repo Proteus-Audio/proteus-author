@@ -8,7 +8,7 @@
   },
   "package": {
     "productName": "Proteus Author",
-    "version": "0.5.4"
+    "version": "0.5.6"
   },
   "tauri": {
     "allowlist": {
@@ -77,7 +77,7 @@
       }
     },
     "security": {
-      "csp": "default-src 'self'; img-src 'self' asset: https://asset.localhost; worker-src * data: blob:; child-src * data: blob:; connect-src 'self' asset: https://asset.localhost"
+      "csp": "default-src 'self'; img-src 'self' asset: https://asset.localhost; worker-src * data: blob:; child-src * data: blob:; connect-src 'self' asset: https://asset.localhost; media-src * asset: https://asset.localhost data: blob:;"
     },
     "updater": {
       "active": false
