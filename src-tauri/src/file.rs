@@ -17,7 +17,7 @@ use crate::windows;
 use crate::peaks::*;
 
 #[tauri::command]
-pub fn register_file(file_path: &str, track_id: u32) -> FileInfoSkeleton {
+pub fn register_file(file_path: &str, state: Arc<Mutex<ProjectSkeleton>>) -> FileInfoSkeleton {
     let mut project = PROJECT.lock().unwrap();
 
     // See if file is already registered

@@ -8,13 +8,18 @@ mod menu;
 mod project;
 mod windows;
 mod peaks;
+mod player;
+
+use std::sync::{Arc, Mutex};
 
 use file::*;
 use project::*;
+use proteus_audio::player::Player;
 
 fn main() {
     let app = tauri::Builder::default()
         .manage(project::create_project())
+        .manage(Arc::new(Mutex::new(None::<Player>)))
         .invoke_handler(tauri::generate_handler![
             project_changes,
             auto_save,
