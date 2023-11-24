@@ -32,8 +32,6 @@ export const useAudioStore = defineStore('prot', () => {
   const getCurrentTime = computed((): number => currentTime.value)
   const getXScale = computed((): number => zoom.value.x)
   const getYScale = computed((): number => zoom.value.y)
-  const context = computed((): AudioContext => toneMaster.context)
-  const audioContext = computed((): AudioContext => context.value)
 
   /////////////
   // SETTERS //
@@ -130,6 +128,24 @@ export const useAudioStore = defineStore('prot', () => {
     effects.value = newEffects
   }
 
+  type zoomType = 'increment' | 'decrement'
+
+  const zoomX = (direction: zoomType) => {
+    if (direction === 'increment' && zoom.value.x < 20) {
+      zoom.value.x++
+    } else if (direction === 'decrement' && zoom.value.x > 1) {
+      zoom.value.x--
+    }
+  }
+
+  const zoomY = (direction: zoomType) => {
+    if (direction === 'increment' && zoom.value.y < 20) {
+      zoom.value.y++
+    } else if (direction === 'decrement' && zoom.value.y > 1) {
+      zoom.value.y--
+    }
+  }
+
   return {
     scale,
     zoom,
@@ -140,7 +156,6 @@ export const useAudioStore = defineStore('prot', () => {
     getCurrentTime,
     getXScale,
     getYScale,
-    audioContext,
     play,
     pause,
     playPause,
@@ -156,5 +171,7 @@ export const useAudioStore = defineStore('prot', () => {
     addEffect,
     removeEffect,
     replaceEffects,
+    zoomX,
+    zoomY,
   }
 })
