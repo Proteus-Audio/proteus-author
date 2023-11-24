@@ -3,10 +3,11 @@
     windows_subsystem = "windows"
 )]
 
-mod menu;
-mod windows;
 mod file;
+mod menu;
 mod project;
+mod windows;
+mod peaks;
 
 use file::*;
 use project::*;
@@ -14,7 +15,17 @@ use project::*;
 fn main() {
     let app = tauri::Builder::default()
         .manage(project::create_project())
-        .invoke_handler(tauri::generate_handler![project_changes, auto_save, save_file, save_file_as, check_status, export_prot])
+        .invoke_handler(tauri::generate_handler![
+            project_changes,
+            auto_save,
+            save_file,
+            save_file_as,
+            check_status,
+            export_prot,
+            get_peaks,
+            register_file,
+            get_simplified_peaks
+        ])
         .menu(menu::get_menu())
         .build(tauri::generate_context!())
         .expect("error while running tauri application");

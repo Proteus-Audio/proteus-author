@@ -44,12 +44,30 @@ pub struct EffectSkeleton {
 pub struct TrackSkeleton {
     pub id: u32,
     pub name: String,
-    pub files: Vec<FileSkeleton>,
+    pub file_ids: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct FileSkeleton {
     pub id: u32,
+    pub path: String,
+    pub name: String,
+    pub extension: Option<String>,
+    pub peaks: Option<Vec<Vec<(f32, f32)>>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct FileInfo {
+    pub id: String,
+    pub path: String,
+    pub name: String,
+    pub extension: Option<String>,
+    pub peaks: Option<Vec<Vec<(f32, f32)>>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct FileInfoSkeleton {
+    pub id: String,
     pub path: String,
     pub name: String,
     pub extension: Option<String>,
@@ -61,6 +79,7 @@ pub struct ProjectSkeleton {
     pub name: Option<String>,
     pub tracks: Vec<TrackSkeleton>,
     pub effects: Vec<EffectSettings>,
+    pub files: Vec<FileInfo>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -91,9 +110,10 @@ pub fn empty_project() -> ProjectSkeleton {
         tracks: vec![TrackSkeleton {
             id: 1,
             name: "".to_string(),
-            files: Vec::new(),
+            file_ids: Vec::new(),
         }],
         effects: Vec::new(),
+        files: Vec::new(),
     }
 }
 

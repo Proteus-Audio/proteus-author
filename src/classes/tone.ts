@@ -133,7 +133,7 @@ class ToneMaster {
     })
   }
 
-  setTrackSelection(trackId: number, selection: number) {
+  setTrackSelection(trackId: number, selection: string) {
     const track = this.trackFromId(trackId)
     if (track) {
       track.players.forEach((player) => {

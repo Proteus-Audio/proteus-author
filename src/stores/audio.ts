@@ -19,7 +19,7 @@ export const useAudioStore = defineStore('prot', () => {
   const currentTime = ref(0)
   const scale = ref(20 as number)
   const duration = ref(0)
-  const zoom = ref({ y: 1, x: 20 })
+  const zoom = ref({ y: 1, x: 10 })
   const effects = ref([] as EffectSettings[])
   //   const group = ref(new Pizzicato.Group());
 
@@ -90,14 +90,14 @@ export const useAudioStore = defineStore('prot', () => {
   const zoomIn = (axis?: 'x' | 'y' | 'both', degree?: number) => {
     axis = axis || 'x'
     const amount = degree ? degree / 100 : 1
-    if (axis === 'x' || axis === 'both') setXScale(getXScale.value + 5 * amount)
+    if (axis === 'x' || axis === 'both') setXScale(getXScale.value + 1 * amount)
     if (axis === 'y' || axis === 'both') setYScale(getXScale.value + 1 * amount)
   }
 
   const zoomOut = (axis?: 'x' | 'y' | 'both', degree?: number) => {
     axis = axis || 'x'
     const amount = degree ? degree / 100 : 1
-    if (axis === 'x' || axis === 'both') setXScale(getXScale.value - 5 * amount)
+    if (axis === 'x' || axis === 'both') setXScale(getXScale.value - 1 * amount)
     if (axis === 'y' || axis === 'both') setYScale(getXScale.value - 1 * amount)
   }
 

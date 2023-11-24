@@ -1,5 +1,5 @@
 <template>
-  <div class="alert-box">
+  <div class="alert-box" :class="{ lower: y > 150 }">
     <div v-for="(al, i) in alerts" :key="i" :class="`alert ${al.class}`">
       <el-alert :title="al.contents" :type="al.type" @close="() => closeAlert(i)" />
     </div>
@@ -7,12 +7,15 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUpdated, ref, watch } from 'vue'
+import { computed, onMounted, onUpdated, ref, watch } from 'vue'
 import { useAlertStore } from '../../stores/alerts'
 import { AlertView } from '../../typings/proteus'
+import { useWindowScroll } from '@vueuse/core'
 
 const alertStore = useAlertStore()
 const alerts = ref([] as AlertView[])
+
+const { y } = useWindowScroll()
 
 const closeAlert = (index: number) => {
   alerts.value[index].autoClose = true
@@ -55,17 +58,26 @@ onUpdated(() => {
 onMounted(() => {
   processAlerts()
 })
+
+const alertTop = computed(() => {
+  return y.value > 150 ? '5em' : '2em'
+})
 </script>
 
 <style lang="scss" scoped>
 .alert-box {
-  position: absolute;
+  position: fixed;
   top: 2em;
   width: calc(100% - 4em);
   max-width: 600px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
+  transition: top 0.3s;
+
+  &.lower {
+    top: 5em;
+  }
 
   .alert {
     margin-bottom: 1em;

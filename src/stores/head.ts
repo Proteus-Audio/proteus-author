@@ -63,7 +63,7 @@ export const useHeadStore = defineStore('head', () => {
     const tracks = track.tracks.map((t) => ({
       id: t.id,
       name: t.name,
-      files: t.files.map((f) => ({ id: f.id, path: f.path, name: f.name })),
+      file_ids: t.files.map((f) => f.id),
     })) as TrackSkeleton[]
 
     const project = {
@@ -71,6 +71,7 @@ export const useHeadStore = defineStore('head', () => {
       location: head.value.path,
       tracks: tracks,
       effects: audio.effects,
+      files: [],
     } as ProjectSkeleton
 
     return project
@@ -78,6 +79,8 @@ export const useHeadStore = defineStore('head', () => {
 
   const logChanges = async (): Promise<boolean> => {
     const project = projectState()
+
+    console.log(project)
 
     return await invoke('project_changes', { newProject: project })
   }

@@ -1,12 +1,13 @@
 interface Track {
   id: number
   name: string
-  selection?: number
-  files: TrackFileSkeleton[]
+  selection?: string
+  files: TrackFile[]
+  // files: TrackFile[]
 }
 
 interface TrackFileSkeleton {
-  id: number
+  id: string
   parentId: number
   name: string
   path: string
@@ -14,10 +15,10 @@ interface TrackFileSkeleton {
 }
 
 interface DropFileSkeleton {
+  id: string
   name: string
   path: string
   extension: string
-  data: Uint8Array
 }
 
 interface DropFile {
@@ -31,7 +32,6 @@ interface DropFile {
 }
 
 interface TrackFile extends DropFileSkeleton {
-  id: number
   parentId: number
 }
 

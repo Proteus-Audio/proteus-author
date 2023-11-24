@@ -6,8 +6,8 @@
     <el-button id="BaseTransportShuffle" :icon="Refresh" @click="track.shuffle" text
       >shuffle</el-button
     >
-    <el-button :icon="ZoomIn" @click="zoomIn" text></el-button>
-    <el-button :icon="ZoomOut" @click="zoomOut" text></el-button>
+    <el-button :icon="ZoomIn" @click="zoomIn" text :disabled="audio.zoom.x === 20"></el-button>
+    <el-button :icon="ZoomOut" @click="zoomOut" text :disabled="audio.zoom.x === 1"></el-button>
     <div class="volume-bin">
       <el-slider v-model="volume" :show-tooltip="false" size="small" />
     </div>

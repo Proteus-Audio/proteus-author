@@ -19,6 +19,7 @@
   "dependencies": {
     "@tauri-apps/api": "^1.5.1",
     "@tauri-apps/cli": "^1.5.6",
+    "@vueuse/core": "^10.6.1",
     "audio-buffer-from": "^1.1.1",
     "case-anything": "^2.1.13",
     "element-plus": "^2.2.17",

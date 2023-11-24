@@ -30,6 +30,15 @@
           :selected="file.id === track.selection"
           >{{ file.name }}</TrackWaveform
         >
+        <!-- <template v-for="file in track.files" :key="file.id">
+          <TrackWaveform
+            v-if="file.id === track.selection"
+            :class="`waveform ${file.id === track.selection ? 'visible' : 'hidden'}`"
+            :track="file"
+            :selected="file.id === track.selection"
+            >{{ file.name }}</TrackWaveform
+          >
+        </template> -->
       </div>
       <el-drawer
         ref="folderContents"
@@ -76,16 +85,17 @@ import { useAudioStore } from '../../stores/audio'
 import { DropFile, DropFileSkeleton } from '../../typings/tracks'
 import { readBinaryFile } from '@tauri-apps/api/fs'
 import { open } from '@tauri-apps/api/dialog'
-import { listen, UnlistenFn } from '@tauri-apps/api/event'
+import { UnlistenFn } from '@tauri-apps/api/event'
 import { appWindow } from '@tauri-apps/api/window'
 import BaseLoadingSpinner from '../base/BaseLoadingSpinner.vue'
+import { invoke } from '@tauri-apps/api'
 // import Button from "element-plus";
 
 interface Props {
   trackId: number
 }
 
-let unlisten: UnlistenFn | undefined
+const unlisten: UnlistenFn[] = []
 
 const props = defineProps<Props>()
 
@@ -151,19 +161,27 @@ async function onDrop(acceptFiles: DropFile[], rejectReasons: any[]) {
 
 const loadFiles = async (files: string[]) => {
   loading.value = true
-  const acceptFiles = files.filter((file) => /(?:.mp3|.wav)$/.test(file))
-  if (acceptFiles.length > 0) {
-    const fileData: DropFileSkeleton[] = []
-    for (let i = 0; i < acceptFiles.length; i++) {
-      const filePath = acceptFiles[i]
-      const name = filePath.replace(/^.*[\\/]/, '')
-      const extension = filePath.replace(/^.*\./, '')
-      const data = await readBinaryFile(filePath)
-      fileData.push({ name, path: filePath, data, extension })
-    }
+  const acceptableFiles = files.filter((file) => /(?:.mp3|.wav)$/.test(file))
+  console.log('starting processing')
+  if (acceptableFiles.length > 0) {
+    // const fileData: DropFileSkeleton[] = []
+    for (let i = 0; i < acceptableFiles.length; i++) {
+      const filePath = acceptableFiles[i]
 
-    console.log('starting processing')
-    await trackStore.addFileToTrackBinary(fileData, props.trackId)
+      const file = (await invoke('register_file', {
+        filePath,
+        trackId: props.trackId,
+      })) as DropFileSkeleton
+
+      console.log(file)
+
+      // const peaks = (await invoke('get_peaks', { filePath })) as [number, number][][]
+
+      // const name = filePath.replace(/^.*[\\/]/, '')
+      // const extension = filePath.replace(/^.*\./, '')
+      // const data = await readBinaryFile(filePath)
+      await trackStore.addFileToTrackBinary(file, props.trackId)
+    }
     console.log('finished processing')
     trackStore.shuffleTrackBin(props.trackId)
     trackStore.addEmptyTrackIfNone()
@@ -171,7 +189,7 @@ const loadFiles = async (files: string[]) => {
   loading.value = false
 }
 
-const removeFile = (id: number) => trackStore.removeFileFromTrack(id, props.trackId)
+const removeFile = (id: string) => trackStore.removeFileFromTrack(id, props.trackId)
 
 const selectedName = computed(() => {
   const filename: string | undefined = trackStore.getTrackSelection(props.trackId)?.name
@@ -199,23 +217,31 @@ const openFiles = async () => {
 }
 
 onMounted(async () => {
-  unlisten = await listen<string>('tauri://file-drop', async (event) => {
-    if (isDragActive.value) loadFiles(event.payload as unknown as string[])
-  })
-  unlisten = await appWindow.onFileDropEvent((event) => {
-    if (event.payload.type === 'hover') {
-      windowHover.value = true
-    } else if (event.payload.type === 'drop') {
-      windowHover.value = false
-      if (isDragActive.value) loadFiles(event.payload as unknown as string[])
-    } else {
-      windowHover.value = false
-    }
-  })
+  console.log('mounting')
+  // unlisten.push(
+  //   await listen<string>('tauri://file-drop', async (event) => {
+  //     console.log('file drop', event)
+  //     if (isDragActive.value) loadFiles(event.payload as unknown as string[])
+  //   }),
+  // )
+  unlisten.push(
+    await appWindow.onFileDropEvent((event) => {
+      if (event.payload.type === 'hover') {
+        windowHover.value = true
+      } else if (event.payload.type === 'drop' && isDragActive.value) {
+        console.log('file drop', event)
+        windowHover.value = false
+        loadFiles(event.payload.paths as string[])
+      } else {
+        windowHover.value = false
+      }
+    }),
+  )
 })
 
 onUnmounted(() => {
-  if (unlisten) unlisten()
+  console.log('unmounting')
+  unlisten.forEach((unlistener) => unlistener())
 })
 </script>
 
@@ -229,8 +255,8 @@ onUnmounted(() => {
   &.drag {
     background: rgba(0, 0, 0, 0.2);
   }
-  .loader {
-  }
+  /* .loader {
+  }*/
   .clickable {
     cursor: pointer;
   }

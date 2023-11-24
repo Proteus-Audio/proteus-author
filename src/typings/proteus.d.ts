@@ -20,15 +20,22 @@ interface ProjectHead {
   path?: string
 }
 
+// interface TrackSkeleton {
+//   id: number
+//   name: string
+//   files: {
+//     id: number
+//     path: string
+//     name: string
+//     extension: string
+//     peaks: [number, number][][]
+//   }[]
+// }
+
 interface TrackSkeleton {
   id: number
   name: string
-  files: {
-    id: number
-    path: string
-    name: string
-    extension: string
-  }[]
+  file_ids: string[]
 }
 
 interface ProjectSkeleton {
