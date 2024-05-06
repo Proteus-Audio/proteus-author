@@ -1,3 +1,5 @@
+import { invoke } from '@tauri-apps/api'
+
 interface GetPlayersOptions {
   all?: boolean
 }
@@ -16,12 +18,15 @@ class PlayMaster {
   //   return this.getPlayers()[0]?.currentTime || 0;
   // }
 
-  play() {
-    const players = this.getPlayers()
-    for (let i = 0; i < players.length; i++) {
-      const player = players[i]
-      player.play()
-    }
+  async play() {
+    invoke('play')
+    console.log('play')
+    console.log(await invoke('get_play_state'))
+    // const players = this.getPlayers()
+    // for (let i = 0; i < players.length; i++) {
+    //   const player = players[i]
+    //   player.play()
+    // }
   }
 
   playTime(callback: (time: number) => void, time?: number) {
@@ -35,43 +40,48 @@ class PlayMaster {
   }
 
   pauseTime() {
-    this.playing = false
+    invoke('pause')
+    // this.playing = false
   }
 
   stopTime() {
-    this.playing = false
-    this.currentTime = 0
+    invoke('stop')
+    // this.playing = false
+    // this.currentTime = 0
   }
 
   pause() {
-    const currentTime = this.currentTime
-    const players = this.getPlayers({ all: true })
-    for (let i = 0; i < players.length; i++) {
-      const player = players[i]
-      player.pause()
-      player.currentTime = currentTime
-    }
+    invoke('pause')
+    // const currentTime = this.currentTime
+    // const players = this.getPlayers({ all: true })
+    // for (let i = 0; i < players.length; i++) {
+    //   const player = players[i]
+    //   player.pause()
+    //   player.currentTime = currentTime
+    // }
   }
   stop() {
-    const players = this.getPlayers({ all: true })
-    for (let i = 0; i < players.length; i++) {
-      const player = players[i]
-      player.pause()
-      player.currentTime = 0
-    }
+    invoke('stop')
+    // const players = this.getPlayers({ all: true })
+    // for (let i = 0; i < players.length; i++) {
+    //   const player = players[i]
+    //   player.pause()
+    //   player.currentTime = 0
+    // }
   }
 
   setCurrentTime(currentTime?: number): void {
-    currentTime = currentTime || this.currentTime
-    const players = this.getPlayers({ all: true })
-    for (let i = 0; i < players.length; i++) {
-      const player = players[i]
-      player.currentTime = currentTime
-    }
+    invoke('seek', { position: currentTime })
+    // currentTime = currentTime || this.currentTime
+    // const players = this.getPlayers({ all: true })
+    // for (let i = 0; i < players.length; i++) {
+    //   const player = players[i]
+    //   player.currentTime = currentTime
+    // }
   }
 
   updateCurrentPlayers(): void {
-    this.currentPlayers = this.getPlayers()
+    // this.currentPlayers = this.getPlayers()
   }
 
   getPlayers(options?: GetPlayersOptions): HTMLCollectionOf<HTMLAudioElement> {

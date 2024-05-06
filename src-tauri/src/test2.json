@@ -1,0 +1,81 @@
+{
+  "location": "/Users/innocentsmith/Dev/tauri/proteus-author/dev-assets/every-day-infinite.protproject",
+  "name": "every-day-infinite",
+  "tracks": [
+    {
+      "id": 1,
+      "name": "",
+      "selection": "0d373133-81c4-4141-95cd-90cb224b15fc",
+      "file_ids": ["6f93ffe0-57ef-4b17-84b9-f747f882c148", "0d373133-81c4-4141-95cd-90cb224b15fc"]
+    },
+    {
+      "id": 2,
+      "name": "",
+      "selection": "bb1abb0c-7552-4277-9a0d-1e1c4ca4e2f7",
+      "file_ids": ["bb1abb0c-7552-4277-9a0d-1e1c4ca4e2f7", "af992227-1128-4bed-acc7-473cc8354bae"]
+    },
+    {
+      "id": 3,
+      "name": "",
+      "selection": "953f9a6e-7032-4ec8-9baf-a79ac8c7225a",
+      "file_ids": ["2db3a8e3-7f74-4f98-b5ab-8658e8f557f3", "953f9a6e-7032-4ec8-9baf-a79ac8c7225a"]
+    },
+    {
+      "id": 4,
+      "name": "",
+      "selection": "7b15125d-53bf-4ba6-bcbf-d232cea2d447",
+      "file_ids": ["7b15125d-53bf-4ba6-bcbf-d232cea2d447", "1a00d323-9208-4fd0-8e5d-aca6a95be3c3"]
+    }
+  ],
+  "effects": [],
+  "files": [
+    {
+      "id": "6f93ffe0-57ef-4b17-84b9-f747f882c148",
+      "path": "/Users/innocentsmith/Dropbox/My Mac (Innocents-MacBook-Pro.local)/Music/Logic/Everyday Infinite/Bounces/prot_parts/edi_vox_1.wav",
+      "name": "edi_vox_1.wav",
+      "extension": "wav"
+    },
+    {
+      "id": "0d373133-81c4-4141-95cd-90cb224b15fc",
+      "path": "/Users/innocentsmith/Dropbox/My Mac (Innocents-MacBook-Pro.local)/Music/Logic/Everyday Infinite/Bounces/prot_parts/edi_vox_2.wav",
+      "name": "edi_vox_2.wav",
+      "extension": "wav"
+    },
+    {
+      "id": "bb1abb0c-7552-4277-9a0d-1e1c4ca4e2f7",
+      "path": "/Users/innocentsmith/Dropbox/My Mac (Innocents-MacBook-Pro.local)/Music/Logic/Everyday Infinite/Bounces/prot_parts/edi_rhythm_1.wav",
+      "name": "edi_rhythm_1.wav",
+      "extension": "wav"
+    },
+    {
+      "id": "af992227-1128-4bed-acc7-473cc8354bae",
+      "path": "/Users/innocentsmith/Dropbox/My Mac (Innocents-MacBook-Pro.local)/Music/Logic/Everyday Infinite/Bounces/prot_parts/edi_rhythm_2.wav",
+      "name": "edi_rhythm_2.wav",
+      "extension": "wav"
+    },
+    {
+      "id": "2db3a8e3-7f74-4f98-b5ab-8658e8f557f3",
+      "path": "/Users/innocentsmith/Dropbox/My Mac (Innocents-MacBook-Pro.local)/Music/Logic/Everyday Infinite/Bounces/prot_parts/edi_guitar_1.wav",
+      "name": "edi_guitar_1.wav",
+      "extension": "wav"
+    },
+    {
+      "id": "953f9a6e-7032-4ec8-9baf-a79ac8c7225a",
+      "path": "/Users/innocentsmith/Dropbox/My Mac (Innocents-MacBook-Pro.local)/Music/Logic/Everyday Infinite/Bounces/prot_parts/edi_guitar_2.wav",
+      "name": "edi_guitar_2.wav",
+      "extension": "wav"
+    },
+    {
+      "id": "7b15125d-53bf-4ba6-bcbf-d232cea2d447",
+      "path": "/Users/innocentsmith/Dropbox/My Mac (Innocents-MacBook-Pro.local)/Music/Logic/Everyday Infinite/Bounces/prot_parts/edi_chords_1.wav",
+      "name": "edi_chords_1.wav",
+      "extension": "wav"
+    },
+    {
+      "id": "1a00d323-9208-4fd0-8e5d-aca6a95be3c3",
+      "path": "/Users/innocentsmith/Dropbox/My Mac (Innocents-MacBook-Pro.local)/Music/Logic/Everyday Infinite/Bounces/prot_parts/edi_violins_1.wav",
+      "name": "edi_violins_1.wav",
+      "extension": "wav"
+    }
+  ]
+}

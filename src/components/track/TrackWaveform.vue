@@ -7,6 +7,8 @@
     >
       <div class="channels">
         <div class="channel" v-for="(peaks, channel) in simplifiedPeaks" :key="channel">
+          <div @click="seek" class="control"></div>
+          <div class="playhead"></div>
           <template v-for="annotation in peaksLength" :key="`annotation-${channel}-${annotation}`">
             <div
               v-if="annotate(annotation)"
@@ -114,6 +116,17 @@ const getAnnotation = (index: number): string => {
   return new Date(seconds * 1000).toISOString().substr(14, 5)
 }
 
+const playheadPosition = computed(() => {
+  const factor = audio.clock * zoomLevel.value * 2
+  console.log(audio.clock, factor, zoomLevel.value)
+  return `${factor}px`
+})
+
+const seek = (event: MouseEvent) => {
+  const seconds = event.offsetX / zoomLevel.value / 2
+  audio.seek(seconds)
+}
+
 onMounted(() => {
   console.log('starting file')
 
@@ -167,6 +180,24 @@ onMounted(() => {
     background-color: white;
     overflow: hidden;
 
+    .playhead {
+      position: absolute;
+      pointer-events: none;
+      top: 0;
+      left: v-bind(playheadPosition);
+      height: 100%;
+      width: 1px;
+      background-color: #7474746e;
+    }
+
+    .control {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
     .peak {
       position: relative;
       display: block;
@@ -175,6 +206,7 @@ onMounted(() => {
       opacity: 0.5;
       // height: calc(10% * attr(top));
       border-radius: 0.1em;
+      pointer-events: none;
 
       // &:nth-of-type(5n) {
       //   &::after {
@@ -206,6 +238,7 @@ onMounted(() => {
     .annotation {
       position: absolute;
       height: 100%;
+      pointer-events: none;
       // width: 1px;
       // background: grey;
 

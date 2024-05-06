@@ -14,6 +14,7 @@ use std::sync::{Arc, Mutex};
 
 use file::*;
 use project::*;
+use player::*;
 use proteus_audio::player::Player;
 
 fn main() {
@@ -29,7 +30,19 @@ fn main() {
             export_prot,
             get_peaks,
             register_file,
-            get_simplified_peaks
+            get_simplified_peaks,
+            init_player,
+            get_project_state,
+            play,
+            pause,
+            stop,
+            seek,
+            shuffle,
+            get_duration,
+            get_position,
+            get_play_state,
+            set_selections,
+            set_volume
         ])
         .menu(menu::get_menu())
         .build(tauri::generate_context!())

@@ -1,11 +1,12 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { Ref, computed, ref } from 'vue'
 import { useAlertStore } from './alerts'
 import { useTrackStore } from './track'
 import * as Tone from 'tone'
 import { toneMaster } from '../assets/toneMaster'
 import { Effect } from '../typings/effects'
 import { EffectSettings } from '../assets/effects'
+import { invoke } from '@tauri-apps/api'
 
 export const useAudioStore = defineStore('prot', () => {
   const alert = useAlertStore()
@@ -21,6 +22,7 @@ export const useAudioStore = defineStore('prot', () => {
   const duration = ref(0)
   const zoom = ref({ y: 1, x: 10 })
   const effects = ref([] as EffectSettings[])
+  const clock: Ref<number> = ref(0.0)
   //   const group = ref(new Pizzicato.Group());
 
   /////////////
@@ -48,15 +50,17 @@ export const useAudioStore = defineStore('prot', () => {
     }
 
     setPlaying(true)
-    await toneMaster.play((time: number, i?: number) => {
-      if (time === 0 && i !== 0) stop()
-      else currentTime.value = time
-    })
+    await invoke('play')
+    // await toneMaster.play((time: number, i?: number) => {
+    //   if (time === 0 && i !== 0) stop()
+    //   else currentTime.value = time
+    // })
   }
 
   const pause = async () => {
     setPlaying(false)
-    await toneMaster.pause()
+    await invoke('pause')
+    // await toneMaster.pause()
   }
 
   const playPause = async () => {
@@ -64,7 +68,8 @@ export const useAudioStore = defineStore('prot', () => {
   }
 
   const stop = async () => {
-    await toneMaster.stop()
+    await invoke('stop')
+    // await toneMaster.stop()
     currentTime.value = 0
     setPlaying(false)
   }
@@ -146,6 +151,14 @@ export const useAudioStore = defineStore('prot', () => {
     }
   }
 
+  const setClock = (time: number) => {
+    clock.value = time
+  }
+
+  const seek = async (time: number) => {
+    await invoke('seek', { position: time })
+  }
+
   return {
     scale,
     zoom,
@@ -156,6 +169,7 @@ export const useAudioStore = defineStore('prot', () => {
     getCurrentTime,
     getXScale,
     getYScale,
+    clock,
     play,
     pause,
     playPause,
@@ -173,5 +187,7 @@ export const useAudioStore = defineStore('prot', () => {
     replaceEffects,
     zoomX,
     zoomY,
+    setClock,
+    seek,
   }
 })

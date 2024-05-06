@@ -40,7 +40,7 @@ const keyListener = (e: KeyboardEvent) => {
     }
     if (e.key === 'Enter') {
       e.preventDefault()
-      toneMaster.seek(0)
+      audio.seek(0)
     }
   }
 }

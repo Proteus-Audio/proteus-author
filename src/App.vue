@@ -121,7 +121,17 @@ onMounted(async () => {
   })
   unlisteners.value.push(exporting)
 
+  const updatePlayhead = await listen('UPDATE_PLAYHEAD', (event) => {
+    const time = event.payload as number
+    audio.setClock(time)
+  })
+  unlisteners.value.push(updatePlayhead)
+
   trackStore.addEmptyTrackIfNone()
+
+  console.log(await invoke('get_play_state'))
+
+  trackStore.sync()
 })
 
 onUnmounted(() => {

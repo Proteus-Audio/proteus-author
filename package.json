@@ -8,7 +8,6 @@
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "postinstall": "husky install",
     "lint": "eslint src/ --ext .vue --ext .ts"
   },
   "repository": "https://github.com/howardah/proteus-author",
@@ -49,7 +48,6 @@
     "eslint-plugin-promise": "^6.0.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-vue": "^9.4.0",
-    "husky": "^8.0.1",
     "prettier": "^2.7.1",
     "sass": "^1.55.0",
     "typescript": "^4.6.4",

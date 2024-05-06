@@ -2,7 +2,7 @@ interface Track {
   id: number
   name: string
   selection?: string
-  files: TrackFile[]
+  file_ids: string[]
   // files: TrackFile[]
 }
 
@@ -31,7 +31,7 @@ interface DropFile {
   webkitRelativePath: string
 }
 
-interface TrackFile extends DropFileSkeleton {
+interface LegacyTrackFile extends DropFileSkeleton {
   parentId: number
 }
 

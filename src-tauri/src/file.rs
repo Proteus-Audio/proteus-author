@@ -1,38 +1,84 @@
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
 use std::sync::Arc;
 use std::sync::Mutex;
 use tauri::api::dialog;
-use tauri::api::file;
 use tauri::api::process::Command;
 use tauri::api::process::CommandEvent;
 use tauri::AppHandle;
 use tauri::Manager;
 use tauri::State;
 use tauri::Window;
+use regex::Regex;
 
 use crate::project::*;
-use crate::windows;
 use crate::peaks::*;
 
-#[tauri::command]
-pub fn register_file(file_path: &str, state: Arc<Mutex<ProjectSkeleton>>) -> FileInfoSkeleton {
-    let mut project = PROJECT.lock().unwrap();
+fn split_arguments(string: &str) -> Vec<&str> {
+    let re = Regex::new(r#"[^"\s]*("[^"]*)"|([^"\s]+)"#).unwrap();
+    re.find_iter(string)
+        .map(|m| {
+            let string = m.as_str();
+            let first = string.chars().next().unwrap();
+            let last = string.chars().last().unwrap();
+            let quote = "\"".chars().next().unwrap();
+            if first == quote && last == quote {
+                &string[1..string.len() - 1]
+            } else {
+                string
+            }
+        })
+        .collect()
+}
 
-    // See if file is already registered
+
+
+#[tauri::command]
+pub fn push_file_id(track_id: u32, file_id: String, project_state: State<Arc<Mutex<ProjectSkeleton>>>) {
+    let mut project = project_state.lock().unwrap();
+
+    let track = project.tracks.iter_mut().find(|t| t.id == track_id);
+
+    match track {
+        Some(track) => {
+            track.file_ids.push(file_id);
+        }
+        None => {
+            // Create new track
+            let track = TrackSkeleton {
+                id: track_id,
+                name: "".to_string(),
+                selection: Some(file_id.clone()),
+                file_ids: vec![file_id],
+            };
+
+            project.tracks.push(track);
+        }
+    }
+}
+
+#[tauri::command]
+pub async fn register_file(file_path: &str, track_id: u32, window: Window) -> Result<FileInfoSkeleton, String> {
+    let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
+
+    let project = project_state.lock().unwrap();
+
     let project_clone = project.clone();
+    drop(project);
+    
+    // See if file is already registered
     let mut found_file = project_clone.files.iter().find_map(|file| {
         if file.path == file_path {
             Some(file)
         } else {
             None
         }
-    });
+    }).clone();
+
 
     // If file is not registered, register it
     if found_file.is_none() {
-        let peaks = proteus_audio::peaks::get_peaks(file_path, true);
+        // let peaks = proteus_audio::peaks::get_peaks(file_path, true);
 
         let path = std::path::Path::new(file_path);
 
@@ -46,35 +92,39 @@ pub fn register_file(file_path: &str, state: Arc<Mutex<ProjectSkeleton>>) -> Fil
             path: file_path.to_string(),
             name: path.file_name().unwrap().to_str().unwrap().to_string(),
             extension: extention,
-            peaks: Some(peaks),
+            // peaks: Some(peaks),
         };
 
-        project.files.push(file);
-        found_file = project.files.last();
+        let mut project = project_state.lock().unwrap();
+        project.files.push(file.clone());
+        drop(project);
+
+        push_file_id(track_id, file.id.clone(), project_state.clone());
+
+        let peaks_start = std::time::Instant::now();
+        let _peaks = get_json_peaks(&window, &file.id, None);
+        println!("Peaks took {}ms", peaks_start.elapsed().as_millis());
     }
+
+    let project = project_state.lock().unwrap();
+    found_file = project.files.last();
 
     let file_unwraped= found_file.unwrap().clone();
 
-    FileInfoSkeleton {
+    Ok(FileInfoSkeleton {
         id: file_unwraped.id.clone(),
         path: file_unwraped.path.clone(),
         name: file_unwraped.name.clone(),
         extension: file_unwraped.extension.clone(),
-    }
+    })
 }
 
 #[tauri::command]
-pub fn get_simplified_peaks(file_id: &str, zoom: u32) -> Vec<SimplifiedPeaks> {
-    println!("Getting simplified peaks");
-    let project = PROJECT.lock().unwrap();
-    let file = project
-        .files
-        .iter()
-        .find(|f| f.id == file_id)
-        .unwrap()
-        .clone();
-
-    let simplified_peaks = simplify_peaks(file.peaks.unwrap(), zoom);
+pub async fn get_simplified_peaks(file_id: String, zoom: usize, window: Window) -> Vec<SimplifiedPeaks> {
+    let timer = std::time::Instant::now();
+    let peaks = get_json_peaks(&window, &file_id, None);
+    let simplified_peaks = simplify_peaks(peaks, zoom);
+    println!("Simplifying peaks took {}ms", timer.elapsed().as_millis());
 
     simplified_peaks
 }
@@ -87,8 +137,9 @@ pub fn get_peaks(file_path: &str) -> Vec<Vec<(f32, f32)>> {
 }
 
 #[tauri::command]
-pub fn project_changes(new_project: ProjectSkeleton, window: Window) -> String {
-    let project = PROJECT.lock().unwrap();
+pub fn project_changes(new_project: ProjectSkeleton, window: Window, project_state: State<Arc<Mutex<ProjectSkeleton>>>) -> String {
+    println!("new_project: {:?}", new_project);
+    let project = project_state.lock().unwrap();
     let project_json = serde_json::to_string(&*project).unwrap();
     let new_project_json = serde_json::to_string(&new_project).unwrap();
 
@@ -108,9 +159,9 @@ pub fn project_changes(new_project: ProjectSkeleton, window: Window) -> String {
 }
 
 #[tauri::command]
-pub fn auto_save(new_project: ProjectSkeleton) {
+pub fn auto_save(new_project: ProjectSkeleton, project_state: State<Arc<Mutex<ProjectSkeleton>>>) {
     println!("Auto Saving");
-    let mut project = PROJECT.lock().unwrap();
+    let mut project = project_state.lock().unwrap();
     println!("Project: {:?}", project);
     project.tracks = new_project.tracks.clone();
     println!("Project: {:?}", project);
@@ -122,9 +173,11 @@ pub fn auto_save(new_project: ProjectSkeleton) {
 #[tauri::command]
 pub async fn save_file(window: Window) -> Option<ProjectSkeleton> {
     // auto_save(new_project.clone());
+    let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
 
+    let project_state_clone = project_state.clone();
     if UNSAVED_CHANGES.load(std::sync::atomic::Ordering::Relaxed) == false {
-        let project = PROJECT.lock().unwrap();
+        let project = project_state_clone.lock().unwrap();
         println!("No changes to save");
         if !project.location.is_none() {
             return None;
@@ -132,7 +185,7 @@ pub async fn save_file(window: Window) -> Option<ProjectSkeleton> {
         drop(project);
     }
 
-    let project_already_saved = PROJECT.lock().unwrap().location.is_some();
+    let project_already_saved = project_state.lock().unwrap().location.is_some();
     // let project_already_saved = new_project.location.is_some();
     // drop(project);
 
@@ -140,7 +193,7 @@ pub async fn save_file(window: Window) -> Option<ProjectSkeleton> {
         return save_file_as(window).await;
     }
 
-    let project = PROJECT.lock().unwrap();
+    let project = project_state.lock().unwrap();
     let project_json = serde_json::to_string(&*project).unwrap();
 
     let mut file = File::create(project.location.clone().unwrap()).unwrap();
@@ -155,7 +208,8 @@ pub async fn save_file(window: Window) -> Option<ProjectSkeleton> {
 
 #[tauri::command]
 pub async fn save_file_as(window: Window) -> Option<ProjectSkeleton> {
-    let project = PROJECT.lock().unwrap();
+    let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
+    let project = project_state.lock().unwrap();
     let file_name = project.name.clone().unwrap_or("untitled".to_string());
     drop(project);
 
@@ -180,10 +234,12 @@ pub async fn save_file_as(window: Window) -> Option<ProjectSkeleton> {
     let file_name =
         String::from(path_buff.file_name().unwrap().to_str().unwrap()).replace(".protproject", "");
 
-    let mut project = PROJECT.lock().unwrap();
+    let mut project = project_state.lock().unwrap();
 
     project.name = Some(file_name.clone());
     project.location = Some(path_buff.to_str().unwrap().to_string());
+
+    println!("Project: {:?}", serde_json::to_string(&project.clone()));
 
     let project_json = serde_json::to_string(&*project).unwrap();
 
@@ -202,9 +258,14 @@ pub fn load_file(handle: &AppHandle, label: &String) {
     let load_dialog =
         dialog::FileDialogBuilder::new().add_filter("Proteus Project", &["protproject"]);
 
+    // let project_state: State<Arc<Mutex<ProjectSkeleton>>> = handle.state();
+    // let project_state_clone = project_state.clone();
+    
     let window = handle.get_window(label);
-
+    
     load_dialog.pick_file(|file_path| {
+        let window_clone = window.clone().unwrap();
+        let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window_clone.state();
         // let window = Window::get_window(&self, "main-window-1");
 
         if file_path.is_none() {
@@ -227,7 +288,7 @@ pub fn load_file(handle: &AppHandle, label: &String) {
         let project_result: Result<ProjectSkeleton, serde_json::Error> =
             serde_json::from_str(&file_contents);
 
-        let mut project = PROJECT.lock().unwrap();
+        let mut project = project_state.lock().unwrap();
 
         match project_result {
             Ok(new_project) => {
@@ -235,6 +296,7 @@ pub fn load_file(handle: &AppHandle, label: &String) {
                 project.location = Some(project_location.to_string());
                 project.tracks = new_project.tracks.clone();
                 project.effects = new_project.effects.clone();
+                project.files = new_project.files.clone();
             }
             Err(e) => {
                 println!("Error: {:?}", e);
@@ -260,13 +322,8 @@ pub fn load_file(handle: &AppHandle, label: &String) {
 }
 
 pub fn load_empty_project(handle: &AppHandle) {
-    let empty_project = empty_project();
-
-    let mut project = PROJECT.lock().unwrap();
-    project.name = empty_project.name;
-    project.location = empty_project.location;
-    project.tracks = empty_project.tracks;
-    project.effects = empty_project.effects;
+    let empty_project = Arc::new(Mutex::new(empty_project()));
+    let project = empty_project.lock().unwrap();
 
     let window = handle.get_window(&"main-window-1".to_string()).unwrap();
     window
@@ -285,7 +342,8 @@ pub fn load_empty_project(handle: &AppHandle) {
 }
 
 #[tauri::command]
-pub fn export_prot(project: ProjectSkeleton, window: Window) {
+pub fn export_prot(project_state: State<Arc<Mutex<ProjectSkeleton>>>, window: Window) {
+    let project = project_state.lock().unwrap().clone();
     let file_name = project.name.clone().unwrap_or("export".to_string()) + ".prot";
     let save_dialog = dialog::FileDialogBuilder::new()
         .add_filter("Proteus Audio", &["prot"])
@@ -353,7 +411,7 @@ pub fn export_prot(project: ProjectSkeleton, window: Window) {
         let mut metadata_list = String::new();
 
         for (index, file) in reduced_file_list.iter().enumerate() {
-            input_list.push_str(&format!("-i {} ", file));
+            input_list.push_str(&format!("-i \"{}\" ", file));
             map_list.push_str(&format!("-map {} ", index));
             metadata_list.push_str(&format!("-metadata:s:a:{} title=\"{}\" ", index, file));
         }
@@ -386,11 +444,11 @@ pub fn export_prot(project: ProjectSkeleton, window: Window) {
             .replace(".prot", ".mka");
 
         let out_command = format!(
-            "-y {}{}{}{}{}",
+            "-y {}{}{}{}\"{}\"",
             input_list,
             map_list,
             format!(
-                "-attach {} -metadata:s:t:0 mimetype=application/json ",
+                "-attach \"{}\" -metadata:s:t:0 mimetype=application/json ",
                 settings_file_path
             ),
             metadata_list,
@@ -398,10 +456,11 @@ pub fn export_prot(project: ProjectSkeleton, window: Window) {
         );
 
         println!("{}", out_command);
+        println!("{:?}", split_arguments(out_command.as_str()));
 
-        let (mut rx, mut child) = Command::new_sidecar("ffmpeg")
+        let (mut rx, ..) = Command::new_sidecar("ffmpeg")
             .expect("failed to create `my-sidecar` binary command")
-            .args(out_command.split(" "))
+            .args(split_arguments(out_command.as_str()))
             .spawn()
             .expect("Failed to spawn sidecar");
 

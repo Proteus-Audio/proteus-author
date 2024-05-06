@@ -51,11 +51,13 @@ export const useHeadStore = defineStore('head', () => {
   const load = async (project: ProjectSkeleton) => {
     if (project.tracks.length > 0) {
       !project.location || setFileLocation(project.location)
-      await track.replaceTracksFromLoad(project.tracks)
+      await track.sync()
+      // await track.replaceTracksFromLoad(project.tracks)
       track.setSelections()
       !project.location || setPath(project.location)
       !project.name || setName(project.name)
       if (project.effects.length > 0) audio.replaceEffects(project.effects)
+      invoke('init_player')
     }
   }
 
@@ -63,7 +65,7 @@ export const useHeadStore = defineStore('head', () => {
     const tracks = track.tracks.map((t) => ({
       id: t.id,
       name: t.name,
-      file_ids: t.files.map((f) => f.id),
+      file_ids: t.file_ids,
     })) as TrackSkeleton[]
 
     const project = {
@@ -78,6 +80,7 @@ export const useHeadStore = defineStore('head', () => {
   }
 
   const logChanges = async (): Promise<boolean> => {
+    return false
     const project = projectState()
 
     console.log(project)

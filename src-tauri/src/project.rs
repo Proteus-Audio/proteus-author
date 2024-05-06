@@ -1,8 +1,10 @@
-
 use std::sync::{Arc, Mutex, atomic::AtomicBool};
 use once_cell::sync::Lazy;
 
 use serde::{Deserialize, Serialize};
+use tauri::Window;
+use tauri::State;
+use tauri::Manager;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ReverbSettings {
@@ -44,6 +46,7 @@ pub struct EffectSkeleton {
 pub struct TrackSkeleton {
     pub id: u32,
     pub name: String,
+    pub selection: Option<String>,
     pub file_ids: Vec<String>,
 }
 
@@ -62,7 +65,6 @@ pub struct FileInfo {
     pub path: String,
     pub name: String,
     pub extension: Option<String>,
-    pub peaks: Option<Vec<Vec<(f32, f32)>>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -110,6 +112,7 @@ pub fn empty_project() -> ProjectSkeleton {
         tracks: vec![TrackSkeleton {
             id: 1,
             name: "".to_string(),
+            selection: None,
             file_ids: Vec::new(),
         }],
         effects: Vec::new(),
@@ -143,4 +146,11 @@ pub fn check_status() -> ProjectStatus {
         project: project.clone(),
         saved: project.location.is_some(),
     }
+}
+
+#[tauri::command]
+pub async fn get_project_state(window: Window) -> ProjectSkeleton {
+    let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
+    let project = project_state.lock().unwrap();
+    project.clone()
 }

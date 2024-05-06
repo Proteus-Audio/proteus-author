@@ -1,4 +1,5 @@
 import { EffectSettings } from '../public/effects'
+import { DropFileSkeleton } from './tracks'
 
 type AlertType = 'success' | 'warning' | 'info' | 'error'
 
@@ -41,8 +42,9 @@ interface TrackSkeleton {
 interface ProjectSkeleton {
   location?: string
   name?: string
-  tracks: TrackSkeleton[]
+  tracks: Track[]
   effects: EffectSettings[]
+  files: DropFileSkeleton[]
 }
 
 export { Alert, AlertType, AlertClass, AlertView, ProjectSkeleton, TrackSkeleton, ProjectHead }

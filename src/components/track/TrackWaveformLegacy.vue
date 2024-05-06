@@ -45,12 +45,16 @@ const clearContainer = () => {
 
 const initialisePeaks = async () => {
   trackStore.initialised = false
-  const player = toneMaster.playerFromIds(props.track.parentId, props.track.id)
+  const player = false // toneMaster.playerFromIds(props.track.parentId, props.track.id)
   if (!player) return
   const container = clearContainer()
 
   await Tone.loaded()
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
   duration.value = player.buffer.duration
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
   const audioBuffer = cloneAudioBuffer((player.buffer as unknown as ExposedBuffer)._buffer)
   console.log(props.track, audioBuffer)
   const options = {
