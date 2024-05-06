@@ -27,6 +27,20 @@ Though, undoutably, much of the draw of performance art is owed to community and
 
 While the world of popular cinematic storytelling is, at least in part, beginning to push itself out of a fixed format ([_Black Mirror: Bandersnatch_](https://www.npr.org/2018/12/28/680671691/black-mirror-bandersnatch-makes-you-choose-your-own-adventure)  /  [Neflix’s growing library of interactive content](https://help.netflix.com/en/node/62526)) and the world of video gaming, which has long-touted interactive storytelling, is  [approaching cinematic realism](https://youtu.be/d8B1LNrBpqc), popular recorded music is still very much fixed.
 
+const path = join(app.getAppPath(), 'static', 'myFile.txt');
+const buffer = readFileSync(path);
+```
+
+## About
+
+> “It’s possible that our grandchildren will look at us and say ‘You mean people used to listen to the same thing over and over again?’” - Brian Eno
+
+I attended a lecture in 2014 by Dr. Andy Farnell on Procedural Audio who spoke, in part, about the distinction between fixed and performance mediums (ie film vs stage, album vs concert). Making note of the fact that while a theatre performance has a fixed structure and the story envokes a mood, it also adapts itself to the space and time of the specific performance.
+
+Though, undoutably, much of the draw of performance art is owed to community and social connection, I think there’s a case to be made that some of the power of perfomance is in its subtle unpredictability.
+
+While the world of popular cinematic storytelling is, at least in part, beginning to push itself out of a fixed format ([_Black Mirror: Bandersnatch_](https://www.npr.org/2018/12/28/680671691/black-mirror-bandersnatch-makes-you-choose-your-own-adventure)  /  [Neflix’s growing library of interactive content](https://help.netflix.com/en/node/62526)) and the world of video gaming, which has long-touted interactive storytelling, is  [approaching cinematic realism](https://youtu.be/d8B1LNrBpqc), popular recorded music is still very much fixed.
+
 Procedural music itself is not a new thing, the video game and contemporary composition communities have been exploring it for a long while (Steve Reich’s  [_It’s Gonna Rain_](https://www.npr.org/sections/deceptivecadence/2015/01/27/381575433/fifty-years-of-steve-reichs-its-gonna-rain)  was recorded in 1965). But, as of yet, examples of procedural music in the realm of song are sparse.
 
 The, possibly obvious, solution that I would like to explore would be to record a song in such a way that you have some number (say 10) of each individual part (ie, 10 takes of the vocal, 10 of the drums, 10 of the guitar, etc). Then on play back, you choose a random selection of each part. On a simple song with 5 parts (Guitar, Vocals, Drums, Bass, Synth) this would yield 100,000 unique combinations.
