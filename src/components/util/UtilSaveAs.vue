@@ -12,15 +12,13 @@ const track = useTrackStore()
 const head = useHeadStore()
 
 const save = async () => {
-  const tracks = track.tracks.map((t) => ({
-    id: t.id,
-    name: t.name,
-    files: t.files.map((f) => ({ id: f.id, path: f.path, name: f.name })),
-  }))
-
-  console.log(head, tracks)
+  // const tracks = track.tracks.map((t) => ({
+  //   id: t.id,
+  //   name: t.name,
+  //   files: t.files.map((f) => ({ id: f.id, path: f.path, name: f.name })),
+  // }))
+  // console.log(head, tracks)
   // const update: ProjectSkeleton = await ipcRenderer.invoke('save', { tracks })
-
   // head.load(update)
 }
 </script>

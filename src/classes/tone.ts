@@ -128,20 +128,20 @@ class ToneMaster {
   }
 
   setSelections(selections: SelectionMap) {
-    selections.forEach((s) => {
-      this.setTrackSelection(s[0], s[1])
-    })
+    // selections.forEach((s) => {
+    //   this.setTrackSelection(s[0], s[1])
+    // })
   }
 
-  setTrackSelection(trackId: number, selection: number) {
-    const track = this.trackFromId(trackId)
-    if (track) {
-      track.players.forEach((player) => {
-        player.selected = player.id === selection
-        if (player.selected) player.tone.mute = false
-        else player.tone.mute = true
-      })
-    }
+  setTrackSelection(trackId: number, selection: string) {
+    // const track = this.trackFromId(trackId)
+    // if (track) {
+    //   track.players.forEach((player) => {
+    //     player.selected = player.id === selection
+    //     if (player.selected) player.tone.mute = false
+    //     else player.tone.mute = true
+    //   })
+    // }
   }
 
   addTrack(track: ToneTrack) {
@@ -152,17 +152,16 @@ class ToneMaster {
   }
 
   addToneTrackFromTrack(track: Track) {
-    const players: ToneTrackPlayer[] = []
-    track.files.forEach((f) => {
-      players.push({
-        id: f.id,
-        name: f.name,
-        selected: false,
-        tone: new Player(`file://${f.path}`),
-      })
-    })
-
-    this.addTrack({ id: track.id, name: track.name, players })
+    // const players: ToneTrackPlayer[] = []
+    // track.files.forEach((f) => {
+    //   players.push({
+    //     id: f.id,
+    //     name: f.name,
+    //     selected: false,
+    //     tone: new Player(`file://${f.path}`),
+    //   })
+    // })
+    // this.addTrack({ id: track.id, name: track.name, players })
   }
 
   addPlayer(trackId: number, player: ToneTrackPlayer) {

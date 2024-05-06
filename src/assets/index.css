@@ -867,7 +867,7 @@
   align-items: center;
 }
 .el-button + .el-button {
-  margin-left: 12px;
+  /* margin-left: 12px; */
 }
 .el-button.is-round {
   padding: 8px 15px;

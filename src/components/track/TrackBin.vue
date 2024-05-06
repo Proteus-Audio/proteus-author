@@ -1,10 +1,17 @@
 <template>
   <div
     v-bind="getRootProps()"
-    :class="`track-bin ${hovering ? 'drag' : ''}`"
+    class="track-bin"
+    :class="{ drag: hovering, loading, clickable: fresh }"
     :style="`min-width: ${width}; ${padding}`"
+    @click="
+      () => {
+        if (fresh) openFiles()
+      }
+    "
   >
     <div v-if="!fresh" class="bin">
+      <BaseLoadingSpinner :message="loadingMessage" v-if="loading" class="loader" />
       <div class="bin-name">
         <InputAutoSizedText
           class="track-name"
@@ -12,7 +19,7 @@
           v-model="trackName"
         />
         -
-        <div type="text" class="selection-name">{{ selectedName }}</div>
+        <div type="text" class="selection-name">{{ selectedFile?.name }}</div>
 
         <el-button
           :icon="Folder"
@@ -23,12 +30,12 @@
       </div>
       <div class="waveforms">
         <TrackWaveform
-          v-for="file in track.files"
-          :class="`waveform ${file.id === track.selection ? 'visible' : 'hidden'}`"
-          :key="file.id"
-          :track="file"
-          :selected="file.id === track.selection"
-          >{{ file.name }}</TrackWaveform
+          v-if="selectedFile"
+          :class="`waveform visible`"
+          :key="selectedFile.id"
+          :track="selectedFile"
+          :selected="selectedFile.id === track.selection"
+          >{{ selectedFile.name }}</TrackWaveform
         >
       </div>
       <el-drawer
@@ -38,10 +45,10 @@
         custom-class="drawer"
       >
         <div class="tracklist">
-          <div v-for="file in track.files" :key="file.id">
-            {{ file.name }}
+          <div v-for="id in track.file_ids" :key="id">
+            {{ trackStore.getFileFromId(id)?.name }}
 
-            <el-button :icon="Delete" class="closeButton" @click="() => removeFile(file.id)" text />
+            <el-button :icon="Delete" class="closeButton" @click="() => removeFile(id)" text />
           </div>
         </div>
       </el-drawer>
@@ -49,7 +56,7 @@
 
     <input v-bind="getInputProps()" />
 
-    <span v-if="fresh" class="message clickable" @click="openFiles">
+    <span v-if="fresh" class="message clickable">
       <BaseLoadingSpinner v-if="loading" class="loader" />
       <p v-if="hovering">Drop the files here ...</p>
       <p v-else>
@@ -73,24 +80,26 @@ import TrackWaveform from './TrackWaveform.vue'
 import { Folder, Delete } from '@element-plus/icons-vue'
 import InputAutoSizedText from '../input/InputAutoSizedText.vue'
 import { useAudioStore } from '../../stores/audio'
-import { DropFile, DropFileSkeleton } from '../../typings/tracks'
-import { readBinaryFile } from '@tauri-apps/api/fs'
+import { DropFileSkeleton } from '../../typings/tracks'
 import { open } from '@tauri-apps/api/dialog'
-import { listen, UnlistenFn } from '@tauri-apps/api/event'
+import { UnlistenFn } from '@tauri-apps/api/event'
 import { appWindow } from '@tauri-apps/api/window'
 import BaseLoadingSpinner from '../base/BaseLoadingSpinner.vue'
+import { invoke } from '@tauri-apps/api'
+import { useAlertStore } from '../../stores/alerts'
 // import Button from "element-plus";
 
 interface Props {
   trackId: number
 }
 
-let unlisten: UnlistenFn | undefined
+const unlisten: UnlistenFn[] = []
 
 const props = defineProps<Props>()
 
 const trackStore = useTrackStore()
 const audio = useAudioStore()
+const alerts = useAlertStore()
 
 const track = computed(() => trackStore.getOrCreateTrackFromId(props.trackId))
 
@@ -99,13 +108,14 @@ const width = computed((): string => {
 })
 
 const padding = computed((): string => {
-  return track.value.files.length > 0 ? '' : 'margin: 0;'
+  return track.value.file_ids.length > 0 ? '' : 'margin: 0;'
 })
 
 const folderOpen = ref(false)
 const error = ref('')
 const windowHover = ref(false)
 const loading = ref(false)
+const loadingMessage = ref('')
 
 const hovering = computed(() => {
   return isDragActive.value && windowHover.value
@@ -121,70 +131,54 @@ const trackName = computed({
   },
 })
 
-const errorMessage = (code: string): string => {
-  type Lookup = { [key: string]: string }
-  const messages: Lookup = {
-    'file-invalid-type': 'Please Choose a WAV or MP3 File',
-  }
-  if (messages[code]) return messages[code]
-  return 'File Error'
-}
-
-/* eslint-disable  @typescript-eslint/no-explicit-any */
-async function onDrop(acceptFiles: DropFile[], rejectReasons: any[]) {
-  if (rejectReasons.length > 0) error.value = errorMessage(rejectReasons[0].errors[0].code)
-  else error.value = ''
-
-  console.log(acceptFiles, rejectReasons)
-
-  acceptFiles.forEach((file) => {
-    console.log(file)
-    // console.log(readBinaryFile(file));
-  })
-
-  if (acceptFiles.length > 0) {
-    // trackStore.addFileToTrack(acceptFiles, props.trackId)
-    // trackStore.shuffleTrackBin(props.trackId)
-    // trackStore.addEmptyTrackIfNone()
-  }
-}
+const selectedFile = computed(() => {
+  if (!track.value.selection) return undefined
+  return trackStore.getFileFromId(track.value.selection)
+})
 
 const loadFiles = async (files: string[]) => {
   loading.value = true
-  const acceptFiles = files.filter((file) => /(?:.mp3|.wav)$/.test(file))
-  if (acceptFiles.length > 0) {
-    const fileData: DropFileSkeleton[] = []
-    for (let i = 0; i < acceptFiles.length; i++) {
-      const filePath = acceptFiles[i]
-      const name = filePath.replace(/^.*[\\/]/, '')
-      const extension = filePath.replace(/^.*\./, '')
-      const data = await readBinaryFile(filePath)
-      fileData.push({ name, path: filePath, data, extension })
+  const acceptableFiles = files.filter((file) => /(?:.mp3|.wav)$/.test(file))
+  if (acceptableFiles.length !== files.length) {
+    alerts.addAlert('Only WAV and MP3 files are accepted at the moment.', 'warning')
+  }
+
+  if (acceptableFiles.length > 0) {
+    // const fileData: DropFileSkeleton[] = []
+    for (let i = 0; i < acceptableFiles.length; i++) {
+      const filePath = acceptableFiles[i]
+      console.log(filePath, /(?:.mp3|.wav)$/.test(filePath))
+
+      const file = (await invoke('register_file', {
+        filePath,
+        trackId: props.trackId,
+      })) as DropFileSkeleton
+
+      console.log(file)
+
+      loadingMessage.value = `Processing ${file.name}`
+
+      await trackStore.addFileToTrackBinary(file, props.trackId)
     }
 
-    console.log('starting processing')
-    await trackStore.addFileToTrackBinary(fileData, props.trackId)
+    await invoke('init_player')
     console.log('finished processing')
-    trackStore.shuffleTrackBin(props.trackId)
-    trackStore.addEmptyTrackIfNone()
+
+    trackStore.shuffle()
+
+    trackStore.sync()
   }
   loading.value = false
 }
 
-const removeFile = (id: number) => trackStore.removeFileFromTrack(id, props.trackId)
-
-const selectedName = computed(() => {
-  const filename: string | undefined = trackStore.getTrackSelection(props.trackId)?.name
-  return filename ? filename.replace(/\..*$/, '') : ''
-})
+const removeFile = (id: string) => trackStore.removeFileFromTrack(id, props.trackId)
 
 const fresh = computed(() => {
-  const isFresh = track.value.files.length === 0
+  const isFresh = track.value.file_ids.length === 0
   return isFresh
 })
 
 const { getRootProps, getInputProps, isDragActive } = useDropzone({
-  onDrop,
   accept: ['audio/mpeg', 'audio/wav'],
   noClick: true,
 })
@@ -199,27 +193,32 @@ const openFiles = async () => {
 }
 
 onMounted(async () => {
-  unlisten = await listen<string>('tauri://file-drop', async (event) => {
-    if (isDragActive.value) loadFiles(event.payload as unknown as string[])
-  })
-  unlisten = await appWindow.onFileDropEvent((event) => {
-    if (event.payload.type === 'hover') {
-      windowHover.value = true
-    } else if (event.payload.type === 'drop') {
-      windowHover.value = false
-      if (isDragActive.value) loadFiles(event.payload as unknown as string[])
-    } else {
-      windowHover.value = false
-    }
-  })
+  unlisten.push(
+    await appWindow.onFileDropEvent((event) => {
+      if (event.payload.type === 'hover') {
+        windowHover.value = true
+      } else if (event.payload.type === 'drop' && isDragActive.value) {
+        console.log('file drop', event)
+        windowHover.value = false
+        loadFiles(event.payload.paths as string[])
+      } else {
+        windowHover.value = false
+      }
+    }),
+  )
 })
 
 onUnmounted(() => {
-  if (unlisten) unlisten()
+  console.log('unmounting')
+  unlisten.forEach((unlistener) => unlistener())
 })
 </script>
 
 <style lang="scss" scoped>
+.clickable {
+  cursor: pointer;
+}
+
 .track-bin {
   background: rgba(0, 0, 0, 0.1);
   padding: 1em;
@@ -229,11 +228,14 @@ onUnmounted(() => {
   &.drag {
     background: rgba(0, 0, 0, 0.2);
   }
-  .loader {
+
+  &.loading {
+    :deep(.channels .channel .annotation .timestamp) {
+      background: rgba(0, 0, 0, 0.2);
+    }
   }
-  .clickable {
-    cursor: pointer;
-  }
+  /* .loader {
+  }*/
   .error {
     color: rgb(189, 50, 50);
   }

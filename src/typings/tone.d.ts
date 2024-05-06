@@ -4,7 +4,7 @@ import { Compressor, Distortion, Limiter, Player, Reverb } from 'tone'
 //   ids: [number, number][];
 // }
 
-type SelectionMap = [number, number][]
+type SelectionMap = [number, string | undefined][]
 
 interface ToneTrackPlayer {
   id: number

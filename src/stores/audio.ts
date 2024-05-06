@@ -1,11 +1,12 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { Ref, computed, ref } from 'vue'
 import { useAlertStore } from './alerts'
 import { useTrackStore } from './track'
 import * as Tone from 'tone'
 import { toneMaster } from '../assets/toneMaster'
 import { Effect } from '../typings/effects'
 import { EffectSettings } from '../assets/effects'
+import { invoke } from '@tauri-apps/api'
 
 export const useAudioStore = defineStore('prot', () => {
   const alert = useAlertStore()
@@ -19,8 +20,9 @@ export const useAudioStore = defineStore('prot', () => {
   const currentTime = ref(0)
   const scale = ref(20 as number)
   const duration = ref(0)
-  const zoom = ref({ y: 1, x: 20 })
+  const zoom = ref({ y: 1, x: 10 })
   const effects = ref([] as EffectSettings[])
+  const clock: Ref<number> = ref(0.0)
   //   const group = ref(new Pizzicato.Group());
 
   /////////////
@@ -32,8 +34,6 @@ export const useAudioStore = defineStore('prot', () => {
   const getCurrentTime = computed((): number => currentTime.value)
   const getXScale = computed((): number => zoom.value.x)
   const getYScale = computed((): number => zoom.value.y)
-  const context = computed((): AudioContext => toneMaster.context)
-  const audioContext = computed((): AudioContext => context.value)
 
   /////////////
   // SETTERS //
@@ -50,15 +50,17 @@ export const useAudioStore = defineStore('prot', () => {
     }
 
     setPlaying(true)
-    await toneMaster.play((time: number, i?: number) => {
-      if (time === 0 && i !== 0) stop()
-      else currentTime.value = time
-    })
+    await invoke('play')
+    // await toneMaster.play((time: number, i?: number) => {
+    //   if (time === 0 && i !== 0) stop()
+    //   else currentTime.value = time
+    // })
   }
 
   const pause = async () => {
     setPlaying(false)
-    await toneMaster.pause()
+    await invoke('pause')
+    // await toneMaster.pause()
   }
 
   const playPause = async () => {
@@ -66,7 +68,8 @@ export const useAudioStore = defineStore('prot', () => {
   }
 
   const stop = async () => {
-    await toneMaster.stop()
+    await invoke('stop')
+    // await toneMaster.stop()
     currentTime.value = 0
     setPlaying(false)
   }
@@ -90,14 +93,14 @@ export const useAudioStore = defineStore('prot', () => {
   const zoomIn = (axis?: 'x' | 'y' | 'both', degree?: number) => {
     axis = axis || 'x'
     const amount = degree ? degree / 100 : 1
-    if (axis === 'x' || axis === 'both') setXScale(getXScale.value + 5 * amount)
+    if (axis === 'x' || axis === 'both') setXScale(getXScale.value + 1 * amount)
     if (axis === 'y' || axis === 'both') setYScale(getXScale.value + 1 * amount)
   }
 
   const zoomOut = (axis?: 'x' | 'y' | 'both', degree?: number) => {
     axis = axis || 'x'
     const amount = degree ? degree / 100 : 1
-    if (axis === 'x' || axis === 'both') setXScale(getXScale.value - 5 * amount)
+    if (axis === 'x' || axis === 'both') setXScale(getXScale.value - 1 * amount)
     if (axis === 'y' || axis === 'both') setYScale(getXScale.value - 1 * amount)
   }
 
@@ -130,6 +133,32 @@ export const useAudioStore = defineStore('prot', () => {
     effects.value = newEffects
   }
 
+  type zoomType = 'increment' | 'decrement'
+
+  const zoomX = (direction: zoomType) => {
+    if (direction === 'increment' && zoom.value.x < 20) {
+      zoom.value.x++
+    } else if (direction === 'decrement' && zoom.value.x > 1) {
+      zoom.value.x--
+    }
+  }
+
+  const zoomY = (direction: zoomType) => {
+    if (direction === 'increment' && zoom.value.y < 20) {
+      zoom.value.y++
+    } else if (direction === 'decrement' && zoom.value.y > 1) {
+      zoom.value.y--
+    }
+  }
+
+  const setClock = (time: number) => {
+    clock.value = time
+  }
+
+  const seek = async (time: number) => {
+    await invoke('seek', { position: time })
+  }
+
   return {
     scale,
     zoom,
@@ -140,7 +169,7 @@ export const useAudioStore = defineStore('prot', () => {
     getCurrentTime,
     getXScale,
     getYScale,
-    audioContext,
+    clock,
     play,
     pause,
     playPause,
@@ -156,5 +185,9 @@ export const useAudioStore = defineStore('prot', () => {
     addEffect,
     removeEffect,
     replaceEffects,
+    zoomX,
+    zoomY,
+    setClock,
+    seek,
   }
 })

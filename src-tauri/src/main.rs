@@ -3,18 +3,47 @@
     windows_subsystem = "windows"
 )]
 
-mod menu;
-mod windows;
 mod file;
+mod menu;
 mod project;
+mod windows;
+mod peaks;
+mod player;
+
+use std::sync::{Arc, Mutex};
 
 use file::*;
 use project::*;
+use player::*;
+use proteus_audio::player::Player;
 
 fn main() {
     let app = tauri::Builder::default()
         .manage(project::create_project())
-        .invoke_handler(tauri::generate_handler![project_changes, auto_save, save_file, save_file_as, check_status, export_prot])
+        .manage(Arc::new(Mutex::new(None::<Player>)))
+        .invoke_handler(tauri::generate_handler![
+            project_changes,
+            auto_save,
+            save_file,
+            save_file_as,
+            check_status,
+            export_prot,
+            get_peaks,
+            register_file,
+            get_simplified_peaks,
+            init_player,
+            get_project_state,
+            play,
+            pause,
+            stop,
+            seek,
+            shuffle,
+            get_duration,
+            get_position,
+            get_play_state,
+            set_selections,
+            set_volume
+        ])
         .menu(menu::get_menu())
         .build(tauri::generate_context!())
         .expect("error while running tauri application");

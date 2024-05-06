@@ -1,4 +1,5 @@
 import { EffectSettings } from '../public/effects'
+import { DropFileSkeleton } from './tracks'
 
 type AlertType = 'success' | 'warning' | 'info' | 'error'
 
@@ -20,22 +21,30 @@ interface ProjectHead {
   path?: string
 }
 
+// interface TrackSkeleton {
+//   id: number
+//   name: string
+//   files: {
+//     id: number
+//     path: string
+//     name: string
+//     extension: string
+//     peaks: [number, number][][]
+//   }[]
+// }
+
 interface TrackSkeleton {
   id: number
   name: string
-  files: {
-    id: number
-    path: string
-    name: string
-    extension: string
-  }[]
+  file_ids: string[]
 }
 
 interface ProjectSkeleton {
   location?: string
   name?: string
-  tracks: TrackSkeleton[]
+  tracks: Track[]
   effects: EffectSettings[]
+  files: DropFileSkeleton[]
 }
 
 export { Alert, AlertType, AlertClass, AlertView, ProjectSkeleton, TrackSkeleton, ProjectHead }
