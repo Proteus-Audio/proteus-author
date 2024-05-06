@@ -1,42 +1,31 @@
 Proteus (.prot) file authoring **Vue3** + **Electron** TypeScript based application based on [Deluze's electron-vue-template](https://github.com/Deluze/electron-vue-template). This repo is moving from the same idea as the [multiplay mixer](https://github.com/howardah/multiplay_mixer) flutter application.
 
-### Install dependencies
+# Tauri + Vue 3 + TypeScript
 
-```bash
-yarn
-```
+This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
 
-### Start developing ⚒️
+## Recommended IDE Setup
 
-```bash
-yarn dev
-```
+- [VS Code](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
 
-## Additional Commands
+## Type Support For `.vue` Imports in TS
 
-```bash
-yarn dev # starts application with hot reload
-yarn build # builds application
+Since TypeScript cannot handle type information for `.vue` imports, they are shimmed to be a generic Vue component type by default. In most cases this is fine if you don't really care about component prop types outside of templates. However, if you wish to get actual prop types in `.vue` imports (for example to get props validation when using manual `h(...)` calls), you can enable Volar's Take Over mode by following these steps:
 
-# OR
+1. Run `Extensions: Show Built-in Extensions` from VS Code's command palette, look for `TypeScript and JavaScript Language Features`, then right click and select `Disable (Workspace)`. By default, Take Over mode will enable itself if the default TypeScript extension is disabled.
+2. Reload the VS Code window by running `Developer: Reload Window` from the command palette.
 
-yarn build:win # uses windows as build target
-yarn build:mac # uses mac as build target
-yarn build:linux # uses linux as build target
-```
+You can learn more about Take Over mode [here](https://github.com/johnsoncodehk/volar/discussions/471).
 
-## Using static files
+## About
 
-If you have any files that you want to copy over to the app directory after installation, you will need to add those files in your `src/main/static` directory.
+> “It’s possible that our grandchildren will look at us and say ‘You mean people used to listen to the same thing over and over again?’” - Brian Eno
 
-#### Referencing static files from your main process
+I attended a lecture in 2014 by Dr. Andy Farnell on Procedural Audio who spoke, in part, about the distinction between fixed and performance mediums (ie film vs stage, album vs concert). Making note of the fact that while a theatre performance has a fixed structure and the story envokes a mood, it also adapts itself to the space and time of the specific performance.
 
-```ts
-/* Assumes src/main/static/myFile.txt exists */
+Though, undoutably, much of the draw of performance art is owed to community and social connection, I think there’s a case to be made that some of the power of perfomance is in its subtle unpredictability.
 
-import {app} from 'electron';
-import {join} from 'path';
-import {readFileSync} from 'fs';
+While the world of popular cinematic storytelling is, at least in part, beginning to push itself out of a fixed format ([_Black Mirror: Bandersnatch_](https://www.npr.org/2018/12/28/680671691/black-mirror-bandersnatch-makes-you-choose-your-own-adventure)  /  [Neflix’s growing library of interactive content](https://help.netflix.com/en/node/62526)) and the world of video gaming, which has long-touted interactive storytelling, is  [approaching cinematic realism](https://youtu.be/d8B1LNrBpqc), popular recorded music is still very much fixed.
 
 const path = join(app.getAppPath(), 'static', 'myFile.txt');
 const buffer = readFileSync(path);
