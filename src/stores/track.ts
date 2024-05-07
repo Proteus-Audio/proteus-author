@@ -7,7 +7,7 @@ import { useAudioStore } from './audio'
 import { SelectionMap } from '../typings/tone'
 import { toneMaster } from '../assets/toneMaster'
 import { useHeadStore } from './head'
-import { invoke } from '@tauri-apps/api'
+import { invoke } from '@tauri-apps/api/core'
 
 export const useTrackStore = defineStore('track', () => {
   const audio = useAudioStore()

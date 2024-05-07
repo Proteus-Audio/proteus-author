@@ -9,7 +9,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { invoke } from "@tauri-apps/api/tauri";
+import { invoke } from "@tauri-apps/api/core";
 
 import { IceCream } from '@element-plus/icons-vue'
 

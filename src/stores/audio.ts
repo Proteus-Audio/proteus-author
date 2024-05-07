@@ -6,7 +6,7 @@ import * as Tone from 'tone'
 import { toneMaster } from '../assets/toneMaster'
 import { Effect } from '../typings/effects'
 import { EffectSettings } from '../assets/effects'
-import { invoke } from '@tauri-apps/api'
+import { invoke } from '@tauri-apps/api/core'
 
 export const useAudioStore = defineStore('prot', () => {
   const alert = useAlertStore()

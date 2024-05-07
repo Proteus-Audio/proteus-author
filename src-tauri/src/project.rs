@@ -1,10 +1,10 @@
-use std::sync::{Arc, Mutex, atomic::AtomicBool};
 use once_cell::sync::Lazy;
+use std::sync::{atomic::AtomicBool, Arc, Mutex};
 
 use serde::{Deserialize, Serialize};
-use tauri::Window;
-use tauri::State;
 use tauri::Manager;
+use tauri::State;
+use tauri::Window;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ReverbSettings {
@@ -124,14 +124,9 @@ pub fn create_project() -> Arc<Mutex<ProjectSkeleton>> {
     Arc::new(Mutex::new(empty_project()))
 }
 
-pub static PROJECT: Lazy<Arc<Mutex<ProjectSkeleton>>> = Lazy::new(|| {
-    create_project()
-});
+pub static PROJECT: Lazy<Arc<Mutex<ProjectSkeleton>>> = Lazy::new(|| create_project());
 
-pub static UNSAVED_CHANGES: Lazy<AtomicBool> = Lazy::new(|| {
-    AtomicBool::new(false)
-});
-
+pub static UNSAVED_CHANGES: Lazy<AtomicBool> = Lazy::new(|| AtomicBool::new(false));
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ProjectStatus {

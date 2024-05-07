@@ -1,6 +1,5 @@
 <template>
   <div
-    v-bind="getRootProps()"
     class="track-bin"
     :class="{ drag: hovering, loading, clickable: fresh }"
     :style="`min-width: ${width}; ${padding}`"
@@ -9,6 +8,7 @@
         if (fresh) openFiles()
       }
     "
+    ref="bin"
   >
     <div v-if="!fresh" class="bin">
       <BaseLoadingSpinner :message="loadingMessage" v-if="loading" class="loader" />
@@ -54,8 +54,6 @@
       </el-drawer>
     </div>
 
-    <input v-bind="getInputProps()" />
-
     <span v-if="fresh" class="message clickable">
       <BaseLoadingSpinner v-if="loading" class="loader" />
       <p v-if="hovering">Drop the files here ...</p>
@@ -73,7 +71,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-import { useDropzone } from 'vue3-dropzone'
 import { useTrackStore } from '../../stores/track'
 import TrackWaveform from './TrackWaveform.vue'
 
@@ -81,11 +78,11 @@ import { Folder, Delete } from '@element-plus/icons-vue'
 import InputAutoSizedText from '../input/InputAutoSizedText.vue'
 import { useAudioStore } from '../../stores/audio'
 import { DropFileSkeleton } from '../../typings/tracks'
-import { open } from '@tauri-apps/api/dialog'
+import { open } from '@tauri-apps/plugin-dialog'
 import { UnlistenFn } from '@tauri-apps/api/event'
-import { appWindow } from '@tauri-apps/api/window'
+import { Window } from '@tauri-apps/api/window'
 import BaseLoadingSpinner from '../base/BaseLoadingSpinner.vue'
-import { invoke } from '@tauri-apps/api'
+import { invoke } from '@tauri-apps/api/core'
 import { useAlertStore } from '../../stores/alerts'
 // import Button from "element-plus";
 
@@ -100,6 +97,7 @@ const props = defineProps<Props>()
 const trackStore = useTrackStore()
 const audio = useAudioStore()
 const alerts = useAlertStore()
+const bin = ref<HTMLElement | null>(null)
 
 const track = computed(() => trackStore.getOrCreateTrackFromId(props.trackId))
 
@@ -113,12 +111,13 @@ const padding = computed((): string => {
 
 const folderOpen = ref(false)
 const error = ref('')
-const windowHover = ref(false)
+const binHover = ref(false)
 const loading = ref(false)
 const loadingMessage = ref('')
+const binBounds = ref({ left: 0, top: 0, right: 0, bottom: 0 })
 
 const hovering = computed(() => {
-  return isDragActive.value && windowHover.value
+  return binHover.value
 })
 
 const trackName = computed({
@@ -178,31 +177,53 @@ const fresh = computed(() => {
   return isFresh
 })
 
-const { getRootProps, getInputProps, isDragActive } = useDropzone({
-  accept: ['audio/mpeg', 'audio/wav'],
-  noClick: true,
-})
-
 const openFiles = async () => {
   const files = await open({
     multiple: true,
     filters: [{ name: 'Audio Files', extensions: ['wav', 'mp3'] }],
   })
   if (!files) return
-  loadFiles(typeof files === 'string' ? [files] : files)
+  console.log(files)
+  loadFiles(files.map((file) => file.path))
+}
+
+const calcBinBounds = () => {
+  const scroll = document.documentElement.scrollTop
+  if (!bin.value) return { left: 0, top: 0 - scroll, right: 0, bottom: 0 - scroll }
+
+  return {
+    left: bin.value.offsetLeft,
+    top: bin.value.offsetTop - scroll,
+    right: bin.value.offsetLeft + bin.value.offsetWidth,
+    bottom: bin.value.offsetTop + bin.value.offsetHeight - scroll,
+  }
+}
+
+const checkBinHover = (position: { x: number; y: number }) => {
+  return (
+    position.x > binBounds.value.left &&
+    position.x < binBounds.value.right &&
+    position.y > binBounds.value.top &&
+    position.y < binBounds.value.bottom
+  )
 }
 
 onMounted(async () => {
+  const appWindow = Window.getCurrent()
+  binBounds.value = calcBinBounds()
+
   unlisten.push(
-    await appWindow.onFileDropEvent((event) => {
-      if (event.payload.type === 'hover') {
-        windowHover.value = true
-      } else if (event.payload.type === 'drop' && isDragActive.value) {
+    await appWindow.onDragDropEvent((event) => {
+      binBounds.value = calcBinBounds()
+      // console.log('drag event', isDragActive.value)
+      if (event.payload.type === 'dragOver' && checkBinHover(event.payload.position)) {
+        binHover.value = true
+      } else if (event.payload.type === 'dropped' && binHover.value) {
         console.log('file drop', event)
-        windowHover.value = false
+        binHover.value = false
         loadFiles(event.payload.paths as string[])
       } else {
-        windowHover.value = false
+        binHover.value = false
       }
     }),
   )

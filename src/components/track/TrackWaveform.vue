@@ -35,7 +35,7 @@ import { onMounted, computed, ref, watch } from 'vue'
 
 import { useAudioStore } from '../../stores/audio'
 import { TrackFile } from '../../typings/tracks'
-import { invoke } from '@tauri-apps/api'
+import { invoke } from '@tauri-apps/api/core'
 
 interface Props {
   track: TrackFile

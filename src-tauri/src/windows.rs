@@ -1,28 +1,30 @@
-use crate::{
-    file::*,
-    project::{self, PROJECT},
-};
+use crate::file::*;
 use tauri::{
-    App, LogicalPosition, LogicalSize, Manager, Position, Size, Window, WindowBuilder, WindowUrl,
+    App, LogicalPosition, LogicalSize, Position, Size, TitleBarStyle, WebviewWindow,
+    WebviewWindowBuilder,
 };
 
-pub fn create_main_window(app: &App) -> Window {
+pub fn create_main_window(app: &App) -> WebviewWindow {
     create_window(app, 1)
 }
 
-pub fn create_window(app: &App, count: i32) -> Window {
+pub fn create_window(app: &App, count: i32) -> WebviewWindow {
     let handle = app.handle();
-    let window = WindowBuilder::new(
-        &handle,
+    let win_builder = WebviewWindowBuilder::new(
+        app,
         format!("{}-{}", "main-window", count),
-        WindowUrl::App("index.html".into()),
+        tauri::WebviewUrl::App("index.html".into()),
     )
     .title("Proteus Author")
-    .min_inner_size(600.0, 600.0)
-    .build()
-    .unwrap();
+    .min_inner_size(600.0, 600.0);
 
-    let current_monitor = Window::current_monitor(&window)
+    // set transparent title bar only when building for macOS
+    #[cfg(target_os = "macos")]
+    let win_builder = win_builder.title_bar_style(TitleBarStyle::Transparent);
+
+    let window = win_builder.build().unwrap();
+
+    let current_monitor = WebviewWindow::current_monitor(&window)
         .unwrap()
         .expect("error getting current monitor");
     let scale_size = current_monitor.scale_factor().clone();
@@ -51,42 +53,7 @@ pub fn create_window(app: &App, count: i32) -> Window {
         create_window(app, count + 1);
     }
 
-    println!(
-        "M Height: {} M Width: {}",
-        monitor_size.height, monitor_size.width
-    );
-    println!("Height: {} Width: {}", height, width);
-
     let label = String::from(window.label());
-
-    window.on_menu_event(move |event| match event.menu_item_id() {
-        "save" => {
-            let window = handle.get_window(&label).unwrap();
-            window.emit("SAVE_FILE", "").expect("failed to emit event");
-            // let new_handle = app.handle();
-            // save_file();
-        }
-        "save_as" => {
-            let window = handle.get_window(&label).unwrap();
-            window
-                .emit("SAVE_FILE_AS", "")
-                .expect("failed to emit event");
-            // save_file_as();
-        }
-        "load" => {
-            load_file(&handle, &label);
-        }
-        "export_prot" => {
-            let window = handle.get_window(&label).unwrap();
-            window
-                .emit("START_EXPORT", "")
-                .expect("failed to emit event");
-        }
-        "new_window" => {
-            load_empty_project(&handle);
-        }
-        _ => {}
-    });
 
     window
 }

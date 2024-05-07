@@ -20,7 +20,7 @@ import { useTrackStore } from '../../stores/track'
 import { VideoPlay, VideoPause, Close, Refresh, ZoomOut, ZoomIn } from '@element-plus/icons-vue'
 import { toneMaster } from '../../assets/toneMaster'
 import { computed, ref } from 'vue'
-import { invoke } from '@tauri-apps/api'
+import { invoke } from '@tauri-apps/api/core'
 
 const audio = useAudioStore()
 const track = useTrackStore()

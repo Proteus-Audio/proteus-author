@@ -4,21 +4,30 @@
 )]
 
 mod file;
-mod menu;
-mod project;
-mod windows;
+// mod menu;
 mod peaks;
 mod player;
+mod project;
+mod windows;
 
 use std::sync::{Arc, Mutex};
 
 use file::*;
-use project::*;
 use player::*;
+use project::*;
 use proteus_audio::player::Player;
 
 fn main() {
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .plugin(tauri_plugin_os::init())
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_http::init())
+        .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_fs::init())
         .manage(project::create_project())
         .manage(Arc::new(Mutex::new(None::<Player>)))
         .invoke_handler(tauri::generate_handler![
@@ -26,6 +35,8 @@ fn main() {
             auto_save,
             save_file,
             save_file_as,
+            open_file,
+            load_empty_project,
             check_status,
             export_prot,
             get_peaks,
@@ -44,7 +55,7 @@ fn main() {
             set_selections,
             set_volume
         ])
-        .menu(menu::get_menu())
+        // .menu(menu::get_menu())
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
 

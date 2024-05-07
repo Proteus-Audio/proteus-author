@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { ProjectHead, ProjectSkeleton, TrackSkeleton } from '../typings/proteus'
 import { useAudioStore } from './audio'
 import { useTrackStore } from './track'
-import { invoke } from '@tauri-apps/api/tauri'
+import { invoke } from '@tauri-apps/api/core'
 
 export const useHeadStore = defineStore('head', () => {
   const track = useTrackStore()

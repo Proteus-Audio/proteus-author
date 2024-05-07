@@ -18,9 +18,9 @@ use proteus_audio::reporter::Report;
 use serde::Deserialize;
 use serde::Serialize;
 // }
+use tauri::Manager;
 use tauri::State;
 use tauri::Window;
-use tauri::Manager;
 
 use crate::project::ProjectSkeleton;
 
@@ -63,10 +63,10 @@ pub async fn init_player(window: Window) {
     }
 
     let mut new_player = Player::new_from_file_paths(&file_list);
-    let handle = window.app_handle();
+    let handle = window.app_handle().clone();
     let label = String::from(window.label());
-    let reporter = move |Report {time, ..} | {
-        let window_clone = handle.get_window(&label).unwrap();
+    let reporter = move |Report { time, .. }| {
+        let window_clone = handle.get_webview_window(&label).unwrap();
         window_clone.emit("UPDATE_PLAYHEAD", time).unwrap_or(());
     };
     new_player.set_reporting(Arc::new(Mutex::new(reporter)), Duration::from_millis(100));
@@ -84,8 +84,11 @@ pub async fn init_player(window: Window) {
 pub async fn play(window: Window) {
     let player_state: State<Arc<Mutex<Option<Player>>>> = window.state();
     let mut player = player_state.lock().unwrap();
-    println!("playing ({})", if player.is_none() { "nope" } else { "yep" });
-    
+    println!(
+        "playing ({})",
+        if player.is_none() { "nope" } else { "yep" }
+    );
+
     if player.is_none() {
         return;
     }
@@ -148,12 +151,10 @@ pub async fn shuffle(window: Window) {
     set_selections(window);
 }
 
-
 #[tauri::command]
 pub async fn get_position(window: Window) -> f64 {
     let player_state: State<Arc<Mutex<Option<Player>>>> = window.state();
     let player = player_state.lock().unwrap();
-
 
     if player.is_none() {
         return 0.0;
@@ -251,7 +252,7 @@ pub fn get_play_state(window: Window) -> PlayerState {
     if player.is_none() {
         return PlayerState::Stopped;
     }
-    
+
     let player = player.as_ref().unwrap();
 
     if player.is_playing() {

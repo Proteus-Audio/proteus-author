@@ -1,18 +1,19 @@
+use regex::Regex;
 use std::fs::File;
 use std::io::prelude::*;
 use std::sync::Arc;
 use std::sync::Mutex;
-use tauri::api::dialog;
-use tauri::api::process::Command;
-use tauri::api::process::CommandEvent;
 use tauri::AppHandle;
 use tauri::Manager;
 use tauri::State;
 use tauri::Window;
-use regex::Regex;
+use tauri_plugin_dialog::DialogExt;
+use tauri_plugin_shell;
+use tauri_plugin_shell::process::CommandEvent;
+use tauri_plugin_shell::ShellExt;
 
-use crate::project::*;
 use crate::peaks::*;
+use crate::project::*;
 
 fn split_arguments(string: &str) -> Vec<&str> {
     let re = Regex::new(r#"[^"\s]*("[^"]*)"|([^"\s]+)"#).unwrap();
@@ -31,10 +32,12 @@ fn split_arguments(string: &str) -> Vec<&str> {
         .collect()
 }
 
-
-
 #[tauri::command]
-pub fn push_file_id(track_id: u32, file_id: String, project_state: State<Arc<Mutex<ProjectSkeleton>>>) {
+pub fn push_file_id(
+    track_id: u32,
+    file_id: String,
+    project_state: State<Arc<Mutex<ProjectSkeleton>>>,
+) {
     let mut project = project_state.lock().unwrap();
 
     let track = project.tracks.iter_mut().find(|t| t.id == track_id);
@@ -58,23 +61,30 @@ pub fn push_file_id(track_id: u32, file_id: String, project_state: State<Arc<Mut
 }
 
 #[tauri::command]
-pub async fn register_file(file_path: &str, track_id: u32, window: Window) -> Result<FileInfoSkeleton, String> {
+pub async fn register_file(
+    file_path: &str,
+    track_id: u32,
+    window: Window,
+) -> Result<FileInfoSkeleton, String> {
     let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
 
     let project = project_state.lock().unwrap();
 
     let project_clone = project.clone();
     drop(project);
-    
-    // See if file is already registered
-    let mut found_file = project_clone.files.iter().find_map(|file| {
-        if file.path == file_path {
-            Some(file)
-        } else {
-            None
-        }
-    }).clone();
 
+    // See if file is already registered
+    let mut found_file = project_clone
+        .files
+        .iter()
+        .find_map(|file| {
+            if file.path == file_path {
+                Some(file)
+            } else {
+                None
+            }
+        })
+        .clone();
 
     // If file is not registered, register it
     if found_file.is_none() {
@@ -109,7 +119,7 @@ pub async fn register_file(file_path: &str, track_id: u32, window: Window) -> Re
     let project = project_state.lock().unwrap();
     found_file = project.files.last();
 
-    let file_unwraped= found_file.unwrap().clone();
+    let file_unwraped = found_file.unwrap().clone();
 
     Ok(FileInfoSkeleton {
         id: file_unwraped.id.clone(),
@@ -120,7 +130,11 @@ pub async fn register_file(file_path: &str, track_id: u32, window: Window) -> Re
 }
 
 #[tauri::command]
-pub async fn get_simplified_peaks(file_id: String, zoom: usize, window: Window) -> Vec<SimplifiedPeaks> {
+pub async fn get_simplified_peaks(
+    file_id: String,
+    zoom: usize,
+    window: Window,
+) -> Vec<SimplifiedPeaks> {
     let timer = std::time::Instant::now();
     let peaks = get_json_peaks(&window, &file_id, None);
     let simplified_peaks = simplify_peaks(peaks, zoom);
@@ -137,7 +151,11 @@ pub fn get_peaks(file_path: &str) -> Vec<Vec<(f32, f32)>> {
 }
 
 #[tauri::command]
-pub fn project_changes(new_project: ProjectSkeleton, window: Window, project_state: State<Arc<Mutex<ProjectSkeleton>>>) -> String {
+pub fn project_changes(
+    new_project: ProjectSkeleton,
+    window: Window,
+    project_state: State<Arc<Mutex<ProjectSkeleton>>>,
+) -> String {
     println!("new_project: {:?}", new_project);
     let project = project_state.lock().unwrap();
     let project_json = serde_json::to_string(&*project).unwrap();
@@ -214,16 +232,15 @@ pub async fn save_file_as(window: Window) -> Option<ProjectSkeleton> {
     drop(project);
 
     // let file_name = new_project.name.clone().unwrap_or("untitled".to_string()) + ".protproject";
-    // auto_save(new_project);
-    let save_dialog = dialog::blocking::FileDialogBuilder::new()
+    // auto_save(new_project)
+
+    let file_path = window
+        .dialog()
+        .file()
         .add_filter("Proteus Author Project", &["protproject"])
         .set_title("Save Project")
-        .set_file_name(&file_name.as_str());
-
-    let handle = window.app_handle();
-    let window_label = String::from(window.label());
-
-    let file_path = save_dialog.save_file();
+        .set_file_name(file_name.as_str())
+        .blocking_save_file();
 
     if file_path.is_none() {
         println!("No file selected");
@@ -247,85 +264,74 @@ pub async fn save_file_as(window: Window) -> Option<ProjectSkeleton> {
     file.write_all(project_json.as_bytes()).unwrap();
 
     UNSAVED_CHANGES.store(false, std::sync::atomic::Ordering::Relaxed);
-    let window = handle.get_window(&window_label).unwrap();
+
     window.set_title(&file_name).unwrap();
 
     Some(project.clone())
 }
 
 #[tauri::command]
-pub fn load_file(handle: &AppHandle, label: &String) {
-    let load_dialog =
-        dialog::FileDialogBuilder::new().add_filter("Proteus Project", &["protproject"]);
-
-    // let project_state: State<Arc<Mutex<ProjectSkeleton>>> = handle.state();
-    // let project_state_clone = project_state.clone();
-    
-    let window = handle.get_window(label);
-    
-    load_dialog.pick_file(|file_path| {
-        let window_clone = window.clone().unwrap();
-        let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window_clone.state();
-        // let window = Window::get_window(&self, "main-window-1");
-
-        if file_path.is_none() {
-            println!("No file selected");
-            ()
-        }
-
-        // If file extension is not .protproject, return error
-        let path_buff = file_path.unwrap();
-
-        if path_buff.extension().unwrap() != "protproject" {
-            println!("File extension is not .protproject");
-            ()
-        }
-
-        let file_name = path_buff.file_name().unwrap().to_str().unwrap();
-        let project_location = path_buff.to_str().unwrap().to_string();
-
-        let file_contents = std::fs::read_to_string(path_buff.clone()).unwrap();
-        let project_result: Result<ProjectSkeleton, serde_json::Error> =
-            serde_json::from_str(&file_contents);
-
-        let mut project = project_state.lock().unwrap();
-
-        match project_result {
-            Ok(new_project) => {
-                project.name = Some(file_name.to_string());
-                project.location = Some(project_location.to_string());
-                project.tracks = new_project.tracks.clone();
-                project.effects = new_project.effects.clone();
-                project.files = new_project.files.clone();
+pub async fn open_file(window: Window) {
+    println!("Window: {:?}", window);
+    window
+        .dialog()
+        .file()
+        .add_filter("Proteus Project", &["protproject"])
+        .pick_file(move |file| {
+            if file.is_none() {
+                println!("No file selected");
+                return;
             }
-            Err(e) => {
-                println!("Error: {:?}", e);
-            }
-        }
 
-        match window {
-            Some(window) => {
-                let file_name = project.name.clone().unwrap();
-                window.set_title(&file_name.as_str()).unwrap();
-                window
-                    .emit("FILE_LOADED", project.clone())
-                    .expect("failed to emit event");
-            }
-            None => {
-                println!("Window not found");
-            }
-        }
+            let file_path = file.unwrap();
+            let path_buff = file_path.path;
+            let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
 
-        drop(project);
-        ()
-    });
+            if path_buff.extension().unwrap() != "protproject" {
+                println!("File extension is not .protproject");
+                ()
+            }
+
+            let file_name = path_buff.file_name().unwrap().to_str().unwrap();
+            let project_location = path_buff.to_str().unwrap().to_string();
+
+            let file_contents = std::fs::read_to_string(path_buff.clone()).unwrap();
+            let project_result: Result<ProjectSkeleton, serde_json::Error> =
+                serde_json::from_str(&file_contents);
+
+            let mut project = project_state.lock().unwrap();
+
+            match project_result {
+                Ok(new_project) => {
+                    project.name = Some(file_name.to_string());
+                    project.location = Some(project_location.to_string());
+                    project.tracks = new_project.tracks.clone();
+                    project.effects = new_project.effects.clone();
+                    project.files = new_project.files.clone();
+                }
+                Err(e) => {
+                    println!("Error: {:?}", e);
+                }
+            }
+
+            let file_name = project.name.clone().unwrap();
+            window.set_title(&file_name.as_str()).unwrap();
+            window
+                .emit("FILE_LOADED", project.clone())
+                .expect("failed to emit event");
+
+            drop(project);
+        });
 }
 
-pub fn load_empty_project(handle: &AppHandle) {
+#[tauri::command]
+pub async fn load_empty_project(handle: AppHandle) {
     let empty_project = Arc::new(Mutex::new(empty_project()));
     let project = empty_project.lock().unwrap();
 
-    let window = handle.get_window(&"main-window-1".to_string()).unwrap();
+    let window = handle
+        .get_webview_window(&"main-window-1".to_string())
+        .unwrap();
     window
         .set_title(
             &project
@@ -345,7 +351,9 @@ pub fn load_empty_project(handle: &AppHandle) {
 pub fn export_prot(project_state: State<Arc<Mutex<ProjectSkeleton>>>, window: Window) {
     let project = project_state.lock().unwrap().clone();
     let file_name = project.name.clone().unwrap_or("export".to_string()) + ".prot";
-    let save_dialog = dialog::FileDialogBuilder::new()
+    let save_dialog = window
+        .dialog()
+        .file()
         .add_filter("Proteus Audio", &["prot"])
         .set_title("Save Project")
         .set_file_name(file_name.as_str());
@@ -355,7 +363,7 @@ pub fn export_prot(project_state: State<Arc<Mutex<ProjectSkeleton>>>, window: Wi
     save_dialog.save_file(move |file_path| {
         if file_path.is_none() {
             println!("No file selected");
-            handle.emit_all("EXPORTING", "Cancelled").unwrap();
+            handle.emit("EXPORTING", "Cancelled").unwrap();
             ()
         }
 
@@ -363,7 +371,7 @@ pub fn export_prot(project_state: State<Arc<Mutex<ProjectSkeleton>>>, window: Wi
         let file_name = file_path.file_name().unwrap().to_str().unwrap();
 
         handle
-            .emit_all("EXPORTING", format!("Exporting {}", file_name))
+            .emit("EXPORTING", format!("Exporting {}", file_name))
             .unwrap();
         // `new_sidecar()` expects just the filename, NOT the whole path like in JavaScript
         let mut reduced_file_list = Vec::new();
@@ -458,7 +466,9 @@ pub fn export_prot(project_state: State<Arc<Mutex<ProjectSkeleton>>>, window: Wi
         println!("{}", out_command);
         println!("{:?}", split_arguments(out_command.as_str()));
 
-        let (mut rx, ..) = Command::new_sidecar("ffmpeg")
+        let shell = handle.shell();
+        let (mut rx, ..) = shell
+            .sidecar("ffmpeg")
             .expect("failed to create `my-sidecar` binary command")
             .args(split_arguments(out_command.as_str()))
             .spawn()
@@ -469,10 +479,10 @@ pub fn export_prot(project_state: State<Arc<Mutex<ProjectSkeleton>>>, window: Wi
             while let Some(event) = rx.recv().await {
                 match event {
                     CommandEvent::Stdout(line) => {
-                        println!("Line: {}", line);
+                        println!("Line: {:?}", line);
                     }
                     CommandEvent::Stderr(line) => {
-                        println!("Error: {}", line);
+                        println!("Error: {:?}", line);
                     }
                     CommandEvent::Terminated(exit_status) => {
                         println!("Exit: {:#?}", exit_status);
@@ -488,7 +498,7 @@ pub fn export_prot(project_state: State<Arc<Mutex<ProjectSkeleton>>>, window: Wi
                 std::fs::rename(output_file.clone(), output_file.replace(".mka", ".prot")).unwrap();
             }
 
-            handle.emit_all("EXPORTING", "Export Finished").unwrap();
+            handle.emit("EXPORTING", "Export Finished").unwrap();
         });
     });
 }

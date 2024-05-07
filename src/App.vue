@@ -32,16 +32,19 @@ import UtilBase from './components/util/UtilBase.vue'
 import { useHeadStore } from './stores/head'
 import { useTrackStore } from './stores/track'
 import { useAudioStore } from './stores/audio'
+import { useMenuStore } from './stores/menu'
+import { useWindowStore } from './stores/window'
 import BaseTitle from './components/base/BaseTitle.vue'
-import { ProjectSkeleton } from './typings/proteus'
+import { AlertType, ProjectSkeleton } from './typings/proteus'
 import { listen } from '@tauri-apps/api/event'
-import { invoke } from '@tauri-apps/api'
+import { invoke } from '@tauri-apps/api/core'
 import { useAlertStore } from './stores/alerts'
 
 const head = useHeadStore()
 const trackStore = useTrackStore()
 const audio = useAudioStore()
 const alerts = useAlertStore()
+const menu = useMenuStore()
 
 const windowTitle = computed(() => {
   return head.name.replace('.protproject', '')
@@ -59,18 +62,7 @@ watch(
 )
 
 onMounted(async () => {
-  // const urlSearchParams = new URLSearchParams(window.location.search)
-  // const params = Object.fromEntries(urlSearchParams.entries())
-
-  // const testPath = '/Users/innocentsmith/Dev/tauri/proteus-author/dev-assets/icon.png'
-
-  // fileSrc.value = convertFileSrc(testPath)
-
-  //   // system.getKey
-  // }, 1000)
-
-  // const data: ProjectSkeleton | undefined = await ipcRenderer.invoke('init', params.id)
-  // if (data) head.load(data)
+  menu.init()
 
   // listen to the `click` event and get a function to remove the event listener
   // there's also a `once` function that subscribes to an event and automatically unsubscribes the listener on the first event
@@ -114,6 +106,12 @@ onMounted(async () => {
     await invoke('export_prot', { project: head.projectState() })
   })
   unlisteners.value.push(startExport)
+
+  const alert = await listen('ALERT', (event) => {
+    const { message, type } = event.payload as { message: string; type: AlertType }
+    alerts.addAlert(message, type)
+  })
+  unlisteners.value.push(alert)
 
   const exporting = await listen('EXPORTING', async (event) => {
     const message = event.payload as string
