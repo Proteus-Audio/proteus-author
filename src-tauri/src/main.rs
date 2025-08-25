@@ -59,12 +59,21 @@ fn main() {
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
 
-    let main_window = windows::create_main_window(&app);
+    let main_window = windows::create_main_window(&app.handle());
     // windows::create_docs_window(&handle);
 
     app.run(|_app_handle, event| match event {
         tauri::RunEvent::ExitRequested { api, .. } => {
+            println!("exit requested");
             api.prevent_exit();
+        }
+        tauri::RunEvent::Reopen { has_visible_windows, .. } => {
+            if !has_visible_windows {
+                windows::create_main_window(&_app_handle);
+            }
+        }
+        tauri::RunEvent::Opened { urls, .. } => {
+            println!("opened: {:?}", urls);
         }
         _ => {}
     });

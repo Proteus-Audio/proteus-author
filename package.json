@@ -16,7 +16,7 @@
     "url": "https://github.com/howardah"
   },
   "dependencies": {
-    "@tauri-apps/api": ">=2.0.0-beta.0",
+    "@tauri-apps/api": "next",
     "@tauri-apps/cli": "next",
     "@tauri-apps/plugin-clipboard-manager": "^2.1.0-beta.1",
     "@tauri-apps/plugin-dialog": "^2.0.0-beta.3",

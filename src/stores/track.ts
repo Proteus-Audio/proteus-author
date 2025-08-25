@@ -68,6 +68,8 @@ export const useTrackStore = defineStore('track', () => {
 
   function setTrackName(trackId: number, name: string) {
     const track = getTrackFromId(trackId)
+    const oldName = track?.name
+    if (oldName === name) return name
     if (track) {
       track.name = name
       head.logChanges()

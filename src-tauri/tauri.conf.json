@@ -42,7 +42,7 @@
     }
   },
   "productName": "Proteus Author",
-  "version": "0.5.6",
+  "version": "0.7.0",
   "identifier": "com.proteus.author",
   "plugins": {},
   "app": {

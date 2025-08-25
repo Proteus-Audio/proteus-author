@@ -1,4 +1,5 @@
 import { invoke } from '@tauri-apps/api/core'
+import { app } from '@tauri-apps/api'
 import { Menu, MenuItem, PredefinedMenuItem, Submenu } from '@tauri-apps/api/menu'
 import { message } from '@tauri-apps/plugin-dialog'
 
@@ -6,6 +7,12 @@ export const defaultMenu = async () => {
   const about = await MenuItem.new({
     text: 'About Proteus Author',
     id: 'about',
+    action: async () => {
+      await message(`v${await app.getVersion()}\n©Adam Thomas Howard 2024`, {
+        title: 'Proteus Author',
+        kind: 'info',
+      })
+    },
   })
 
   const separator = await PredefinedMenuItem.new({ item: 'Separator' })

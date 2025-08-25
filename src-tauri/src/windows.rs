@@ -1,17 +1,16 @@
 use crate::file::*;
 use tauri::{
-    App, LogicalPosition, LogicalSize, Position, Size, TitleBarStyle, WebviewWindow,
-    WebviewWindowBuilder,
+    App, AppHandle, LogicalPosition, LogicalSize, Position, Size, TitleBarStyle, WebviewWindow, WebviewWindowBuilder
 };
 
-pub fn create_main_window(app: &App) -> WebviewWindow {
-    create_window(app, 1)
+pub fn create_main_window(app_handle: &AppHandle) -> WebviewWindow {
+    create_window(app_handle, 1)
 }
 
-pub fn create_window(app: &App, count: i32) -> WebviewWindow {
-    let handle = app.handle();
+pub fn create_window(app_handle: &AppHandle, count: i32) -> WebviewWindow {
+    // let handle = app.handle();
     let win_builder = WebviewWindowBuilder::new(
-        app,
+        app_handle,
         format!("{}-{}", "main-window", count),
         tauri::WebviewUrl::App("index.html".into()),
     )
@@ -50,7 +49,7 @@ pub fn create_window(app: &App, count: i32) -> WebviewWindow {
     window.set_position(window_position).unwrap();
 
     if count < 1 {
-        create_window(app, count + 1);
+        create_window(app_handle, count + 1);
     }
 
     let label = String::from(window.label());

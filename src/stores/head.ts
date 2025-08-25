@@ -23,12 +23,14 @@ export const useHeadStore = defineStore('head', () => {
     get: () => head.value.name,
     set: (name: string) => {
       head.value.name = name
+      invoke('update_project_name', { name }) // Communicate change to backend
     },
   })
   const path = computed({
     get: () => head.value.path,
     set: (location: string | undefined) => {
       head.value.path = location
+      invoke('update_project_path', { location }) // Communicate change to backend
     },
   })
 
@@ -39,23 +41,26 @@ export const useHeadStore = defineStore('head', () => {
   const setFileLocation = (location: string) => {
     head.value.name = (location.match(/[^/\\]*\.\w+$/) || ['.jpg'])[0].replace(/\.\w+$/, '')
     head.value.path = location
+    invoke('update_project_location', { location }) // Communicate change to backend
   }
 
   const setName = (name: string) => {
     head.value.name = name
+    invoke('update_project_name', { name }) // Communicate change to backend
   }
   const setPath = (location: string) => {
     head.value.path = location
+    invoke('update_project_path', { location }) // Communicate change to backend
   }
 
-  const load = async (project: ProjectSkeleton) => {
-    if (project.tracks.length > 0) {
-      !project.location || setFileLocation(project.location)
+  const load = async () => {
+    const project = await invoke<ProjectSkeleton>('get_project_state')
+    if (project) {
+      setFileLocation(project.location || '')
       await track.sync()
-      // await track.replaceTracksFromLoad(project.tracks)
       track.setSelections()
-      !project.location || setPath(project.location)
-      !project.name || setName(project.name)
+      setPath(project.location || '')
+      setName(project.name || '')
       if (project.effects.length > 0) audio.replaceEffects(project.effects)
       invoke('init_player')
     }
@@ -80,7 +85,6 @@ export const useHeadStore = defineStore('head', () => {
   }
 
   const logChanges = async (): Promise<boolean> => {
-    return false
     const project = projectState()
 
     console.log(project)
@@ -91,7 +95,7 @@ export const useHeadStore = defineStore('head', () => {
   const save = (): ProjectSkeleton => {
     const project = projectState()
 
-    // invoke('auto_save', { newProject: JSON.stringify(project) })
+    invoke('auto_save', { newProject: JSON.stringify(project) })
 
     return project
   }
