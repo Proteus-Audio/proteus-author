@@ -36,3 +36,11 @@ In mid-2022, I decided to replace the flutter applications with an  [ElectronJS]
 Shortly after beginning to write the electron application, I realised that the resulting file size and performance of the build was far from ideal for a, relatively, simple application. I did some additional research and found  [Tauri](https://tauri.app/)  which offers nearly everything that I was looking for with electron but with  _significantly_  improved performance. Tauri's perfomative Rust-based encouraged me to build out a Rust-based CLI for parsing and playing .prot files which in integrated into this project as well as the [Proteus Player](https://github.com/Proteus-Audio/proteus-player) application.
 
 There's still much to do with the project so, if you would like to follow along, you can keep tabs on this repo its  [issues page](https://github.com/Proteus-Audio/proteus-author/issues). If you’d like talk about the idea, feel free to give me a shout at [adam.thomas.howard@gmail.com](mailto:adam.thomas.howard@gmail.com)!
+
+## License
+
+This project is licensed under the [PolyForm Small Business License 1.0.0](https://polyformproject.org/licenses/small-business/1.0.0/).
+
+- ✅ Free for individuals and businesses making less than $1M USD annual revenue.
+- 💰 Commercial license required for larger organizations.
+- Contact [Adam Howard](mailto:adam.thomas.howard@gmail.com) to obtain a commercial license.
