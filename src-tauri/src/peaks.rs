@@ -28,13 +28,15 @@
 //     simplified_peaks
 // }
 
+use serde::{Deserialize, Serialize};
+use std::fs::File;
 use std::io::prelude::*;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::fs::File;
-use serde::{Deserialize, Serialize};
 use tauri::State;
 use tauri::{Manager, Window};
+
+use crate::helpers::get_cache_dir;
 
 use crate::project::ProjectSkeleton;
 
@@ -101,13 +103,14 @@ pub fn get_json_peaks(
     peaks_option: Option<Vec<Vec<(f32, f32)>>>,
 ) -> Vec<Vec<(f32, f32)>> {
     // let timer = std::time::Instant::now();
-    let app_cache = window.path().app_cache_dir().unwrap();
-    let app_cache_dir = app_cache.to_str().unwrap();
+    let app_cache = get_cache_dir(window).unwrap();
+
+    println!("App Cache Dir: {}", app_cache);
 
     if peaks_option.is_some() {
         // let timer = std::time::Instant::now();
         let peaks = peaks_option.unwrap();
-        let mut peaks_file = File::create(format!("{}/{}.json", app_cache_dir, file_id)).unwrap();
+        let mut peaks_file = File::create(format!("{}/{}.json", app_cache, file_id)).unwrap();
 
         // let timer = std::time::Instant::now();
         let peaks_json = serde_json::to_string(&peaks).unwrap();
@@ -116,7 +119,7 @@ pub fn get_json_peaks(
         return peaks;
     }
 
-    let peaks_file = File::open(format!("{}/{}.json", app_cache_dir, file_id));
+    let peaks_file = File::open(format!("{}/{}.json", app_cache, file_id));
 
     match peaks_file {
         Ok(mut peaks_file) => {
@@ -140,16 +143,15 @@ pub fn get_json_peaks(
                 .path
                 .clone();
 
-            let peaks = proteus_audio::peaks::get_peaks(&file_path, true);
+            let peaks = proteus_lib::peaks::get_peaks(&file_path, true);
 
             let peaks_json = serde_json::to_string(&peaks).unwrap();
-            let mut peaks_file =
-                File::create(format!("{}/{}.json", app_cache_dir, file_id)).unwrap();
+            let mut peaks_file = File::create(format!("{}/{}.json", app_cache, file_id)).unwrap();
             peaks_file.write(peaks_json.as_bytes()).unwrap();
 
             save_svgs_in_new_thread_for_each_zoom_level(
                 peaks.clone(),
-                format!("{}/{}.svg", app_cache_dir, file_id),
+                format!("{}/{}.svg", app_cache, file_id),
             );
 
             return peaks;

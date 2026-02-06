@@ -70,7 +70,7 @@ onMounted(async () => {
     console.log('file loaded', event)
     const project = event?.payload as ProjectSkeleton
     if (project.location) alerts.addAlert('Loading project…', 'info')
-    head.load(project)
+    head.load()
   })
   unlisteners.value.push(fileLoaded)
 

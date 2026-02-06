@@ -5,6 +5,7 @@
 
 mod file;
 // mod menu;
+mod helpers;
 mod peaks;
 mod player;
 mod project;
@@ -15,7 +16,7 @@ use std::sync::{Arc, Mutex};
 use file::*;
 use player::*;
 use project::*;
-use proteus_audio::player::Player;
+use proteus_lib::playback::player::Player;
 
 fn main() {
     let app = tauri::Builder::default()
@@ -67,7 +68,10 @@ fn main() {
             println!("exit requested");
             api.prevent_exit();
         }
-        tauri::RunEvent::Reopen { has_visible_windows, .. } => {
+        tauri::RunEvent::Reopen {
+            has_visible_windows,
+            ..
+        } => {
             if !has_visible_windows {
                 windows::create_main_window(&_app_handle);
             }

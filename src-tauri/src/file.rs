@@ -147,7 +147,7 @@ pub async fn get_simplified_peaks(
 pub fn get_peaks(file_path: &str) -> Vec<Vec<(f32, f32)>> {
     // let project = PROJECT.lock().unwrap();
 
-    return proteus_audio::peaks::get_peaks(file_path, true);
+    return proteus_lib::peaks::get_peaks(file_path, true);
 }
 
 #[tauri::command]

@@ -13,8 +13,8 @@
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use proteus_audio::player::Player;
-use proteus_audio::reporter::Report;
+use proteus_lib::diagnostics::reporter::Report;
+use proteus_lib::playback::player::Player;
 use serde::Deserialize;
 use serde::Serialize;
 // }
