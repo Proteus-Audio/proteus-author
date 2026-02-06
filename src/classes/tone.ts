@@ -31,9 +31,9 @@ class ToneMaster {
     this.lastGain = 1
     this.clock = new Clock()
     this.cachedCallback = () => {}
-    this.connectEffects()
     this.transport = getTransport()
     this.destination = getDestination()
+    this.connectEffects()
   }
 
   private _initTonePlayer(player: ToneTrackPlayer) {
