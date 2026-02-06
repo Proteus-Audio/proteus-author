@@ -74,6 +74,7 @@ import { invoke } from '@tauri-apps/api/core'
 import type { Event, UnlistenFn } from '@tauri-apps/api/event'
 import { type DragDropEvent, Window } from '@tauri-apps/api/window'
 import { open } from '@tauri-apps/plugin-dialog'
+import { assignIn } from 'lodash'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useAlertStore } from '../../stores/alerts.js'
 import { useAudioStore } from '../../stores/audio.js'
@@ -131,7 +132,8 @@ const trackName = computed({
 
 const selectedFile = computed(() => {
   if (!track.value.selection) return undefined
-  return trackStore.getFileFromId(track.value.selection)
+  const file = trackStore.getFileFromId(track.value.selection)
+  return assignIn(file, { parentId: props.trackId })
 })
 
 const loadFiles = async (files: string[]) => {
@@ -230,7 +232,9 @@ onMounted(async () => {
 
 onUnmounted(() => {
   console.log('unmounting')
-  unlisten.forEach((unlistener) => unlistener())
+  unlisten.forEach((unlistener) => {
+    unlistener()
+  })
 })
 </script>
 
