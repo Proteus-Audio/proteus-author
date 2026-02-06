@@ -482,7 +482,7 @@ pub fn export_prot(project_state: State<Arc<Mutex<ProjectSkeleton>>>, window: Wi
         let shell = handle.shell();
         let (mut rx, ..) = shell
             .sidecar("ffmpeg")
-            .expect("failed to create `my-sidecar` binary command")
+            .expect("failed to create `ffmpeg` binary command")
             .args(split_arguments(out_command.as_str()))
             .spawn()
             .expect("Failed to spawn sidecar");
