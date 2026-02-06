@@ -36,7 +36,7 @@ import { useMenuStore } from './stores/menu'
 import { useWindowStore } from './stores/window'
 import BaseTitle from './components/base/BaseTitle.vue'
 import { AlertType, ProjectSkeleton } from './typings/proteus'
-import { listen } from '@tauri-apps/api/event'
+import { listen, UnlistenFn } from '@tauri-apps/api/event'
 import { invoke } from '@tauri-apps/api/core'
 import { useAlertStore } from './stores/alerts'
 
@@ -50,7 +50,7 @@ const windowTitle = computed(() => {
   return head.name.replace('.protproject', '')
 })
 
-const unlisteners = ref<(() => void)[]>([])
+const unlisteners = ref<UnlistenFn[]>([])
 
 watch(
   [trackStore.tracks, audio.effects],
@@ -133,7 +133,9 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  unlisteners.value.forEach((unlistener) => unlistener())
+  unlisteners.value.forEach((unlistener) => {
+    unlistener()
+  })
 })
 
 watch(audio.zoom, () => {

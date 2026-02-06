@@ -18,6 +18,7 @@ use proteus_lib::playback::player::Player;
 use serde::Deserialize;
 use serde::Serialize;
 // }
+use tauri::Emitter;
 use tauri::Manager;
 use tauri::State;
 use tauri::Window;

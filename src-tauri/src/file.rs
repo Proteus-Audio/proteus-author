@@ -4,6 +4,7 @@ use std::io::prelude::*;
 use std::sync::Arc;
 use std::sync::Mutex;
 use tauri::AppHandle;
+use tauri::Emitter;
 use tauri::Manager;
 use tauri::State;
 use tauri::Window;
@@ -247,7 +248,13 @@ pub async fn save_file_as(window: Window) -> Option<ProjectSkeleton> {
         return None;
     }
 
-    let path_buff = file_path.unwrap();
+    let path_buff = match file_path.unwrap().into_path() {
+        Ok(path) => path,
+        Err(err) => {
+            println!("Invalid file path: {:?}", err);
+            return None;
+        }
+    };
     let file_name =
         String::from(path_buff.file_name().unwrap().to_str().unwrap()).replace(".protproject", "");
 
@@ -260,7 +267,7 @@ pub async fn save_file_as(window: Window) -> Option<ProjectSkeleton> {
 
     let project_json = serde_json::to_string(&*project).unwrap();
 
-    let mut file = File::create(path_buff).unwrap();
+    let mut file = File::create(&path_buff).unwrap();
     file.write_all(project_json.as_bytes()).unwrap();
 
     UNSAVED_CHANGES.store(false, std::sync::atomic::Ordering::Relaxed);
@@ -284,7 +291,13 @@ pub async fn open_file(window: Window) {
             }
 
             let file_path = file.unwrap();
-            let path_buff = file_path.path;
+            let path_buff = match file_path.into_path() {
+                Ok(path) => path,
+                Err(err) => {
+                    println!("Invalid file path: {:?}", err);
+                    return;
+                }
+            };
             let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
 
             if path_buff.extension().unwrap() != "protproject" {
@@ -367,7 +380,14 @@ pub fn export_prot(project_state: State<Arc<Mutex<ProjectSkeleton>>>, window: Wi
             ()
         }
 
-        let file_path = file_path.clone().unwrap();
+        let file_path = match file_path.clone().unwrap().into_path() {
+            Ok(path) => path,
+            Err(err) => {
+                println!("Invalid file path: {:?}", err);
+                handle.emit("EXPORTING", "Cancelled").unwrap();
+                return;
+            }
+        };
         let file_name = file_path.file_name().unwrap().to_str().unwrap();
 
         handle
@@ -431,13 +451,7 @@ pub fn export_prot(project_state: State<Arc<Mutex<ProjectSkeleton>>>, window: Wi
 
         let json_settings = serde_json::to_string(&settings_encoder).unwrap();
 
-        let output_dir = file_path
-            .clone()
-            .parent()
-            .unwrap()
-            .to_str()
-            .unwrap()
-            .to_string();
+        let output_dir = file_path.parent().unwrap().to_str().unwrap().to_string();
         let settings_file_path = format!("{}/play_settings.json", output_dir);
         let mut settings_file = File::create(settings_file_path.clone()).unwrap();
         settings_file.write_all(json_settings.as_bytes()).unwrap();
@@ -445,7 +459,6 @@ pub fn export_prot(project_state: State<Arc<Mutex<ProjectSkeleton>>>, window: Wi
         // Replace extension .prot with .mka
         // TODO: Replace with regex
         let output_file = file_path
-            .clone()
             .to_str()
             .unwrap()
             .to_string()

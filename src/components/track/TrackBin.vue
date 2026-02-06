@@ -139,6 +139,7 @@ const loadFiles = async (files: string[]) => {
   loading.value = true
   const acceptableFiles = files.filter((file) => /(?:.mp3|.wav)$/.test(file))
   if (acceptableFiles.length !== files.length) {
+    console.log(acceptableFiles, files);
     alerts.addAlert('Only WAV and MP3 files are accepted at the moment.', 'warning')
   }
 
@@ -184,7 +185,7 @@ const openFiles = async () => {
   })
   if (!files) return
   console.log(files)
-  loadFiles(files.map((file) => file.path))
+  loadFiles(files)
 }
 
 const calcBinBounds = () => {
@@ -216,9 +217,9 @@ onMounted(async () => {
     await appWindow.onDragDropEvent((event) => {
       binBounds.value = calcBinBounds()
       // console.log('drag event', isDragActive.value)
-      if (event.payload.type === 'dragOver' && checkBinHover(event.payload.position)) {
+      if (event.payload.type === 'over' && checkBinHover(event.payload.position)) {
         binHover.value = true
-      } else if (event.payload.type === 'dropped' && binHover.value) {
+      } else if (event.payload.type === 'drop' && binHover.value) {
         console.log('file drop', event)
         binHover.value = false
         loadFiles(event.payload.paths as string[])
