@@ -12,16 +12,15 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed, ref } from 'vue'
-
-import { useAudioStore } from '../../stores/audio.js'
-import { TrackFileSkeleton } from '../../typings/tracks.js'
-import { ExposedBuffer } from '../../typings/tone.js'
-import Peaks, { PeaksOptions } from 'peaks.js'
-import { PeaksPlayer } from '../../assets/toneMaster.js'
+import Peaks, { type PeaksOptions } from 'peaks.js'
 import * as Tone from 'tone'
+import { computed, onMounted, ref } from 'vue'
+import { PeaksPlayer } from '../../assets/toneMaster.js'
 import { cloneAudioBuffer } from '../../assets/tools.js'
+import { useAudioStore } from '../../stores/audio.js'
 import { useTrackStore } from '../../stores/track.js'
+import type { ExposedBuffer } from '../../typings/tone.js'
+import type { TrackFileSkeleton } from '../../typings/tracks.js'
 
 interface Props {
   track: TrackFileSkeleton
@@ -51,10 +50,10 @@ const initialisePeaks = async () => {
 
   await Tone.loaded()
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
+  // @ts-expect-error
   duration.value = player.buffer.duration
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
+  // @ts-expect-error
   const audioBuffer = cloneAudioBuffer((player.buffer as unknown as ExposedBuffer)._buffer)
   console.log(props.track, audioBuffer)
   const options = {
@@ -69,7 +68,7 @@ const initialisePeaks = async () => {
     },
   }
 
-  Peaks.init(options as PeaksOptions, function (err, peaks) {
+  Peaks.init(options as unknown as PeaksOptions, (err, peaks) => {
     if (err) {
       console.error('Failed to initialize Peaks instance: ' + err.message)
       console.log(peaks)
