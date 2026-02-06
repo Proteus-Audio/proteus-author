@@ -1,13 +1,33 @@
 import fs from "node:fs";
 import path from "node:path";
 
-type BumpKind = "major" | "breaking" | "minor";
+type BumpKind = "major" | "breaking" | "minor" | "patch";
 
 const ROOT = process.cwd();
 const ARG = process.argv[2] as BumpKind | undefined;
+const HELP_FLAGS = new Set(["-h", "--help", "help"]);
 
-if (ARG !== "major" && ARG !== "breaking" && ARG !== "minor") {
-  console.error("Usage: bump-version <major|breaking|minor>");
+const printHelp = () => {
+  console.log(
+    [
+      "Usage: bump-version <major|breaking|minor|patch>",
+      "",
+      "Arguments:",
+      "  major     Increment major version (X+1.0.0)",
+      "  breaking  Alias of major",
+      "  minor     Increment minor version (X.Y+1.0)",
+      "  patch     Increment patch version (X.Y.Z+1)",
+    ].join("\n"),
+  );
+};
+
+if (!ARG || HELP_FLAGS.has(ARG)) {
+  printHelp();
+  process.exit(ARG ? 0 : 1);
+}
+
+if (ARG !== "major" && ARG !== "breaking" && ARG !== "minor" && ARG !== "patch") {
+  printHelp();
   process.exit(1);
 }
 
@@ -24,6 +44,9 @@ const bumpVersion = (current: string, kind: BumpKind): string => {
 
   if (kind === "minor") {
     return `${major}.${minor + 1}.0`;
+  }
+  if (kind === "patch") {
+    return `${major}.${minor}.${patch + 1}`;
   }
   const newMajor = major + 1;
   return `${newMajor}.0.0`;

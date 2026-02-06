@@ -1,6 +1,6 @@
 {
   "name": "proteus-author",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "An authoring application for .prot files.",
   "type": "module",
   "scripts": {
@@ -8,7 +8,10 @@
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "lint": "eslint src/ --ext .vue --ext .ts"
+    "lint": "eslint src/ --ext .vue --ext .ts",
+    "bump:patch": "bun ./scripts/bump-version.ts patch",
+    "bump:minor": "bun ./scripts/bump-version.ts minor",
+    "bump:major": "bun ./scripts/bump-version.ts major"
   },
   "repository": "https://github.com/howardah/proteus-author",
   "author": {
