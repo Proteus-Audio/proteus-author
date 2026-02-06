@@ -8,10 +8,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { invoke } from '@tauri-apps/api/core'
-
 import { IceCream } from '@element-plus/icons-vue'
+import { invoke } from '@tauri-apps/api/core'
+import { computed, ref } from 'vue'
 
 const fileName = ref('')
 const filePath = ref('')
