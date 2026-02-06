@@ -8,8 +8,8 @@
 
 <script setup lang="ts">
 import { onMounted, onUpdated, ref, watch } from 'vue'
-import { useAlertStore } from '../../stores/alerts.js'
-import { AlertView } from '../../typings/proteus.js'
+import { useAlertStore } from '../../stores/alerts'
+import { AlertView } from '../../typings/proteus'
 import { useWindowScroll } from '@vueuse/core'
 
 const alertStore = useAlertStore()

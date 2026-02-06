@@ -18,14 +18,14 @@
 
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
-import { Effect } from '../../typings/effects.js'
+import { Effect } from '../../typings/effects'
 import { SuitcaseLine, Phone, Close, Delete } from '@element-plus/icons-vue'
-import { toneMaster } from '../../assets/toneMaster.js'
+import { toneMaster } from '../../assets/toneMaster'
 import EffectDialogCompressor from './EffectDialogCompressor.vue'
 import EffectDialogReverb from './EffectDialogReverb.vue'
-import { useAudioStore } from '../../stores/audio.js'
+import { useAudioStore } from '../../stores/audio'
 import { Compressor, Reverb } from 'tone'
-import { CompressorSettings, ReverbSettings } from '../../assets/effects.js'
+import { CompressorSettings, ReverbSettings } from '../../assets/effects'
 
 interface Props {
   id: number

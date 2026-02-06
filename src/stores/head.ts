@@ -1,9 +1,9 @@
 import { invoke } from '@tauri-apps/api/core'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import type { ProjectHead, ProjectSkeleton, TrackSkeleton } from '../typings/proteus.js'
-import { useAudioStore } from './audio.js'
-import { useTrackStore } from './track.js'
+import type { ProjectHead, ProjectSkeleton, TrackSkeleton } from '../typings/proteus'
+import { useAudioStore } from './audio'
+import { useTrackStore } from './track'
 
 export const useHeadStore = defineStore('head', () => {
   const track = useTrackStore()

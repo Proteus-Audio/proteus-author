@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { Menu } from '@tauri-apps/api/menu'
-import { defaultMenu } from '../utils/menu.js'
+import { defaultMenu } from '../utils/menu'
 
 export const useMenuStore = defineStore('menu', () => {
   /////////////

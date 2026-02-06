@@ -4,8 +4,8 @@
 
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount } from 'vue'
-import { useAudioStore } from '../../stores/audio.js'
-import { useTrackStore } from '../../stores/track.js'
+import { useAudioStore } from '../../stores/audio'
+import { useTrackStore } from '../../stores/track'
 
 const audio = useAudioStore()
 const track = useTrackStore()

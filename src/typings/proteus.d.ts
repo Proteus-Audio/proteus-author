@@ -1,5 +1,5 @@
-import type { EffectSettings } from '../assets/effects.js'
-import type { DropFileSkeleton, Track } from './tracks.js'
+import type { EffectSettings } from '../assets/effects'
+import type { DropFileSkeleton, Track } from './tracks'
 
 export type AlertType = 'success' | 'warning' | 'info' | 'error'
 

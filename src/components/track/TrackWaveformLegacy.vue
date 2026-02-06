@@ -12,15 +12,15 @@
 </template>
 
 <script setup lang="ts">
-import Peaks, { type PeaksOptions } from 'peaks.js'
+import Peaks, { type PeaksOptions } from 'peaks'
 import * as Tone from 'tone'
 import { computed, onMounted, ref } from 'vue'
-import { PeaksPlayer } from '../../assets/toneMaster.js'
-import { cloneAudioBuffer } from '../../assets/tools.js'
-import { useAudioStore } from '../../stores/audio.js'
-import { useTrackStore } from '../../stores/track.js'
-import type { ExposedBuffer } from '../../typings/tone.js'
-import type { TrackFileSkeleton } from '../../typings/tracks.js'
+import { PeaksPlayer } from '../../assets/toneMaster'
+import { cloneAudioBuffer } from '../../assets/tools'
+import { useAudioStore } from '../../stores/audio'
+import { useTrackStore } from '../../stores/track'
+import type { ExposedBuffer } from '../../typings/tone'
+import type { TrackFileSkeleton } from '../../typings/tracks'
 
 interface Props {
   track: TrackFileSkeleton

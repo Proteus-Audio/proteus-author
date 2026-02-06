@@ -3,7 +3,7 @@
 </template>
 
 <script setup lang="ts">
-// import { ipcRenderer } from '../../electron.js'
+// import { ipcRenderer } from '../../electron'
 const save = () => {
   // const tracks = track.tracks.map((t) => ({
   //   id: t.id,

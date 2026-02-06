@@ -1,11 +1,11 @@
 import { defineStore } from 'pinia'
 import { Ref, computed, ref } from 'vue'
-import { useAlertStore } from './alerts.js'
-import { useTrackStore } from './track.js'
+import { useAlertStore } from './alerts'
+import { useTrackStore } from './track'
 import * as Tone from 'tone'
-import { toneMaster } from '../assets/toneMaster.js'
-import { Effect } from '../typings/effects.js'
-import { EffectSettings } from '../assets/effects.js'
+import { toneMaster } from '../assets/toneMaster'
+import { Effect } from '../typings/effects'
+import { EffectSettings } from '../assets/effects'
 import { invoke } from '@tauri-apps/api/core'
 
 export const useAudioStore = defineStore('prot', () => {
