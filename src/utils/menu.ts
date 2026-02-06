@@ -1,5 +1,5 @@
-import { invoke } from '@tauri-apps/api/core'
 import { app } from '@tauri-apps/api'
+import { invoke } from '@tauri-apps/api/core'
 import { Menu, MenuItem, PredefinedMenuItem, Submenu } from '@tauri-apps/api/menu'
 import { message } from '@tauri-apps/plugin-dialog'
 
@@ -7,11 +7,13 @@ export const defaultMenu = async () => {
   const about = await MenuItem.new({
     text: 'About Proteus Author',
     id: 'about',
-    action: async () => {
-      await message(`v${await app.getVersion()}\n©Adam Thomas Howard 2024`, {
-        title: 'Proteus Author',
-        kind: 'info',
-      })
+    action: () => {
+      void (async () => {
+        await message(`v${await app.getVersion()}\n©Adam Thomas Howard 2024`, {
+          title: 'Proteus Author',
+          kind: 'info',
+        })
+      })()
     },
   })
 
@@ -32,17 +34,19 @@ export const defaultMenu = async () => {
     text: 'New Window',
     id: 'new_window',
     accelerator: 'CmdOrCtrl+N',
-    action: async () => {
-      //   await dialog.open({
-      //     directory: false,
-      //     multiple: false,
-      //     filter: 'All Files',
-      //   })
-      await message('New Window command not setup', {
-        title: 'New Window',
-        kind: 'info',
-      })
-      console.log('New Window')
+    action: () => {
+      void (async () => {
+        //   await dialog.open({
+        //     directory: false,
+        //     multiple: false,
+        //     filter: 'All Files',
+        //   })
+        await message('New Window command not setup', {
+          title: 'New Window',
+          kind: 'info',
+        })
+        console.log('New Window')
+      })()
     },
   })
 
@@ -50,8 +54,8 @@ export const defaultMenu = async () => {
     text: 'Save',
     id: 'save',
     accelerator: 'CmdOrCtrl+S',
-    action: async () => {
-      await invoke('save_file')
+    action: () => {
+      void invoke('save_file')
     },
   })
 
@@ -59,8 +63,8 @@ export const defaultMenu = async () => {
     text: 'Save As',
     id: 'save_as',
     accelerator: 'CmdOrCtrl+Shift+S',
-    action: async () => {
-      await invoke('save_file_as')
+    action: () => {
+      void invoke('save_file_as')
     },
   })
 
@@ -68,8 +72,8 @@ export const defaultMenu = async () => {
     text: 'Open',
     id: 'open',
     accelerator: 'CmdOrCtrl+O',
-    action: async () => {
-      await invoke('open_file')
+    action: () => {
+      void invoke('open_file')
     },
   })
 
@@ -77,8 +81,8 @@ export const defaultMenu = async () => {
     text: 'Export Prot File',
     id: 'export_prot',
     accelerator: 'CmdOrCtrl+Shift+E',
-    action: async () => {
-      await invoke('export_prot')
+    action: () => {
+      void invoke('export_prot')
     },
   })
 

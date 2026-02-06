@@ -3,15 +3,8 @@
 </template>
 
 <script setup lang="ts">
-// import { ipcRenderer } from '../../electron'
-import { useHeadStore } from '../../stores/head'
-import { useTrackStore } from '../../stores/track'
-// import { ProjectSkeleton } from '../../typings/proteus'
-
-const track = useTrackStore()
-const head = useHeadStore()
-
-const save = async () => {
+// import { ipcRenderer } from '../../electron.js'
+const save = () => {
   // const tracks = track.tracks.map((t) => ({
   //   id: t.id,
   //   name: t.name,

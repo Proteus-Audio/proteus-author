@@ -4,9 +4,8 @@
 
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount } from 'vue'
-import { toneMaster } from '../../assets/toneMaster'
-import { useAudioStore } from '../../stores/audio'
-import { useTrackStore } from '../../stores/track'
+import { useAudioStore } from '../../stores/audio.js'
+import { useTrackStore } from '../../stores/track.js'
 
 const audio = useAudioStore()
 const track = useTrackStore()
@@ -32,15 +31,15 @@ const keyListener = (e: KeyboardEvent) => {
         window.dispatchEvent(new Event('resize'))
         track.initialised = true
       }
-      audio.playPause()
+      void audio.playPause()
     }
     if (e.key === 's') {
       e.preventDefault()
-      track.shuffle()
+      void track.shuffle()
     }
     if (e.key === 'Enter') {
       e.preventDefault()
-      audio.seek(0)
+      void audio.seek(0)
     }
   }
 }

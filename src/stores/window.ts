@@ -17,9 +17,9 @@ export const useWindowStore = defineStore('window', () => {
   // SETTERS //
   /////////////
 
-  const init = async () => {
+  const init = () => {
     const appWindow = new Window('main')
-    appWindow.isFocused()
+    void appWindow.isFocused()
     window.value = appWindow
   }
 

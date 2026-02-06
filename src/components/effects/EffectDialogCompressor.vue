@@ -42,9 +42,9 @@
 <script setup lang="ts">
 import { Compressor } from 'tone'
 import { computed, onMounted } from 'vue'
-import { CompressorSettings } from '../../assets/effects'
-import { toneMaster } from '../../assets/toneMaster'
-import { useAudioStore } from '../../stores/audio'
+import { CompressorSettings } from '../../assets/effects.js'
+import { toneMaster } from '../../assets/toneMaster.js'
+import { useAudioStore } from '../../stores/audio.js'
 
 interface Props {
   effectIndex: number

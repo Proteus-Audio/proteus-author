@@ -1,11 +1,9 @@
 <template>
   <div class="transport">
     <el-button v-if="!audio.isPlaying" :icon="VideoPlay" @click="play" text>play</el-button>
-    <el-button v-else :icon="VideoPause" @click="audio.pause" text>pause</el-button>
-    <el-button id="BaseTransportStop" :icon="Close" @click="audio.stop" text>stop</el-button>
-    <el-button id="BaseTransportShuffle" :icon="Refresh" @click="track.shuffle" text
-      >shuffle</el-button
-    >
+    <el-button v-else :icon="VideoPause" @click="pause" text>pause</el-button>
+    <el-button id="BaseTransportStop" :icon="Close" @click="stop" text>stop</el-button>
+    <el-button id="BaseTransportShuffle" :icon="Refresh" @click="shuffle" text>shuffle</el-button>
     <el-button :icon="ZoomIn" @click="zoomIn" text :disabled="audio.zoom.x === 20"></el-button>
     <el-button :icon="ZoomOut" @click="zoomOut" text :disabled="audio.zoom.x === 1"></el-button>
     <div class="volume-bin">
@@ -15,10 +13,10 @@
 </template>
 
 <script setup lang="ts">
-import { useAudioStore } from '../../stores/audio'
-import { useTrackStore } from '../../stores/track'
+import { useAudioStore } from '../../stores/audio.js'
+import { useTrackStore } from '../../stores/track.js'
 import { VideoPlay, VideoPause, Close, Refresh, ZoomOut, ZoomIn } from '@element-plus/icons-vue'
-import { toneMaster } from '../../assets/toneMaster'
+import { toneMaster } from '../../assets/toneMaster.js'
 import { computed, ref } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 
@@ -28,19 +26,31 @@ const volumeRef = ref(toneMaster.volume)
 
 const volume = computed({
   get: () => volumeRef.value * 75,
-  set: async (value: number) => {
+  set: (value: number) => {
     volumeRef.value = value / 75
-    await invoke('set_volume', { volume: (value / 100) * 3 })
+    void invoke('set_volume', { volume: (value / 100) * 3 })
     // toneMaster.setGain(value / 75)
   },
 })
 
 const play = () => {
-  audio.play()
+  void audio.play()
   // if (!track.initialised) {
   //   window.dispatchEvent(new Event('resize'))
   //   track.initialised = true
   // }
+}
+
+const pause = () => {
+  void audio.pause()
+}
+
+const stop = () => {
+  void audio.stop()
+}
+
+const shuffle = () => {
+  void track.shuffle()
 }
 
 const zoomIn = () => audio.zoomIn()

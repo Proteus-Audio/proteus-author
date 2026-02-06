@@ -69,21 +69,20 @@
 </template>
 
 <script setup lang="ts">
+import { Delete, Folder } from '@element-plus/icons-vue'
+import { invoke } from '@tauri-apps/api/core'
+import type { Event, UnlistenFn } from '@tauri-apps/api/event'
+import { type DragDropEvent, Window } from '@tauri-apps/api/window'
+import { open } from '@tauri-apps/plugin-dialog'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-
-import { useTrackStore } from '../../stores/track'
+import { useAlertStore } from '../../stores/alerts.js'
+import { useAudioStore } from '../../stores/audio.js'
+import { useTrackStore } from '../../stores/track.js'
+import type { DropFileSkeleton } from '../../typings/tracks.js'
+import BaseLoadingSpinner from '../base/BaseLoadingSpinner.vue'
+import InputAutoSizedText from '../input/InputAutoSizedText.vue'
 import TrackWaveform from './TrackWaveform.vue'
 
-import { Folder, Delete } from '@element-plus/icons-vue'
-import InputAutoSizedText from '../input/InputAutoSizedText.vue'
-import { useAudioStore } from '../../stores/audio'
-import { DropFileSkeleton } from '../../typings/tracks'
-import { open } from '@tauri-apps/plugin-dialog'
-import { UnlistenFn } from '@tauri-apps/api/event'
-import { Window } from '@tauri-apps/api/window'
-import BaseLoadingSpinner from '../base/BaseLoadingSpinner.vue'
-import { invoke } from '@tauri-apps/api/core'
-import { useAlertStore } from '../../stores/alerts'
 // import Button from "element-plus";
 
 interface Props {
@@ -139,7 +138,7 @@ const loadFiles = async (files: string[]) => {
   loading.value = true
   const acceptableFiles = files.filter((file) => /(?:.mp3|.wav)$/.test(file))
   if (acceptableFiles.length !== files.length) {
-    console.log(acceptableFiles, files);
+    console.log(acceptableFiles, files)
     alerts.addAlert('Only WAV and MP3 files are accepted at the moment.', 'warning')
   }
 
@@ -149,24 +148,23 @@ const loadFiles = async (files: string[]) => {
       const filePath = acceptableFiles[i]
       console.log(filePath, /(?:.mp3|.wav)$/.test(filePath))
 
-      const file = (await invoke('register_file', {
+      const file = await invoke<DropFileSkeleton>('register_file', {
         filePath,
         trackId: props.trackId,
-      })) as DropFileSkeleton
+      })
 
       console.log(file)
 
       loadingMessage.value = `Processing ${file.name}`
 
-      await trackStore.addFileToTrackBinary(file, props.trackId)
+      trackStore.addFileToTrackBinary(file, props.trackId)
     }
 
     await invoke('init_player')
     console.log('finished processing')
 
-    trackStore.shuffle()
-
-    trackStore.sync()
+    await trackStore.shuffle()
+    await trackStore.sync()
   }
   loading.value = false
 }
@@ -185,7 +183,7 @@ const openFiles = async () => {
   })
   if (!files) return
   console.log(files)
-  loadFiles(files)
+  await loadFiles(files)
 }
 
 const calcBinBounds = () => {
@@ -214,7 +212,7 @@ onMounted(async () => {
   binBounds.value = calcBinBounds()
 
   unlisten.push(
-    await appWindow.onDragDropEvent((event) => {
+    await appWindow.onDragDropEvent((event: Event<DragDropEvent>) => {
       binBounds.value = calcBinBounds()
       // console.log('drag event', isDragActive.value)
       if (event.payload.type === 'over' && checkBinHover(event.payload.position)) {
@@ -222,7 +220,7 @@ onMounted(async () => {
       } else if (event.payload.type === 'drop' && binHover.value) {
         console.log('file drop', event)
         binHover.value = false
-        loadFiles(event.payload.paths as string[])
+        void loadFiles(event.payload.paths)
       } else {
         binHover.value = false
       }

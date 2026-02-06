@@ -19,7 +19,7 @@ class PlayMaster {
   // }
 
   async play() {
-    invoke('play')
+    void invoke('play')
     console.log('play')
     console.log(await invoke('get_play_state'))
     // const players = this.getPlayers()
@@ -40,18 +40,18 @@ class PlayMaster {
   }
 
   pauseTime() {
-    invoke('pause')
+    void invoke('pause')
     // this.playing = false
   }
 
   stopTime() {
-    invoke('stop')
+    void invoke('stop')
     // this.playing = false
     // this.currentTime = 0
   }
 
   pause() {
-    invoke('pause')
+    void invoke('pause')
     // const currentTime = this.currentTime
     // const players = this.getPlayers({ all: true })
     // for (let i = 0; i < players.length; i++) {
@@ -61,7 +61,7 @@ class PlayMaster {
     // }
   }
   stop() {
-    invoke('stop')
+    void invoke('stop')
     // const players = this.getPlayers({ all: true })
     // for (let i = 0; i < players.length; i++) {
     //   const player = players[i]
@@ -71,7 +71,7 @@ class PlayMaster {
   }
 
   setCurrentTime(currentTime?: number): void {
-    invoke('seek', { position: currentTime })
+    void invoke('seek', { position: currentTime })
     // currentTime = currentTime || this.currentTime
     // const players = this.getPlayers({ all: true })
     // for (let i = 0; i < players.length; i++) {

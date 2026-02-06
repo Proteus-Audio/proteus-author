@@ -31,11 +31,10 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed, ref, watch } from 'vue'
-
-import { useAudioStore } from '../../stores/audio'
-import { TrackFile } from '../../typings/tracks'
 import { invoke } from '@tauri-apps/api/core'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useAudioStore } from '../../stores/audio'
+import type { TrackFile } from '../../typings/tracks'
 
 interface Props {
   track: TrackFile
@@ -62,18 +61,20 @@ const calcHeight = (peak: number) => {
 
 const simplifiedPeaks = ref([] as SimplifiedPeaks[])
 
+const updateSimplifiedPeaks = async () => {
+  simplifiedPeaks.value = await getSimplifiedPeaks()
+}
+
 watch(audio.zoom, () => {
   // console.log('zoom changed')
-  getSimplifiedPeaks().then((peaks) => {
-    simplifiedPeaks.value = peaks
-  })
+  void updateSimplifiedPeaks()
 })
 
 const getSimplifiedPeaks = async () => {
-  const simplifiedPeaks = (await invoke('get_simplified_peaks', {
+  const simplifiedPeaks = await invoke<SimplifiedPeaks[]>('get_simplified_peaks', {
     fileId: props.track.id,
     zoom: audio.zoom.x,
-  })) as SimplifiedPeaks[]
+  })
 
   console.log('simplifiedPeaks', simplifiedPeaks)
 
@@ -124,15 +125,12 @@ const playheadPosition = computed(() => {
 
 const seek = (event: MouseEvent) => {
   const seconds = event.offsetX / zoomLevel.value / 2
-  audio.seek(seconds)
+  void audio.seek(seconds)
 }
 
 onMounted(() => {
   console.log('starting file')
-
-  getSimplifiedPeaks().then((peaks) => {
-    simplifiedPeaks.value = peaks
-  })
+  void updateSimplifiedPeaks()
 
   console.log(props.track)
 })

@@ -1,9 +1,7 @@
-import PlayMaster from './playMaster'
+import type PlayMaster from './playMaster.ts'
 
-interface Transport {
+export interface Transport {
   playing: boolean
   currentTime: number
   master: PlayMaster
 }
-
-export { Transport }

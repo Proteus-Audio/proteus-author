@@ -14,14 +14,14 @@
 <script setup lang="ts">
 import { onMounted, computed, ref } from 'vue'
 
-import { useAudioStore } from '../../stores/audio'
-import { TrackFileSkeleton } from '../../typings/tracks'
-import { ExposedBuffer } from '../../typings/tone.d'
+import { useAudioStore } from '../../stores/audio.js'
+import { TrackFileSkeleton } from '../../typings/tracks.js'
+import { ExposedBuffer } from '../../typings/tone.js'
 import Peaks, { PeaksOptions } from 'peaks.js'
-import { toneMaster, PeaksPlayer } from '../../assets/toneMaster'
+import { PeaksPlayer } from '../../assets/toneMaster.js'
 import * as Tone from 'tone'
-import { cloneAudioBuffer } from '../../assets/tools'
-import { useTrackStore } from '../../stores/track'
+import { cloneAudioBuffer } from '../../assets/tools.js'
+import { useTrackStore } from '../../stores/track.js'
 
 interface Props {
   track: TrackFileSkeleton
@@ -81,7 +81,7 @@ const initialisePeaks = async () => {
 
 onMounted(() => {
   console.log('starting file')
-  initialisePeaks()
+  void initialisePeaks()
 })
 </script>
 

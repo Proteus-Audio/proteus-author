@@ -18,14 +18,14 @@
 
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
-import { Effect } from '../../typings/effects'
+import { Effect } from '../../typings/effects.js'
 import { SuitcaseLine, Phone, Close, Delete } from '@element-plus/icons-vue'
-import { toneMaster } from '../../assets/toneMaster'
+import { toneMaster } from '../../assets/toneMaster.js'
 import EffectDialogCompressor from './EffectDialogCompressor.vue'
 import EffectDialogReverb from './EffectDialogReverb.vue'
-import { useAudioStore } from '../../stores/audio'
+import { useAudioStore } from '../../stores/audio.js'
 import { Compressor, Reverb } from 'tone'
-import { CompressorSettings, ReverbSettings } from '../../assets/effects'
+import { CompressorSettings, ReverbSettings } from '../../assets/effects.js'
 
 interface Props {
   id: number
@@ -80,7 +80,9 @@ onUnmounted(() => {
   color: white;
   display: block;
   overflow: hidden;
-  transition: height 0.3s, margin 0.3s;
+  transition:
+    height 0.3s,
+    margin 0.3s;
 
   display: grid;
   align-items: center;

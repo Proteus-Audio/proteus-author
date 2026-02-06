@@ -1,13 +1,13 @@
-import { defineStore } from 'pinia'
-import { DropFile, DropFileSkeleton, Track, TrackFile, TrackFileSkeleton } from '../typings/tracks'
-import { sample, assignIn } from 'lodash'
-import { computed, ref } from 'vue'
-import { ProjectSkeleton, TrackSkeleton } from '../typings/proteus'
-import { useAudioStore } from './audio'
-import { SelectionMap } from '../typings/tone'
-import { toneMaster } from '../assets/toneMaster'
-import { useHeadStore } from './head'
 import { invoke } from '@tauri-apps/api/core'
+import { assignIn, sample } from 'lodash'
+import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
+import { toneMaster } from '../assets/toneMaster'
+import type { ProjectSkeleton, TrackSkeleton } from '../typings/proteus'
+import type { SelectionMap } from '../typings/tone'
+import type { DropFile, DropFileSkeleton, Track, TrackFile } from '../typings/tracks'
+import { useAudioStore } from './audio'
+import { useHeadStore } from './head'
 
 export const useTrackStore = defineStore('track', () => {
   const audio = useAudioStore()
@@ -72,7 +72,7 @@ export const useTrackStore = defineStore('track', () => {
     if (oldName === name) return name
     if (track) {
       track.name = name
-      head.logChanges()
+      void head.logChanges()
     }
 
     return name
@@ -86,13 +86,17 @@ export const useTrackStore = defineStore('track', () => {
     return files.value.find((file) => file.id === fileId)
   }
 
-  async function replaceTracksFromLoad(trackSkeletons: TrackSkeleton[]) {
+  function replaceTracksFromLoad(trackSkeletons: TrackSkeleton[]) {
     const buildTracks: Track[] = []
     toneMaster.clear()
 
     for (let i = 0; i < trackSkeletons.length; i++) {
       const skeleton = trackSkeletons[i]
-      const track: Track = { id: skeleton.id, name: skeleton.name, file_ids: [] }
+      const track: Track = {
+        id: skeleton.id,
+        name: skeleton.name,
+        file_ids: [],
+      }
 
       // const players: ToneTrackPlayer[] = []
       // for (let j = 0; j < skeleton.files.length; j++) {
@@ -115,7 +119,7 @@ export const useTrackStore = defineStore('track', () => {
       buildTracks.push(track)
     }
 
-    audio.setDuration()
+    void audio.setDuration()
     tracks.value = buildTracks
   }
 
@@ -136,8 +140,8 @@ export const useTrackStore = defineStore('track', () => {
     toneMaster.addToneTrackFromTrack(track)
     tracks.value.push(track)
 
-    audio.setDuration()
-    head.logChanges()
+    void audio.setDuration()
+    void head.logChanges()
     return track
   }
 
@@ -150,7 +154,7 @@ export const useTrackStore = defineStore('track', () => {
   const shuffle = async () => {
     // const now = new Date()
     await invoke('shuffle')
-    sync()
+    await sync()
   }
 
   const shuffleTrackBin = async (trackId: number, index?: number) => {
@@ -184,6 +188,8 @@ export const useTrackStore = defineStore('track', () => {
   }
 
   const addFileToTrack = (files: DropFile | DropFile[], trackId: number) => {
+    void files
+    void trackId
     // const index = tracks.value.findIndex((v) => v.id === trackId)
     // if (!Array.isArray(files)) files = [files]
     // files.forEach((file) => {
@@ -201,10 +207,7 @@ export const useTrackStore = defineStore('track', () => {
     // })
   }
 
-  const addFileToTrackBinary = async (
-    files: DropFileSkeleton | DropFileSkeleton[],
-    trackId: number,
-  ) => {
+  const addFileToTrackBinary = (files: DropFileSkeleton | DropFileSkeleton[], trackId: number) => {
     const index = tracks.value.findIndex((v) => v.id === trackId)
     if (!Array.isArray(files)) files = [files]
 
@@ -221,10 +224,10 @@ export const useTrackStore = defineStore('track', () => {
       //   name: trackFile.name,
       //   tone: new Player(audioBuffer),
       // })
-      tracks.value[index].file_ids.push(trackFile)
+      tracks.value[index].file_ids.push(trackFile.id)
     }
 
-    head.logChanges()
+    void head.logChanges()
   }
 
   const removeFileFromTrack = (fileIds: string | string[], trackId: number) => {
@@ -238,11 +241,11 @@ export const useTrackStore = defineStore('track', () => {
       }
     })
 
-    head.logChanges()
+    void head.logChanges()
   }
 
   const sync = async () => {
-    const projectState = (await invoke('get_project_state')) as ProjectSkeleton
+    const projectState = await invoke<ProjectSkeleton>('get_project_state')
     console.log(projectState)
 
     files.value = projectState.files

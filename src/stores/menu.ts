@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { Menu } from '@tauri-apps/api/menu'
-import { defaultMenu } from '../utils/menu'
+import { defaultMenu } from '../utils/menu.js'
 
 export const useMenuStore = defineStore('menu', () => {
   /////////////
@@ -22,7 +22,7 @@ export const useMenuStore = defineStore('menu', () => {
     console.log('init menu')
     const newMenu = await defaultMenu()
     console.log('new menu', newMenu)
-    newMenu.setAsAppMenu()
+    await newMenu.setAsAppMenu()
     menu.value = newMenu
   }
 

@@ -1,4 +1,4 @@
-import { CompressorSettingsInterface, Effect, ReverbSettingsInterface } from '../typings/effects'
+import { CompressorSettingsInterface, Effect, ReverbSettingsInterface } from '../typings/effects.js'
 
 class ReverbSettings implements ReverbSettingsInterface {
   decay: number

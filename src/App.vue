@@ -22,23 +22,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import EffectRack from './components/effects/EffectRack.vue'
-import BaseContainer from './components/base/BaseContainer.vue'
-import TrackBin from './components/track/TrackBin.vue'
-import BaseTransport from './components/base/BaseTransport.vue'
-import BaseAlertBox from './components/base/BaseAlertBox.vue'
-import UtilBase from './components/util/UtilBase.vue'
-import { useHeadStore } from './stores/head'
-import { useTrackStore } from './stores/track'
-import { useAudioStore } from './stores/audio'
-import { useMenuStore } from './stores/menu'
-import { useWindowStore } from './stores/window'
-import BaseTitle from './components/base/BaseTitle.vue'
-import { AlertType, ProjectSkeleton } from './typings/proteus'
-import { listen, UnlistenFn } from '@tauri-apps/api/event'
 import { invoke } from '@tauri-apps/api/core'
+import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import BaseAlertBox from './components/base/BaseAlertBox.vue'
+import BaseContainer from './components/base/BaseContainer.vue'
+import BaseTitle from './components/base/BaseTitle.vue'
+import BaseTransport from './components/base/BaseTransport.vue'
+import EffectRack from './components/effects/EffectRack.vue'
+import TrackBin from './components/track/TrackBin.vue'
+import UtilBase from './components/util/UtilBase.vue'
 import { useAlertStore } from './stores/alerts'
+import { useAudioStore } from './stores/audio'
+import { useHeadStore } from './stores/head'
+import { useMenuStore } from './stores/menu'
+import { useTrackStore } from './stores/track'
+import type { AlertType, ProjectSkeleton } from './typings/proteus'
 
 const head = useHeadStore()
 const trackStore = useTrackStore()
@@ -61,8 +60,42 @@ watch(
   { deep: true },
 )
 
+const handleSaveFile = async () => {
+  console.log('saving file')
+  const response = await invoke<ProjectSkeleton | null>('save_file', {
+    newProject: head.projectState(),
+  })
+
+  if (response) {
+    head.name = response.name || head.name
+    head.path = response.location
+    alerts.addAlert('Saved file', 'success')
+  } else {
+    alerts.addAlert('Failed to save file', 'error')
+  }
+}
+
+const handleSaveFileAs = async () => {
+  const response = await invoke<ProjectSkeleton | null>('save_file_as', {
+    newProject: head.projectState(),
+  })
+
+  if (response) {
+    head.name = response.name || head.name
+    head.path = response.location
+    alerts.addAlert('Saved file', 'success')
+  } else {
+    alerts.addAlert('Failed to save file', 'error')
+  }
+}
+
+const handleStartExport = async () => {
+  console.log('exporting')
+  await invoke('export_prot', { project: head.projectState() })
+}
+
 onMounted(async () => {
-  menu.init()
+  await menu.init()
 
   // listen to the `click` event and get a function to remove the event listener
   // there's also a `once` function that subscribes to an event and automatically unsubscribes the listener on the first event
@@ -70,50 +103,35 @@ onMounted(async () => {
     console.log('file loaded', event)
     const project = event?.payload as ProjectSkeleton
     if (project.location) alerts.addAlert('Loading project…', 'info')
-    head.load()
+    void head.load()
   })
   unlisteners.value.push(fileLoaded)
 
-  const saveFile = await listen('SAVE_FILE', async () => {
-    console.log('saving file')
-    const response = (await invoke('save_file', {
-      newProject: head.projectState(),
-    })) as ProjectSkeleton | undefined
-
-    if (response) {
-      head.name = response.name || head.name
-      head.path = response.location
-      alerts.addAlert('Saved file', 'success')
-    } else alerts.addAlert('Failed to save file', 'error')
+  const saveFile = await listen('SAVE_FILE', () => {
+    void handleSaveFile()
   })
   unlisteners.value.push(saveFile)
 
-  const saveFileAs = await listen('SAVE_FILE_AS', async () => {
-    const response = (await invoke('save_file_as', {
-      newProject: head.projectState(),
-    })) as ProjectSkeleton | undefined
-
-    if (response) {
-      head.name = response.name || head.name
-      head.path = response.location
-      alerts.addAlert('Saved file', 'success')
-    } else alerts.addAlert('Failed to save file', 'error')
+  const saveFileAs = await listen('SAVE_FILE_AS', () => {
+    void handleSaveFileAs()
   })
   unlisteners.value.push(saveFileAs)
 
-  const startExport = await listen('START_EXPORT', async () => {
-    console.log('exporting')
-    await invoke('export_prot', { project: head.projectState() })
+  const startExport = await listen('START_EXPORT', () => {
+    void handleStartExport()
   })
   unlisteners.value.push(startExport)
 
   const alert = await listen('ALERT', (event) => {
-    const { message, type } = event.payload as { message: string; type: AlertType }
+    const { message, type } = event.payload as {
+      message: string
+      type: AlertType
+    }
     alerts.addAlert(message, type)
   })
   unlisteners.value.push(alert)
 
-  const exporting = await listen('EXPORTING', async (event) => {
+  const exporting = await listen('EXPORTING', (event) => {
     const message = event.payload as string
     alerts.addAlert(message, 'info')
   })
@@ -129,7 +147,7 @@ onMounted(async () => {
 
   console.log(await invoke('get_play_state'))
 
-  trackStore.sync()
+  await trackStore.sync()
 })
 
 onUnmounted(() => {

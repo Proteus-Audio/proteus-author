@@ -24,7 +24,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useAudioStore } from '../../stores/audio'
+import { useAudioStore } from '../../stores/audio.js'
 import EffectMini from './EffectMini.vue'
 
 const effects = computed(() => audio.effects)

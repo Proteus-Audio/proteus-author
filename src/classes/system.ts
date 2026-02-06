@@ -34,7 +34,7 @@ export class System {
 
   constructor() {
     this.directories = {}
-    this.populateDirectories()
+    void this.populateDirectories()
   }
 
   dirPath(dir: string): string {

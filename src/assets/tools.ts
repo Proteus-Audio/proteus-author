@@ -1,8 +1,7 @@
 // import axios from "axios";
 
-/* eslint-disable  @typescript-eslint/no-explicit-any */
-const arrRandom = (arr: any[]) => {
-  if (arr.length === 0) return
+function arrRandom<T>(arr: T[]): T | undefined {
+  if (arr.length === 0) return undefined
   return arr[Math.floor(Math.random() * arr.length)]
 }
 
@@ -15,7 +14,10 @@ const arrRandom = (arr: any[]) => {
 // };
 
 const cloneAudioBuffer = (fromAudioBuffer: AudioBuffer): AudioBuffer => {
-  const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+  const audioContext = new (
+    window.AudioContext ||
+    (window as unknown as { webkitAudioContext: AudioContext }).webkitAudioContext
+  )()
   const audioBuffer = audioContext.createBuffer(
     fromAudioBuffer.numberOfChannels,
     fromAudioBuffer.length,
@@ -34,25 +36,28 @@ const cloneAudioBuffer = (fromAudioBuffer: AudioBuffer): AudioBuffer => {
 }
 
 const getAudioBuffer = async (srcPath: string): Promise<AudioBuffer> => {
-  const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-  const audioData = (await new Promise((resolve, reject) => {
+  const audioContext = new (
+    window.AudioContext ||
+    (window as unknown as { webkitAudioContext: AudioContext }).webkitAudioContext
+  )()
+  const audioData = await new Promise<ArrayBuffer>((resolve, reject) => {
     const request = new XMLHttpRequest()
     request.open('GET', srcPath, true)
     request.responseType = 'arraybuffer'
     request.onload = () => resolve(request.response as ArrayBuffer)
-    request.onerror = (e) => reject(e)
+    request.onerror = () => reject(new Error('Failed to load audio data'))
     request.send()
-  })) as ArrayBuffer
+  })
 
   return new Promise((resolve, reject) => {
-    audioContext.decodeAudioData(
+    void audioContext.decodeAudioData(
       audioData,
       (buffer) => {
         resolve(buffer)
       },
       (e) => {
         console.log('Error with decoding audio data', e)
-        reject(e)
+        reject(e instanceof Error ? e : new Error('Failed to decode audio data'))
       },
     )
   })

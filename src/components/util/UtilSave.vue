@@ -3,18 +3,7 @@
 </template>
 
 <script setup lang="ts">
-import { cloneDeep } from 'lodash'
-// import { ipcRenderer } from '../../electron'
-import { useAudioStore } from '../../stores/audio'
-import { useHeadStore } from '../../stores/head'
-import { useTrackStore } from '../../stores/track'
-import { ProjectSkeleton } from '../../typings/proteus'
-
-const head = useHeadStore()
-const track = useTrackStore()
-const audio = useAudioStore()
-
-const save = async () => {
+const save = () => {
   // const tracks = track.tracks.map((t) => ({
   //   id: t.id,
   //   name: t.name,

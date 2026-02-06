@@ -7,9 +7,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUpdated, ref, watch } from 'vue'
-import { useAlertStore } from '../../stores/alerts'
-import { AlertView } from '../../typings/proteus'
+import { onMounted, onUpdated, ref, watch } from 'vue'
+import { useAlertStore } from '../../stores/alerts.js'
+import { AlertView } from '../../typings/proteus.js'
 import { useWindowScroll } from '@vueuse/core'
 
 const alertStore = useAlertStore()
@@ -57,10 +57,6 @@ onUpdated(() => {
 
 onMounted(() => {
   processAlerts()
-})
-
-const alertTop = computed(() => {
-  return y.value > 150 ? '5em' : '2em'
 })
 </script>
 

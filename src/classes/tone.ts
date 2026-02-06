@@ -1,8 +1,8 @@
-import EventEmitter from 'events'
-import { Destination, Gain, getContext, Limiter, loaded, Player, Transport } from 'tone'
+import { Gain, getContext, getTransport, getDestination, Limiter, loaded, Player } from 'tone'
 import { Clock } from './clock'
 import { ToneTrack, Effect, SelectionMap, ToneTrackPlayer } from '../typings/tone'
 import { Track } from '../typings/tracks'
+import type EventEmitter from 'node:events'
 
 type Command = 'start' | 'stop' | 'play' | 'clockSync'
 type PlayCallback = (currentTime: number, iteration: number) => void
@@ -18,6 +18,8 @@ class ToneMaster {
   lastGain: number
   clock: Clock
   cachedCallback: PlayCallback
+  transport: ReturnType<typeof getTransport>
+  destination: ReturnType<typeof getDestination>
 
   constructor() {
     this.playing = false
@@ -30,6 +32,8 @@ class ToneMaster {
     this.clock = new Clock()
     this.cachedCallback = () => {}
     this.connectEffects()
+    this.transport = getTransport()
+    this.destination = getDestination()
   }
 
   private _initTonePlayer(player: ToneTrackPlayer) {
@@ -73,7 +77,7 @@ class ToneMaster {
   }
 
   get seconds() {
-    return Transport.seconds
+    return this.transport.seconds
   }
 
   setGain(gain: number) {
@@ -91,7 +95,7 @@ class ToneMaster {
     await waitForTheRamp
   }
 
-  async initPeaks(eventEmitter: EventEmitter, logEmitter?: boolean) {
+  initPeaks(eventEmitter: EventEmitter, logEmitter?: boolean) {
     if (logEmitter) console.log(eventEmitter)
   }
 
@@ -106,7 +110,7 @@ class ToneMaster {
   async seek(time: number) {
     this.seeking = true
     this.clock.seek(time)
-    Transport.seconds = time
+    this.transport.seconds = time
     if (this.playing) {
       await this.pause()
       await this.play()
@@ -128,12 +132,15 @@ class ToneMaster {
   }
 
   setSelections(selections: SelectionMap) {
+    void selections
     // selections.forEach((s) => {
     //   this.setTrackSelection(s[0], s[1])
     // })
   }
 
   setTrackSelection(trackId: number, selection: string) {
+    void trackId
+    void selection
     // const track = this.trackFromId(trackId)
     // if (track) {
     //   track.players.forEach((player) => {
@@ -152,6 +159,7 @@ class ToneMaster {
   }
 
   addToneTrackFromTrack(track: Track) {
+    void track
     // const players: ToneTrackPlayer[] = []
     // track.files.forEach((f) => {
     //   players.push({
@@ -170,7 +178,11 @@ class ToneMaster {
 
     this._initTonePlayer(player)
     const trackIndex = track.players.findIndex((p) => p.id === player.id)
-    trackIndex === -1 ? track.players.push(player) : (track.players[trackIndex] = player)
+    if (trackIndex === -1) {
+      track.players.push(player)
+    } else {
+      track.players[trackIndex] = player
+    }
   }
 
   removeEffect(index: number) {
@@ -183,13 +195,13 @@ class ToneMaster {
     if (index !== -1) return this.effects[index]
   }
 
-  async addEffect(effect: Effect) {
+  addEffect(effect: Effect) {
     this.effects.push(effect)
     this.connectEffects()
   }
 
   connectEffects() {
-    Destination.chain(...this.effects, new Limiter(-5))
+    this.destination.chain(...this.effects, new Limiter(-5))
   }
 
   async play(callback?: PlayCallback) {
@@ -199,10 +211,10 @@ class ToneMaster {
     if (callback) this.cachedCallback = callback
     const update = (iteration?: number) => {
       const i = iteration || 0
-      this.cachedCallback(Transport.seconds, i)
-      if (Transport.seconds >= this.duration) {
+      this.cachedCallback(this.transport.seconds, i)
+      if (this.transport.seconds >= this.duration) {
         this.cachedCallback(0, i)
-        this.stop()
+        void this.stop()
       }
       if (this.playing === true)
         setTimeout(() => {
@@ -212,7 +224,7 @@ class ToneMaster {
 
     await loaded()
 
-    Transport.start()
+    this.transport.start()
     this.clock.play()
     update()
 
@@ -226,7 +238,7 @@ class ToneMaster {
 
     this.lastGain = this.gain.gain.value
     await this.rampGain(0)
-    Transport.pause()
+    this.transport.pause()
   }
 
   async stop() {
@@ -236,7 +248,7 @@ class ToneMaster {
 
     this.lastGain = this.gain.gain.value
     await this.rampGain(0)
-    Transport.stop()
+    this.transport.stop()
   }
 }
 

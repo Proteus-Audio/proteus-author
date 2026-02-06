@@ -20,9 +20,9 @@
 <script setup lang="ts">
 import { Reverb } from 'tone'
 import { computed, onMounted } from 'vue'
-import { ReverbSettings } from '../../assets/effects'
-import { toneMaster } from '../../assets/toneMaster'
-import { useAudioStore } from '../../stores/audio'
+import { ReverbSettings } from '../../assets/effects.js'
+import { toneMaster } from '../../assets/toneMaster.js'
+import { useAudioStore } from '../../stores/audio.js'
 
 interface Props {
   effectIndex: number

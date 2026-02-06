@@ -31,7 +31,7 @@ interface DropFile {
   webkitRelativePath: string
 }
 
-interface LegacyTrackFile extends DropFileSkeleton {
+interface TrackFile extends DropFileSkeleton {
   parentId: number
 }
 
