@@ -465,7 +465,7 @@ pub fn export_prot(project_state: State<Arc<Mutex<ProjectSkeleton>>>, window: Wi
             .replace(".prot", ".mka");
 
         let out_command = format!(
-            "-y {}{}{}{}\"{}\"",
+            "-y {}{}{}{} {} \"{}\"",
             input_list,
             map_list,
             format!(
@@ -473,6 +473,7 @@ pub fn export_prot(project_state: State<Arc<Mutex<ProjectSkeleton>>>, window: Wi
                 settings_file_path
             ),
             metadata_list,
+            format!("-f matroska"),
             output_file
         );
 
@@ -492,10 +493,12 @@ pub fn export_prot(project_state: State<Arc<Mutex<ProjectSkeleton>>>, window: Wi
             while let Some(event) = rx.recv().await {
                 match event {
                     CommandEvent::Stdout(line) => {
-                        println!("Line: {:?}", line);
+                        let text = String::from_utf8_lossy(&line);
+                        println!("Line: {}", text.trim_end());
                     }
                     CommandEvent::Stderr(line) => {
-                        println!("Error: {:?}", line);
+                        let text = String::from_utf8_lossy(&line);
+                        eprintln!("Error: {}", text.trim_end());
                     }
                     CommandEvent::Terminated(exit_status) => {
                         println!("Exit: {:#?}", exit_status);
@@ -506,6 +509,7 @@ pub fn export_prot(project_state: State<Arc<Mutex<ProjectSkeleton>>>, window: Wi
 
             // Remove settings file
             std::fs::remove_file(settings_file_path).unwrap();
+
             // Rename output file if it exists from .mka to .prot
             if std::path::Path::new(&output_file).exists() {
                 std::fs::rename(output_file.clone(), output_file.replace(".mka", ".prot")).unwrap();
