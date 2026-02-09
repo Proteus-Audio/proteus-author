@@ -30,7 +30,11 @@
         <el-input type="text" v-model="convolutionMix" disabled="true" />
 
         <div>impulse response</div>
-        <el-input v-model="convolutionImpulse" placeholder="builtin:small-hall" />
+        <div class="ir-picker">
+          <el-input v-model="convolutionImpulse" placeholder="attachment:ir.wav or /path/to/ir.wav" />
+          <el-button size="small" @click="pickImpulseResponse">Choose File</el-button>
+          <el-button size="small" @click="clearImpulseResponse">Clear</el-button>
+        </div>
         <div></div>
 
         <div>tail (dB)</div>
@@ -248,13 +252,48 @@ const convolutionMix = computed({
 })
 
 const convolutionImpulse = computed({
-  get: () => convolutionSettings.value?.impulse_response || '',
+  get: () =>
+    convolutionSettings.value?.impulse_response_path ||
+    convolutionSettings.value?.impulse_response ||
+    '',
   set: (value: string) => {
     if (convolutionSettings.value) {
-      convolutionSettings.value.impulse_response = value || null
+      const next = value || null
+      convolutionSettings.value.impulse_response = next
+      convolutionSettings.value.impulse_response_path = null
+      convolutionSettings.value.impulse_response_attachment = null
     }
   },
 })
+
+const pickImpulseResponse = async () => {
+  const { open } = await import('@tauri-apps/plugin-dialog')
+  const result = await open({
+    multiple: false,
+    filters: [
+      {
+        name: 'Impulse Response',
+        extensions: ['wav', 'aif', 'aiff', 'flac', 'ogg'],
+      },
+    ],
+  })
+
+  if (!convolutionSettings.value) return
+  if (!result) return
+  const path = Array.isArray(result) ? result[0] : result
+  if (!path) return
+
+  convolutionSettings.value.impulse_response = null
+  convolutionSettings.value.impulse_response_attachment = null
+  convolutionSettings.value.impulse_response_path = path
+}
+
+const clearImpulseResponse = () => {
+  if (!convolutionSettings.value) return
+  convolutionSettings.value.impulse_response = null
+  convolutionSettings.value.impulse_response_attachment = null
+  convolutionSettings.value.impulse_response_path = null
+}
 
 const convolutionTailDb = computed({
   get: () => convolutionSettings.value?.impulse_response_tail_db ?? -60,
@@ -417,6 +456,13 @@ const distortionThreshold = computed({
     column-gap: 1em;
     row-gap: 1em;
     text-align: right;
+    align-items: center;
+  }
+
+  .ir-picker {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 0.5em;
     align-items: center;
   }
 }

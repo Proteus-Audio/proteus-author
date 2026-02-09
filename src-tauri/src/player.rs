@@ -99,7 +99,7 @@ pub async fn play(window: Window) {
     let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
     let effects = project_state.lock().unwrap().effects.clone();
     println!("Setting Effects: {:?}", effects);
-    player.as_ref().unwrap().set_effects(effects);
+    player.as_mut().unwrap().set_effects(effects);
     player.as_mut().unwrap().play();
 }
 
@@ -256,8 +256,8 @@ pub fn set_effects_chain(
     }
 
     let player_state: State<Arc<Mutex<Option<Player>>>> = window.state();
-    let player = player_state.lock().unwrap();
-    if let Some(player) = player.as_ref() {
+    let mut player = player_state.lock().unwrap();
+    if let Some(player) = player.as_mut() {
         println!("Setting Effects: {:?}", effects);
         player.set_effects(effects);
     } else {
