@@ -64,7 +64,7 @@ watch(
   async () => {
     await audio.syncEffects()
   },
-  { deep: true },
+  { deep: true, immediate: true },
 )
 
 const handleSaveFile = async () => {

@@ -119,17 +119,20 @@ export const useAudioStore = defineStore('prot', () => {
       await invoke('set_effects_chain', { effects: effectsChain.value })
     } catch (error) {
       console.error('Failed to sync effects chain', error)
+      alert.addAlert('Failed to sync effects chain', 'error')
     }
   }
 
   const addEffect = (effectType: AudioEffectType) => {
     const effect = createEffect(effectType)
     effects.value.push({ id: nextEffectId.value++, effect })
+    void syncEffects()
   }
 
   const removeEffect = (id: number) => {
     const index = effects.value.findIndex((e) => e.id === id)
     if (index !== -1) effects.value.splice(index, 1)
+    void syncEffects()
   }
 
   const moveEffect = (fromIndex: number, toIndex: number) => {
@@ -139,11 +142,13 @@ export const useAudioStore = defineStore('prot', () => {
 
     const [item] = effects.value.splice(fromIndex, 1)
     effects.value.splice(toIndex, 0, item)
+    void syncEffects()
   }
 
   const replaceEffects = (input: AudioEffectPayload[]) => {
     effects.value = effectChainFromPayload(input)
     nextEffectId.value = effects.value.reduce((max, item) => Math.max(max, item.id), 0) + 1
+    void syncEffects()
   }
 
   const effectLabel = (effect: AudioEffectPayload) => getEffectLabel(effect)

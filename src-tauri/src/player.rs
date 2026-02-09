@@ -13,8 +13,8 @@
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use proteus_lib::diagnostics::reporter::Report;
 use proteus_lib::container::play_settings::EffectSettings;
+use proteus_lib::diagnostics::reporter::Report;
 use proteus_lib::playback::player::Player;
 use serde::Deserialize;
 use serde::Serialize;
@@ -96,6 +96,10 @@ pub async fn play(window: Window) {
         return;
     }
 
+    let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
+    let effects = project_state.lock().unwrap().effects.clone();
+    println!("Setting Effects: {:?}", effects);
+    player.as_ref().unwrap().set_effects(effects);
     player.as_mut().unwrap().play();
 }
 
@@ -254,7 +258,10 @@ pub fn set_effects_chain(
     let player_state: State<Arc<Mutex<Option<Player>>>> = window.state();
     let player = player_state.lock().unwrap();
     if let Some(player) = player.as_ref() {
+        println!("Setting Effects: {:?}", effects);
         player.set_effects(effects);
+    } else {
+        println!("No player found");
     }
 }
 

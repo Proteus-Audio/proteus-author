@@ -58,14 +58,14 @@ export const effectTypeLabels: Record<AudioEffectType, string> = {
 
 const defaultBasicReverb = (): BasicReverbSettings => ({
   enabled: true,
-  mix: 0.0,
-  duration_ms: 100,
+  mix: 0.25,
+  duration_ms: 120,
   amplitude: 0.7,
 })
 
 const defaultConvolutionReverb = (): ConvolutionReverbSettings => ({
   enabled: true,
-  dry_wet: 0.000001,
+  dry_wet: 0.25,
   impulse_response: null,
   impulse_response_attachment: null,
   impulse_response_path: null,
@@ -74,35 +74,35 @@ const defaultConvolutionReverb = (): ConvolutionReverbSettings => ({
 })
 
 const defaultLowPassFilter = (): LowPassFilterSettings => ({
-  enabled: false,
-  freq_hz: 1000,
-  q: 0.5,
+  enabled: true,
+  freq_hz: 1200,
+  q: 0.7,
 })
 
 const defaultHighPassFilter = (): HighPassFilterSettings => ({
-  enabled: false,
-  freq_hz: 1000,
-  q: 0.5,
+  enabled: true,
+  freq_hz: 120,
+  q: 0.7,
 })
 
 const defaultDistortion = (): DistortionSettings => ({
-  enabled: false,
-  gain: 1.0,
-  threshold: 1.0,
+  enabled: true,
+  gain: 1.5,
+  threshold: 0.3,
 })
 
 const defaultCompressor = (): CompressorSettings => ({
-  enabled: false,
-  threshold_db: -18.0,
-  ratio: 4.0,
+  enabled: true,
+  threshold_db: -12.0,
+  ratio: 2.5,
   attack_ms: 10.0,
-  release_ms: 100.0,
-  makeup_gain_db: 0.0,
+  release_ms: 80.0,
+  makeup_gain_db: 2.0,
 })
 
 const defaultLimiter = (): LimiterSettings => ({
-  enabled: false,
-  threshold_db: -1.0,
+  enabled: true,
+  threshold_db: -3.0,
   knee_width_db: 4.0,
   attack_ms: 5.0,
   release_ms: 100.0,
@@ -123,13 +123,20 @@ export const createEffect = (type: AudioEffectType): AudioEffectPayload => {
     case 'Limiter':
       return { LimiterSettings: defaultLimiter() }
     case 'Compressor':
+      return { CompressorSettings: defaultCompressor() }
     default:
       return { CompressorSettings: defaultCompressor() }
   }
 }
 
 export const getEffectKey = (effect: AudioEffectPayload): AudioEffectKey => {
-  return Object.keys(effect)[0] as AudioEffectKey
+  if ('BasicReverbSettings' in effect) return 'BasicReverbSettings'
+  if ('ConvolutionReverbSettings' in effect) return 'ConvolutionReverbSettings'
+  if ('LowPassFilterSettings' in effect) return 'LowPassFilterSettings'
+  if ('HighPassFilterSettings' in effect) return 'HighPassFilterSettings'
+  if ('DistortionSettings' in effect) return 'DistortionSettings'
+  if ('LimiterSettings' in effect) return 'LimiterSettings'
+  return 'CompressorSettings'
 }
 
 export const getEffectType = (effect: AudioEffectPayload): AudioEffectType => {
@@ -142,24 +149,33 @@ export const getEffectLabel = (effect: AudioEffectPayload): string => {
 }
 
 export const normalizeEffect = (effect: AudioEffectPayload): AudioEffectPayload => {
-  const key = getEffectKey(effect)
-  switch (key) {
-    case 'BasicReverbSettings':
-      return { BasicReverbSettings: { ...defaultBasicReverb(), ...effect[key] } }
-    case 'ConvolutionReverbSettings':
-      return { ConvolutionReverbSettings: { ...defaultConvolutionReverb(), ...effect[key] } }
-    case 'LowPassFilterSettings':
-      return { LowPassFilterSettings: { ...defaultLowPassFilter(), ...effect[key] } }
-    case 'HighPassFilterSettings':
-      return { HighPassFilterSettings: { ...defaultHighPassFilter(), ...effect[key] } }
-    case 'DistortionSettings':
-      return { DistortionSettings: { ...defaultDistortion(), ...effect[key] } }
-    case 'LimiterSettings':
-      return { LimiterSettings: { ...defaultLimiter(), ...effect[key] } }
-    case 'CompressorSettings':
-    default:
-      return { CompressorSettings: { ...defaultCompressor(), ...effect[key] } }
+  if ('BasicReverbSettings' in effect) {
+    return { BasicReverbSettings: { ...defaultBasicReverb(), ...effect.BasicReverbSettings } }
   }
+  if ('ConvolutionReverbSettings' in effect) {
+    return {
+      ConvolutionReverbSettings: {
+        ...defaultConvolutionReverb(),
+        ...effect.ConvolutionReverbSettings,
+      },
+    }
+  }
+  if ('LowPassFilterSettings' in effect) {
+    return { LowPassFilterSettings: { ...defaultLowPassFilter(), ...effect.LowPassFilterSettings } }
+  }
+  if ('HighPassFilterSettings' in effect) {
+    return {
+      HighPassFilterSettings: { ...defaultHighPassFilter(), ...effect.HighPassFilterSettings },
+    }
+  }
+  if ('DistortionSettings' in effect) {
+    return { DistortionSettings: { ...defaultDistortion(), ...effect.DistortionSettings } }
+  }
+  if ('LimiterSettings' in effect) {
+    return { LimiterSettings: { ...defaultLimiter(), ...effect.LimiterSettings } }
+  }
+
+  return { CompressorSettings: { ...defaultCompressor(), ...effect.CompressorSettings } }
 }
 
 export const effectKeyFromType = (type: AudioEffectType): AudioEffectKey => effectTypeToKey[type]

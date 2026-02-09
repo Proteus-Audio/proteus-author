@@ -77,7 +77,7 @@ type AudioEffectPayload =
   | { CompressorSettings: CompressorSettings }
   | { LimiterSettings: LimiterSettings }
 
-export {
+export type {
   AudioEffectKey,
   AudioEffectType,
   BasicReverbSettings,
