@@ -60,7 +60,7 @@ watch(
 )
 
 watch(
-  audio.effectsChain,
+  audio.effects,
   async () => {
     await audio.syncEffects()
   },
