@@ -1,17 +1,17 @@
+import { invoke } from '@tauri-apps/api/core'
 import { defineStore } from 'pinia'
-import { Ref, computed, ref } from 'vue'
-import { useAlertStore } from './alerts'
-import { useTrackStore } from './track'
 import * as Tone from 'tone'
-import { toneMaster } from '../assets/toneMaster'
+import { computed, type Ref, ref, watch as vueWatch } from 'vue'
 import {
-  EffectChainItem,
   createEffect,
+  type EffectChainItem,
   effectChainFromPayload,
   getEffectLabel,
 } from '../assets/effects'
+import { toneMaster } from '../assets/toneMaster'
 import type { AudioEffectPayload, AudioEffectType } from '../typings/effects'
-import { invoke } from '@tauri-apps/api/core'
+import { useAlertStore } from './alerts'
+import { useTrackStore } from './track'
 
 export const useAudioStore = defineStore('prot', () => {
   const alert = useAlertStore()
@@ -36,7 +36,11 @@ export const useAudioStore = defineStore('prot', () => {
   /////////////
 
   const isPlaying = computed((): boolean => playing.value)
-  const watch = computed(() => ({ playing: playing.value, zoom: zoom.value, scale: scale.value }))
+  const watch = computed(() => ({
+    playing: playing.value,
+    zoom: zoom.value,
+    scale: scale.value,
+  }))
   const getCurrentTime = computed((): number => currentTime.value)
   const getXScale = computed((): number => zoom.value.x)
   const getYScale = computed((): number => zoom.value.y)
@@ -123,6 +127,14 @@ export const useAudioStore = defineStore('prot', () => {
     }
   }
 
+  let syncTimer: ReturnType<typeof setTimeout> | undefined
+  const scheduleSyncEffects = () => {
+    if (syncTimer) clearTimeout(syncTimer)
+    syncTimer = setTimeout(() => {
+      void syncEffects()
+    }, 150)
+  }
+
   const addEffect = (effectType: AudioEffectType) => {
     const effect = createEffect(effectType)
     effects.value.push({ id: nextEffectId.value++, effect })
@@ -179,6 +191,14 @@ export const useAudioStore = defineStore('prot', () => {
     await invoke('seek', { position: time })
   }
 
+  vueWatch(
+    effects,
+    () => {
+      scheduleSyncEffects()
+    },
+    { deep: true, immediate: true },
+  )
+
   return {
     scale,
     zoom,
@@ -213,5 +233,6 @@ export const useAudioStore = defineStore('prot', () => {
     setClock,
     seek,
     syncEffects,
+    scheduleSyncEffects,
   }
 })
