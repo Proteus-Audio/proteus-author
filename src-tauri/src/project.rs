@@ -1,46 +1,11 @@
 use once_cell::sync::Lazy;
+use proteus_lib::container::play_settings::EffectSettings;
 use std::sync::{atomic::AtomicBool, Arc, Mutex};
 
 use serde::{Deserialize, Serialize};
 use tauri::Manager;
 use tauri::State;
 use tauri::Window;
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ReverbSettings {
-    pub decay: f32,
-    pub pre_delay: f32,
-    pub mix: f32,
-    pub active: bool,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct CompressorSettings {
-    pub attack: f32,
-    pub knee: f32,
-    pub ratio: f32,
-    pub release: f32,
-    pub threshold: f32,
-    pub active: bool,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub enum EffectSettings {
-    ReverbSettings(ReverbSettings),
-    CompressorSettings(CompressorSettings),
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub enum Effect {
-    Compressor(CompressorSettings),
-    Reverb(ReverbSettings),
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct EffectSkeleton {
-    pub id: u32,
-    pub effect: Effect,
-}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TrackSkeleton {
@@ -82,27 +47,6 @@ pub struct ProjectSkeleton {
     pub tracks: Vec<TrackSkeleton>,
     pub effects: Vec<EffectSettings>,
     pub files: Vec<FileInfo>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct SettingsTrack {
-    pub level: f32,
-    pub pan: f32,
-    pub ids: Vec<u32>,
-    pub name: String,
-    pub safe_name: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct SettingsEncoder {
-    pub play_settings: PlaySettings,
-    pub encoder_version: f32,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct PlaySettings {
-    pub effects: Vec<EffectSettings>,
-    pub tracks: Vec<SettingsTrack>,
 }
 
 pub fn empty_project() -> ProjectSkeleton {

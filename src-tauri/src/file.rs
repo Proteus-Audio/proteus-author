@@ -1,3 +1,7 @@
+use proteus_lib::container::play_settings::PlaySettingsContainer;
+use proteus_lib::container::play_settings::{
+    PlaySettingsFile, PlaySettingsV2, PlaySettingsV2File, SettingsTrack,
+};
 use regex::Regex;
 use std::fs::File;
 use std::io::prelude::*;
@@ -396,7 +400,7 @@ pub fn export_prot(project_state: State<Arc<Mutex<ProjectSkeleton>>>, window: Wi
         // `new_sidecar()` expects just the filename, NOT the whole path like in JavaScript
         let mut reduced_file_list = Vec::new();
 
-        let mut play_settings = PlaySettings {
+        let mut play_settings = PlaySettingsV2 {
             effects: project.effects.clone(),
             tracks: Vec::new(),
         };
@@ -444,10 +448,13 @@ pub fn export_prot(project_state: State<Arc<Mutex<ProjectSkeleton>>>, window: Wi
             metadata_list.push_str(&format!("-metadata:s:a:{} title=\"{}\" ", index, file));
         }
 
-        let settings_encoder = SettingsEncoder {
-            play_settings: play_settings.clone(),
-            encoder_version: 1.0,
+        let settings_file = PlaySettingsV2File {
+            settings: PlaySettingsContainer::Nested {
+                play_settings: play_settings,
+            },
         };
+
+        let settings_encoder = PlaySettingsFile::V2(settings_file);
 
         let json_settings = serde_json::to_string(&settings_encoder).unwrap();
 
