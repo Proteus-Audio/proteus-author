@@ -1,14 +1,13 @@
 <template>
   <div class="fx-icon" @click.stop="toggleEdit">
-    <el-icon class="inner" style="vertical-align: middle" :size="20" color="#ffffff">
-      <SuitcaseLine v-if="type === 'Compressor'" />
-      <Phone v-if="type === 'Reverb'" />
-      <!-- <QuestionFilled v-if="type " /> -->
-    </el-icon>
+    <div class="fx-label">{{ label }}</div>
+    <div class="fx-controls" @click.stop>
+      <el-button size="small" :disabled="isFirst" @click="moveUp">Up</el-button>
+      <el-button size="small" :disabled="isLast" @click="moveDown">Down</el-button>
+    </div>
     <el-dialog v-model="editOpen" width="calc(100% - 4em)">
-      <EffectDialogCompressor :effectIndex="index" v-if="type === 'Compressor'" />
-      <EffectDialogReverb :effectIndex="index" v-if="type === 'Reverb'" />
-      <div>
+      <EffectDialog :effectIndex="index" />
+      <div class="dialog-actions">
         <el-button :icon="Close" @click="toggleEdit">Close</el-button>
         <el-button :icon="Delete" @click="removeEffect">Remove Effect</el-button>
       </div>
@@ -17,56 +16,41 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
-import { Effect } from '../../typings/effects'
-import { SuitcaseLine, Phone, Close, Delete } from '@element-plus/icons-vue'
-import { toneMaster } from '../../assets/toneMaster'
-import EffectDialogCompressor from './EffectDialogCompressor.vue'
-import EffectDialogReverb from './EffectDialogReverb.vue'
+import { computed, ref } from 'vue'
+import { Close, Delete } from '@element-plus/icons-vue'
+import EffectDialog from './EffectDialog.vue'
 import { useAudioStore } from '../../stores/audio'
-import { Compressor, Reverb } from 'tone'
-import { CompressorSettings, ReverbSettings } from '../../assets/effects'
+import type { EffectChainItem } from '../../assets/effects'
 
 interface Props {
-  id: number
-  type: Effect
+  item: EffectChainItem
   index: number
 }
 
 const audio = useAudioStore()
-
 const props = defineProps<Props>()
 
 const editOpen = ref(false)
+
+const label = computed(() => audio.effectLabel(props.item.effect))
+const isFirst = computed(() => props.index === 0)
+const isLast = computed(() => props.index === audio.effects.length - 1)
 
 const toggleEdit = () => {
   editOpen.value = !editOpen.value
 }
 
 const removeEffect = () => {
-  console.log(`Deleting #${props.id}`)
-  audio.removeEffect(props.id)
-  // toneMaster.removeEffect(props.type);
-  // emit("remove");
+  audio.removeEffect(props.item.id)
 }
 
-onMounted(() => {
-  const instance = audio.effects[props.index]
-  console.log(instance, props.index, props.id, props.type)
-  if (instance.effect instanceof CompressorSettings) {
-    const { threshold, ratio, knee, attack, release } = instance.effect
-    toneMaster.addEffect(new Compressor({ threshold, ratio, knee, attack, release }))
-  } else if (instance.effect instanceof ReverbSettings) {
-    const { decay, wet, preDelay } = instance.effect
-    toneMaster.addEffect(new Reverb({ decay, wet, preDelay }))
-  }
-  console.log(toneMaster.effects)
-})
+const moveUp = () => {
+  audio.moveEffect(props.index, props.index - 1)
+}
 
-onUnmounted(() => {
-  console.log('destroy', props.id, props.index)
-  toneMaster.removeEffect(props.index)
-})
+const moveDown = () => {
+  audio.moveEffect(props.index, props.index + 1)
+}
 </script>
 
 <style lang="scss" scoped>
@@ -76,26 +60,40 @@ onUnmounted(() => {
   background-color: rgb(69, 69, 69);
   margin-top: 0em;
   border-radius: 0.5em;
-  padding: 1em;
+  padding: 0.75em;
   color: white;
-  display: block;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 0.5em;
   overflow: hidden;
   transition:
     height 0.3s,
     margin 0.3s;
 
-  display: grid;
-  align-items: center;
-  align-content: center;
-  text-align: center;
-
   &:hover {
     height: 110%;
     margin-top: -2.5%;
   }
+}
 
-  .inner {
-    margin: auto;
-  }
+.fx-label {
+  font-weight: 600;
+  text-align: center;
+  display: grid;
+  align-items: center;
+}
+
+.fx-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5em;
+}
+
+.dialog-actions {
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: end;
+  gap: 0.75em;
+  margin-top: 1em;
 }
 </style>

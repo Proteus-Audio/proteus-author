@@ -55,7 +55,14 @@ watch(
   [trackStore.tracks, audio.effects],
   async () => {
     console.log(await head.logChanges())
-    // invoke('save_file', { newProject: JSON.stringify(head.projectState()) })
+  },
+  { deep: true },
+)
+
+watch(
+  audio.effectsChain,
+  async () => {
+    await audio.syncEffects()
   },
   { deep: true },
 )

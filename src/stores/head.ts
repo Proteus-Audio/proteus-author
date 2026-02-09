@@ -61,7 +61,7 @@ export const useHeadStore = defineStore('head', () => {
       track.setSelections()
       setPath(project.location || '')
       setName(project.name || '')
-      if (project.effects.length > 0) audio.replaceEffects(project.effects)
+      audio.replaceEffects(project.effects || [])
       void invoke('init_player')
     }
   }
@@ -77,7 +77,7 @@ export const useHeadStore = defineStore('head', () => {
       name: head.value.name,
       location: head.value.path,
       tracks: tracks,
-      effects: audio.effects,
+      effects: audio.effectsChain,
       files: [],
     } as ProjectSkeleton
 

@@ -1,4 +1,4 @@
-import type { EffectSettings } from '../assets/effects'
+import type { AudioEffectPayload } from './effects'
 import type { DropFileSkeleton, Track } from './tracks'
 
 export type AlertType = 'success' | 'warning' | 'info' | 'error'
@@ -43,6 +43,6 @@ export interface ProjectSkeleton {
   location?: string
   name?: string
   tracks: Track[]
-  effects: EffectSettings[]
+  effects: AudioEffectPayload[]
   files: DropFileSkeleton[]
 }

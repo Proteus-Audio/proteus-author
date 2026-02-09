@@ -1,22 +1,26 @@
 <template>
-  <el-dropdown id="effect-rack" trigger="click">
-    <div :class="`${rackClass}`">
+  <el-dropdown id="effect-rack" :class="rackClass" trigger="click">
+    <div>
       <div class="no-effects" v-if="noEffects">There are no effects, click to add one</div>
       <div class="effects-list" v-else>
         <EffectMini
           class="effect"
           v-for="(effect, i) in effects"
           :key="effect.id"
-          :type="effect.type"
-          :id="effect.id"
+          :item="effect"
           :index="i"
         />
       </div>
     </div>
     <template #dropdown>
       <el-dropdown-menu>
-        <el-dropdown-item @click="() => addEffect('Reverb')">Reverb</el-dropdown-item>
-        <el-dropdown-item @click="() => addEffect('Compressor')">Compression</el-dropdown-item>
+        <el-dropdown-item
+          v-for="type in effectTypes"
+          :key="type"
+          @click="() => addEffect(type)"
+        >
+          {{ effectTypeLabels[type] }}
+        </el-dropdown-item>
       </el-dropdown-menu>
     </template>
   </el-dropdown>
@@ -26,16 +30,17 @@
 import { computed } from 'vue'
 import { useAudioStore } from '../../stores/audio'
 import EffectMini from './EffectMini.vue'
+import { effectTypes, effectTypeLabels } from '../../assets/effects'
+import type { AudioEffectType } from '../../typings/effects'
+
+const audio = useAudioStore()
 
 const effects = computed(() => audio.effects)
 const noEffects = computed(() => effects.value.length <= 0)
 const rackClass = computed(() => (noEffects.value ? 'empty' : 'full'))
 
-const audio = useAudioStore()
-
-const addEffect = (toAdd: 'Reverb' | 'Compressor') => {
-  if (toAdd === 'Compressor') audio.addEffect('Compressor')
-  else if (toAdd === 'Reverb') audio.addEffect('Reverb')
+const addEffect = (toAdd: AudioEffectType) => {
+  audio.addEffect(toAdd)
 }
 </script>
 
@@ -55,28 +60,25 @@ const addEffect = (toAdd: 'Reverb' | 'Compressor') => {
   z-index: 20;
 
   &.empty {
-    // background-color: green;
     display: grid;
   }
   &.full {
-    // grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
     display: block;
   }
 
   &:hover {
-    height: 6em;
+    height: 7em;
   }
   .no-effects {
     text-align: center;
     text-transform: uppercase;
-    // font-weight: bold;
     color: grey;
     font-size: 0.8em;
   }
 
   .effects-list {
     display: grid;
-    grid-template-columns: 7em 7em 7em 7em;
+    grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
     gap: 1em;
     height: 100%;
   }

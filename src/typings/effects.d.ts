@@ -1,33 +1,91 @@
-type Effect = 'Compressor' | 'Reverb'
+type AudioEffectKey =
+  | 'BasicReverbSettings'
+  | 'ConvolutionReverbSettings'
+  | 'LowPassFilterSettings'
+  | 'HighPassFilterSettings'
+  | 'DistortionSettings'
+  | 'CompressorSettings'
+  | 'LimiterSettings'
 
-interface ReverbSettingsInterface {
-  decay: number
-  preDelay: number
+type AudioEffectType =
+  | 'BasicReverb'
+  | 'ConvolutionReverb'
+  | 'LowPassFilter'
+  | 'HighPassFilter'
+  | 'Distortion'
+  | 'Compressor'
+  | 'Limiter'
+
+interface BasicReverbSettings {
+  enabled: boolean
   mix: number
-  active: boolean
+  duration_ms: number
+  amplitude: number
 }
 
-interface CompressorSettingsInterface {
-  attack: number
-  knee: number
-  ratio: number
-  release: number
+interface ConvolutionReverbSettings {
+  enabled: boolean
+  dry_wet: number
+  impulse_response?: string | null
+  impulse_response_attachment?: string | null
+  impulse_response_path?: string | null
+  impulse_response_tail_db?: number | null
+  impulse_response_tail?: number | null
+}
+
+interface LowPassFilterSettings {
+  enabled: boolean
+  freq_hz: number
+  q: number
+}
+
+interface HighPassFilterSettings {
+  enabled: boolean
+  freq_hz: number
+  q: number
+}
+
+interface DistortionSettings {
+  enabled: boolean
+  gain: number
   threshold: number
-  active: boolean
 }
 
-type EffectSettings = ReverbSettingsInterface | CompressorSettingsInterface
-
-interface EffectSkeleton {
-  id: number
-  type: Effect
-  effect: ReverbSettingsInterface | CompressorSettingsInterface | undefined
+interface CompressorSettings {
+  enabled: boolean
+  threshold_db: number
+  ratio: number
+  attack_ms: number
+  release_ms: number
+  makeup_gain_db: number
 }
+
+interface LimiterSettings {
+  enabled: boolean
+  threshold_db: number
+  knee_width_db: number
+  attack_ms: number
+  release_ms: number
+}
+
+type AudioEffectPayload =
+  | { BasicReverbSettings: BasicReverbSettings }
+  | { ConvolutionReverbSettings: ConvolutionReverbSettings }
+  | { LowPassFilterSettings: LowPassFilterSettings }
+  | { HighPassFilterSettings: HighPassFilterSettings }
+  | { DistortionSettings: DistortionSettings }
+  | { CompressorSettings: CompressorSettings }
+  | { LimiterSettings: LimiterSettings }
 
 export {
-  Effect,
-  ReverbSettingsInterface,
-  CompressorSettingsInterface,
-  EffectSettings,
-  EffectSkeleton,
+  AudioEffectKey,
+  AudioEffectType,
+  BasicReverbSettings,
+  ConvolutionReverbSettings,
+  LowPassFilterSettings,
+  HighPassFilterSettings,
+  DistortionSettings,
+  CompressorSettings,
+  LimiterSettings,
+  AudioEffectPayload,
 }

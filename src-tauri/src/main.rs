@@ -56,7 +56,8 @@ fn main() {
             get_position,
             get_play_state,
             set_selections,
-            set_volume
+            set_volume,
+            set_effects_chain
         ])
         // .menu(menu::get_menu())
         .build(tauri::generate_context!())

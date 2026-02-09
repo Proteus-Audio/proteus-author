@@ -14,6 +14,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use proteus_lib::diagnostics::reporter::Report;
+use proteus_lib::container::play_settings::EffectSettings;
 use proteus_lib::playback::player::Player;
 use serde::Deserialize;
 use serde::Serialize;
@@ -64,6 +65,7 @@ pub async fn init_player(window: Window) {
     }
 
     let mut new_player = Player::new_from_file_paths(&file_list);
+    new_player.set_effects(project.effects.clone());
     let handle = window.app_handle().clone();
     let label = String::from(window.label());
     let reporter = move |Report { time, .. }| {
@@ -236,6 +238,24 @@ pub fn set_volume(volume: f32, window: Window) {
     }
 
     player.as_mut().unwrap().set_volume(volume);
+}
+
+#[tauri::command]
+pub fn set_effects_chain(
+    effects: Vec<EffectSettings>,
+    window: Window,
+    project_state: State<Arc<Mutex<ProjectSkeleton>>>,
+) {
+    {
+        let mut project = project_state.lock().unwrap();
+        project.effects = effects.clone();
+    }
+
+    let player_state: State<Arc<Mutex<Option<Player>>>> = window.state();
+    let player = player_state.lock().unwrap();
+    if let Some(player) = player.as_ref() {
+        player.set_effects(effects);
+    }
 }
 
 #[derive(Serialize, Deserialize)]

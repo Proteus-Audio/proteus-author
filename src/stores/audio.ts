@@ -4,8 +4,13 @@ import { useAlertStore } from './alerts'
 import { useTrackStore } from './track'
 import * as Tone from 'tone'
 import { toneMaster } from '../assets/toneMaster'
-import { Effect } from '../typings/effects'
-import { EffectSettings } from '../assets/effects'
+import {
+  EffectChainItem,
+  createEffect,
+  effectChainFromPayload,
+  getEffectLabel,
+} from '../assets/effects'
+import type { AudioEffectPayload, AudioEffectType } from '../typings/effects'
 import { invoke } from '@tauri-apps/api/core'
 
 export const useAudioStore = defineStore('prot', () => {
@@ -21,9 +26,10 @@ export const useAudioStore = defineStore('prot', () => {
   const scale = ref(20 as number)
   const duration = ref(0)
   const zoom = ref({ y: 1, x: 10 })
-  const effects = ref([] as EffectSettings[])
+  const effects = ref([] as EffectChainItem[])
   const clock: Ref<number> = ref(0.0)
-  //   const group = ref(new Pizzicato.Group());
+
+  const nextEffectId = ref(1)
 
   /////////////
   // GETTERS //
@@ -34,6 +40,7 @@ export const useAudioStore = defineStore('prot', () => {
   const getCurrentTime = computed((): number => currentTime.value)
   const getXScale = computed((): number => zoom.value.x)
   const getYScale = computed((): number => zoom.value.y)
+  const effectsChain = computed((): AudioEffectPayload[] => effects.value.map((e) => e.effect))
 
   /////////////
   // SETTERS //
@@ -51,16 +58,11 @@ export const useAudioStore = defineStore('prot', () => {
 
     setPlaying(true)
     await invoke('play')
-    // await toneMaster.play((time: number, i?: number) => {
-    //   if (time === 0 && i !== 0) stop()
-    //   else currentTime.value = time
-    // })
   }
 
   const pause = async () => {
     setPlaying(false)
     await invoke('pause')
-    // await toneMaster.pause()
   }
 
   const playPause = async () => {
@@ -73,7 +75,6 @@ export const useAudioStore = defineStore('prot', () => {
 
   const stop = async () => {
     await invoke('stop')
-    // await toneMaster.stop()
     currentTime.value = 0
     setPlaying(false)
   }
@@ -113,14 +114,17 @@ export const useAudioStore = defineStore('prot', () => {
     duration.value = toneMaster.duration
   }
 
-  const addEffect = (effectType: Effect) => {
-    const highestId =
-      effects.value
-        .map((e) => e.id)
-        .sort((a, b) => a - b)
-        .reverse()[0] || 0
-    const effect = new EffectSettings(effectType, highestId + 1)
-    effects.value.push(effect)
+  const syncEffects = async () => {
+    try {
+      await invoke('set_effects_chain', { effects: effectsChain.value })
+    } catch (error) {
+      console.error('Failed to sync effects chain', error)
+    }
+  }
+
+  const addEffect = (effectType: AudioEffectType) => {
+    const effect = createEffect(effectType)
+    effects.value.push({ id: nextEffectId.value++, effect })
   }
 
   const removeEffect = (id: number) => {
@@ -128,14 +132,21 @@ export const useAudioStore = defineStore('prot', () => {
     if (index !== -1) effects.value.splice(index, 1)
   }
 
-  const replaceEffects = (input: EffectSettings[]) => {
-    const newEffects: EffectSettings[] = []
-    input.forEach((effect) => {
-      newEffects.push(new EffectSettings(effect.type, effect.id, effect.effect))
-    })
+  const moveEffect = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return
+    if (fromIndex < 0 || fromIndex >= effects.value.length) return
+    if (toIndex < 0 || toIndex >= effects.value.length) return
 
-    effects.value = newEffects
+    const [item] = effects.value.splice(fromIndex, 1)
+    effects.value.splice(toIndex, 0, item)
   }
+
+  const replaceEffects = (input: AudioEffectPayload[]) => {
+    effects.value = effectChainFromPayload(input)
+    nextEffectId.value = effects.value.reduce((max, item) => Math.max(max, item.id), 0) + 1
+  }
+
+  const effectLabel = (effect: AudioEffectPayload) => getEffectLabel(effect)
 
   type zoomType = 'increment' | 'decrement'
 
@@ -167,6 +178,7 @@ export const useAudioStore = defineStore('prot', () => {
     scale,
     zoom,
     effects,
+    effectsChain,
     duration,
     watch,
     isPlaying,
@@ -188,10 +200,13 @@ export const useAudioStore = defineStore('prot', () => {
     setDuration,
     addEffect,
     removeEffect,
+    moveEffect,
     replaceEffects,
+    effectLabel,
     zoomX,
     zoomY,
     setClock,
     seek,
+    syncEffects,
   }
 })
