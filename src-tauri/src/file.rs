@@ -2,9 +2,12 @@ use proteus_lib::container::play_settings::PlaySettingsContainer;
 use proteus_lib::container::play_settings::{
     PlaySettingsFile, PlaySettingsV2, PlaySettingsV2File, SettingsTrack,
 };
+use proteus_lib::dsp::effects::AudioEffect;
 use regex::Regex;
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::prelude::*;
+use std::path::Path;
 use std::sync::Arc;
 use std::sync::Mutex;
 use tauri::AppHandle;
@@ -35,6 +38,47 @@ fn split_arguments(string: &str) -> Vec<&str> {
             }
         })
         .collect()
+}
+
+fn attachment_mime_for_path(path: &Path) -> &'static str {
+    match path
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .unwrap_or("")
+        .to_lowercase()
+        .as_str()
+    {
+        "wav" => "audio/wav",
+        "aif" | "aiff" => "audio/aiff",
+        "flac" => "audio/flac",
+        "ogg" => "audio/ogg",
+        _ => "application/octet-stream",
+    }
+}
+
+fn unique_attachment_name(name: &str, used: &mut HashSet<String>) -> String {
+    if !used.contains(name) {
+        used.insert(name.to_string());
+        return name.to_string();
+    }
+
+    let (stem, ext) = match name.rsplit_once('.') {
+        Some((stem, ext)) => (stem.to_string(), Some(ext.to_string())),
+        None => (name.to_string(), None),
+    };
+
+    let mut counter = 1;
+    loop {
+        let candidate = match &ext {
+            Some(ext) => format!("{}-{}.{}", stem, counter, ext),
+            None => format!("{}-{}", stem, counter),
+        };
+        if !used.contains(&candidate) {
+            used.insert(candidate.clone());
+            return candidate;
+        }
+        counter += 1;
+    }
 }
 
 #[tauri::command]
@@ -400,8 +444,51 @@ pub fn export_prot(project_state: State<Arc<Mutex<ProjectSkeleton>>>, window: Wi
         // `new_sidecar()` expects just the filename, NOT the whole path like in JavaScript
         let mut reduced_file_list = Vec::new();
 
+        let mut effects = project.effects.clone();
+        let mut ir_attachments: Vec<(String, String, String)> = Vec::new();
+        let mut used_attachment_names = HashSet::new();
+
+        for effect in effects.iter_mut() {
+            if let AudioEffect::ConvolutionReverb(convolution) = effect {
+                let mut path = convolution.settings.impulse_response_path.clone();
+                if path.is_none() {
+                    if let Some(raw) = convolution.settings.impulse_response.clone() {
+                        if !raw.starts_with("attachment:") {
+                            let candidate = raw.strip_prefix("file:").unwrap_or(&raw).to_string();
+                            if Path::new(&candidate).exists() {
+                                path = Some(candidate);
+                            }
+                        }
+                    }
+                }
+
+                if let Some(path) = path {
+                    let ir_path = Path::new(&path);
+                    if !ir_path.exists() {
+                        println!("Impulse response not found: {}", path);
+                        continue;
+                    }
+
+                    let file_name = ir_path
+                        .file_name()
+                        .and_then(|name| name.to_str())
+                        .unwrap_or("impulse_response.wav");
+                    let attachment_name =
+                        unique_attachment_name(file_name, &mut used_attachment_names);
+                    let attachment_ref = format!("attachment:{}", attachment_name);
+
+                    convolution.settings.impulse_response = Some(attachment_ref.clone());
+                    convolution.settings.impulse_response_attachment = Some(attachment_ref);
+                    convolution.settings.impulse_response_path = None;
+
+                    let mime = attachment_mime_for_path(ir_path).to_string();
+                    ir_attachments.push((path, attachment_name, mime));
+                }
+            }
+        }
+
         let mut play_settings = PlaySettingsV2 {
-            effects: project.effects.clone(),
+            effects,
             tracks: Vec::new(),
         };
 
@@ -463,6 +550,8 @@ pub fn export_prot(project_state: State<Arc<Mutex<ProjectSkeleton>>>, window: Wi
         let mut settings_file = File::create(settings_file_path.clone()).unwrap();
         settings_file.write_all(json_settings.as_bytes()).unwrap();
 
+        print!("Settings Written: {:?}", json_settings);
+
         // Replace extension .prot with .mka
         // TODO: Replace with regex
         let output_file = file_path
@@ -471,14 +560,28 @@ pub fn export_prot(project_state: State<Arc<Mutex<ProjectSkeleton>>>, window: Wi
             .to_string()
             .replace(".prot", ".mka");
 
+        let mut attachment_args = String::new();
+        let mut attachment_index = 0;
+
+        attachment_args.push_str(&format!(
+            "-attach \"{}\" -metadata:s:t:{} mimetype=application/json -metadata:s:t:{} filename=play_settings.json ",
+            settings_file_path, attachment_index, attachment_index
+        ));
+        attachment_index += 1;
+
+        for (path, name, mime) in ir_attachments.iter() {
+            attachment_args.push_str(&format!(
+                "-attach \"{}\" -metadata:s:t:{} mimetype={} -metadata:s:t:{} filename=\"{}\" ",
+                path, attachment_index, mime, attachment_index, name
+            ));
+            attachment_index += 1;
+        }
+
         let out_command = format!(
             "-y {}{}{}{} {} \"{}\"",
             input_list,
             map_list,
-            format!(
-                "-attach \"{}\" -metadata:s:t:0 mimetype=application/json ",
-                settings_file_path
-            ),
+            attachment_args,
             metadata_list,
             format!("-f matroska"),
             output_file
