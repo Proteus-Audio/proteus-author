@@ -28,6 +28,7 @@ export const useAudioStore = defineStore('prot', () => {
   const zoom = ref({ y: 1, x: 10 })
   const effects = ref([] as EffectChainItem[])
   const clock: Ref<number> = ref(0.0)
+  const levelsDb = ref([-60, -60] as number[])
 
   const nextEffectId = ref(1)
 
@@ -45,6 +46,7 @@ export const useAudioStore = defineStore('prot', () => {
   const getXScale = computed((): number => zoom.value.x)
   const getYScale = computed((): number => zoom.value.y)
   const effectsChain = computed((): AudioEffectPayload[] => effects.value.map((e) => e.effect))
+  const getLevelsDb = computed((): number[] => levelsDb.value)
 
   /////////////
   // SETTERS //
@@ -61,11 +63,13 @@ export const useAudioStore = defineStore('prot', () => {
     }
 
     setPlaying(true)
+    startLevelPolling()
     await invoke('play')
   }
 
   const pause = async () => {
     setPlaying(false)
+    stopLevelPolling()
     await invoke('pause')
   }
 
@@ -81,6 +85,7 @@ export const useAudioStore = defineStore('prot', () => {
     await invoke('stop')
     currentTime.value = 0
     setPlaying(false)
+    stopLevelPolling()
   }
 
   const setPlaying = (playingVal: boolean): void => {
@@ -191,6 +196,43 @@ export const useAudioStore = defineStore('prot', () => {
     await invoke('seek', { position: time })
   }
 
+  const setLevelsDb = (levels: number[]) => {
+    if (levels.length === 0) {
+      levelsDb.value = levelsDb.value.length ? levelsDb.value : [-60, -60]
+      return
+    }
+    levelsDb.value = levels
+  }
+
+  let levelsTimer: ReturnType<typeof setInterval> | undefined
+  const refreshLevels = async () => {
+    console.log('refreshLevels')
+    try {
+      const levels = await invoke<number[]>('get_levels_db')
+      if (Array.isArray(levels)) {
+        setLevelsDb(levels)
+      }
+    } catch (error) {
+      console.error('Failed to refresh levels', error)
+    }
+  }
+
+  const startLevelPolling = () => {
+    if (levelsTimer) return
+    void refreshLevels()
+    levelsTimer = setInterval(() => {
+      void refreshLevels()
+    }, 60)
+  }
+
+  const stopLevelPolling = () => {
+    if (levelsTimer) {
+      clearInterval(levelsTimer)
+      levelsTimer = undefined
+    }
+    setLevelsDb(levelsDb.value.map(() => -60))
+  }
+
   vueWatch(
     effects,
     () => {
@@ -210,6 +252,7 @@ export const useAudioStore = defineStore('prot', () => {
     getCurrentTime,
     getXScale,
     getYScale,
+    getLevelsDb,
     clock,
     play,
     pause,
@@ -234,5 +277,8 @@ export const useAudioStore = defineStore('prot', () => {
     seek,
     syncEffects,
     scheduleSyncEffects,
+    refreshLevels,
+    startLevelPolling,
+    stopLevelPolling,
   }
 })

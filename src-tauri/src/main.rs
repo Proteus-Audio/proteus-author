@@ -55,6 +55,8 @@ fn main() {
             get_duration,
             get_position,
             get_play_state,
+            get_levels,
+            get_levels_db,
             set_selections,
             set_volume,
             set_effects_chain
@@ -71,6 +73,7 @@ fn main() {
             println!("exit requested");
             api.prevent_exit();
         }
+         #[cfg(any(target_os = "macos", target_os = "ios"))]
         tauri::RunEvent::Reopen {
             has_visible_windows,
             ..
@@ -79,6 +82,8 @@ fn main() {
                 windows::create_main_window(&_app_handle);
             }
         }
+
+         #[cfg(any(target_os = "macos", target_os = "ios"))]
         tauri::RunEvent::Opened { urls, .. } => {
             println!("opened: {:?}", urls);
         }
