@@ -154,7 +154,7 @@ const peakLevels = computed(() => {
 }
 
 .inactive .meter-mask {
-  background: #bcbcbc;
+  background: #e3e3e3;
 }
 
 .inactive .meter-peak {

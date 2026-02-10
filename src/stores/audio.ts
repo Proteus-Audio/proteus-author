@@ -69,7 +69,7 @@ export const useAudioStore = defineStore('prot', () => {
 
   const pause = async () => {
     setPlaying(false)
-    stopLevelPolling()
+    stopLevelPolling(true)
     await invoke('pause')
   }
 
@@ -225,12 +225,14 @@ export const useAudioStore = defineStore('prot', () => {
     }, 60)
   }
 
-  const stopLevelPolling = () => {
+  const stopLevelPolling = (paused = false) => {
     if (levelsTimer) {
       clearInterval(levelsTimer)
       levelsTimer = undefined
     }
-    setLevelsDb(levelsDb.value.map(() => -60))
+    if (!paused) {
+      setLevelsDb(levelsDb.value.map(() => -60))
+    }
   }
 
   vueWatch(
