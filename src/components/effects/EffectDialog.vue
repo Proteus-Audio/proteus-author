@@ -20,6 +20,36 @@
         <el-input type="text" v-model="basicAmplitude" disabled="true" />
       </template>
 
+      <template v-else-if="type === 'DiffusionReverb'">
+        <div>enabled</div>
+        <el-switch v-model="diffusionEnabled" />
+        <div></div>
+
+        <div>mix</div>
+        <el-slider v-model="diffusionMix" :min="0" :max="1" :step="0.01" size="small" />
+        <el-input type="text" v-model="diffusionMix" disabled="true" />
+
+        <div>pre-delay (ms)</div>
+        <el-slider v-model="diffusionPreDelay" :min="0" :max="200" :step="1" size="small" />
+        <el-input type="text" v-model="diffusionPreDelay" disabled="true" />
+
+        <div>room size (ms)</div>
+        <el-slider v-model="diffusionRoomSize" :min="0" :max="200" :step="1" size="small" />
+        <el-input type="text" v-model="diffusionRoomSize" disabled="true" />
+
+        <div>decay</div>
+        <el-slider v-model="diffusionDecay" :min="0" :max="0.98" :step="0.01" size="small" />
+        <el-input type="text" v-model="diffusionDecay" disabled="true" />
+
+        <div>damping</div>
+        <el-slider v-model="diffusionDamping" :min="0" :max="0.99" :step="0.01" size="small" />
+        <el-input type="text" v-model="diffusionDamping" disabled="true" />
+
+        <div>diffusion</div>
+        <el-slider v-model="diffusionAmount" :min="0" :max="0.9" :step="0.01" size="small" />
+        <el-input type="text" v-model="diffusionAmount" disabled="true" />
+      </template>
+
       <template v-else-if="type === 'ConvolutionReverb'">
         <div>enabled</div>
         <el-switch v-model="convolutionEnabled" />
@@ -146,6 +176,7 @@ import type {
   AudioEffectPayload,
   BasicReverbSettings,
   ConvolutionReverbSettings,
+  DiffusionReverbSettings,
   CompressorSettings,
   LimiterSettings,
   LowPassFilterSettings,
@@ -176,6 +207,12 @@ const basicSettings = computed(() =>
 const convolutionSettings = computed(() =>
   effect.value && 'ConvolutionReverbSettings' in effect.value
     ? (effect.value.ConvolutionReverbSettings as ConvolutionReverbSettings)
+    : undefined,
+)
+
+const diffusionSettings = computed(() =>
+  effect.value && 'DiffusionReverbSettings' in effect.value
+    ? (effect.value.DiffusionReverbSettings as DiffusionReverbSettings)
     : undefined,
 )
 
@@ -234,6 +271,55 @@ const basicAmplitude = computed({
   get: () => basicSettings.value?.amplitude ?? 0,
   set: (value: number) => {
     if (basicSettings.value) basicSettings.value.amplitude = value
+  },
+})
+
+const diffusionEnabled = computed({
+  get: () => diffusionSettings.value?.enabled ?? false,
+  set: (value: boolean) => {
+    if (diffusionSettings.value) diffusionSettings.value.enabled = value
+  },
+})
+
+const diffusionMix = computed({
+  get: () => diffusionSettings.value?.mix ?? 0,
+  set: (value: number) => {
+    if (diffusionSettings.value) diffusionSettings.value.mix = value
+  },
+})
+
+const diffusionPreDelay = computed({
+  get: () => diffusionSettings.value?.pre_delay_ms ?? 0,
+  set: (value: number) => {
+    if (diffusionSettings.value) diffusionSettings.value.pre_delay_ms = Math.round(value)
+  },
+})
+
+const diffusionRoomSize = computed({
+  get: () => diffusionSettings.value?.room_size_ms ?? 0,
+  set: (value: number) => {
+    if (diffusionSettings.value) diffusionSettings.value.room_size_ms = Math.round(value)
+  },
+})
+
+const diffusionDecay = computed({
+  get: () => diffusionSettings.value?.decay ?? 0,
+  set: (value: number) => {
+    if (diffusionSettings.value) diffusionSettings.value.decay = value
+  },
+})
+
+const diffusionDamping = computed({
+  get: () => diffusionSettings.value?.damping ?? 0,
+  set: (value: number) => {
+    if (diffusionSettings.value) diffusionSettings.value.damping = value
+  },
+})
+
+const diffusionAmount = computed({
+  get: () => diffusionSettings.value?.diffusion ?? 0,
+  set: (value: number) => {
+    if (diffusionSettings.value) diffusionSettings.value.diffusion = value
   },
 })
 

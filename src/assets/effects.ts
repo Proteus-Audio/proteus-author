@@ -5,6 +5,7 @@ import type {
   BasicReverbSettings,
   CompressorSettings,
   ConvolutionReverbSettings,
+  DiffusionReverbSettings,
   DistortionSettings,
   HighPassFilterSettings,
   LimiterSettings,
@@ -18,6 +19,7 @@ export interface EffectChainItem {
 
 const effectTypeToKey: Record<AudioEffectType, AudioEffectKey> = {
   BasicReverb: 'BasicReverbSettings',
+  DiffusionReverb: 'DiffusionReverbSettings',
   ConvolutionReverb: 'ConvolutionReverbSettings',
   LowPassFilter: 'LowPassFilterSettings',
   HighPassFilter: 'HighPassFilterSettings',
@@ -28,6 +30,7 @@ const effectTypeToKey: Record<AudioEffectType, AudioEffectKey> = {
 
 const effectKeyToType: Record<AudioEffectKey, AudioEffectType> = {
   BasicReverbSettings: 'BasicReverb',
+  DiffusionReverbSettings: 'DiffusionReverb',
   ConvolutionReverbSettings: 'ConvolutionReverb',
   LowPassFilterSettings: 'LowPassFilter',
   HighPassFilterSettings: 'HighPassFilter',
@@ -38,6 +41,7 @@ const effectKeyToType: Record<AudioEffectKey, AudioEffectType> = {
 
 export const effectTypes: AudioEffectType[] = [
   'BasicReverb',
+  'DiffusionReverb',
   'ConvolutionReverb',
   'Compressor',
   'Limiter',
@@ -48,6 +52,7 @@ export const effectTypes: AudioEffectType[] = [
 
 export const effectTypeLabels: Record<AudioEffectType, string> = {
   BasicReverb: 'Basic Reverb',
+  DiffusionReverb: 'Diffusion Reverb',
   ConvolutionReverb: 'Convolution Reverb',
   Compressor: 'Compressor',
   Limiter: 'Limiter',
@@ -61,6 +66,16 @@ const defaultBasicReverb = (): BasicReverbSettings => ({
   mix: 0.25,
   duration_ms: 120,
   amplitude: 0.7,
+})
+
+const defaultDiffusionReverb = (): DiffusionReverbSettings => ({
+  enabled: true,
+  mix: 0.35,
+  pre_delay_ms: 12,
+  room_size_ms: 48,
+  decay: 0.72,
+  damping: 0.35,
+  diffusion: 0.72,
 })
 
 const defaultConvolutionReverb = (): ConvolutionReverbSettings => ({
@@ -112,6 +127,8 @@ export const createEffect = (type: AudioEffectType): AudioEffectPayload => {
   switch (type) {
     case 'BasicReverb':
       return { BasicReverbSettings: defaultBasicReverb() }
+    case 'DiffusionReverb':
+      return { DiffusionReverbSettings: defaultDiffusionReverb() }
     case 'ConvolutionReverb':
       return { ConvolutionReverbSettings: defaultConvolutionReverb() }
     case 'LowPassFilter':
@@ -131,6 +148,7 @@ export const createEffect = (type: AudioEffectType): AudioEffectPayload => {
 
 export const getEffectKey = (effect: AudioEffectPayload): AudioEffectKey => {
   if ('BasicReverbSettings' in effect) return 'BasicReverbSettings'
+  if ('DiffusionReverbSettings' in effect) return 'DiffusionReverbSettings'
   if ('ConvolutionReverbSettings' in effect) return 'ConvolutionReverbSettings'
   if ('LowPassFilterSettings' in effect) return 'LowPassFilterSettings'
   if ('HighPassFilterSettings' in effect) return 'HighPassFilterSettings'
@@ -151,6 +169,14 @@ export const getEffectLabel = (effect: AudioEffectPayload): string => {
 export const normalizeEffect = (effect: AudioEffectPayload): AudioEffectPayload => {
   if ('BasicReverbSettings' in effect) {
     return { BasicReverbSettings: { ...defaultBasicReverb(), ...effect.BasicReverbSettings } }
+  }
+  if ('DiffusionReverbSettings' in effect) {
+    return {
+      DiffusionReverbSettings: {
+        ...defaultDiffusionReverb(),
+        ...effect.DiffusionReverbSettings,
+      },
+    }
   }
   if ('ConvolutionReverbSettings' in effect) {
     return {

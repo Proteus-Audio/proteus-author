@@ -1,5 +1,6 @@
 type AudioEffectKey =
   | 'BasicReverbSettings'
+  | 'DiffusionReverbSettings'
   | 'ConvolutionReverbSettings'
   | 'LowPassFilterSettings'
   | 'HighPassFilterSettings'
@@ -9,6 +10,7 @@ type AudioEffectKey =
 
 type AudioEffectType =
   | 'BasicReverb'
+  | 'DiffusionReverb'
   | 'ConvolutionReverb'
   | 'LowPassFilter'
   | 'HighPassFilter'
@@ -21,6 +23,16 @@ interface BasicReverbSettings {
   mix: number
   duration_ms: number
   amplitude: number
+}
+
+interface DiffusionReverbSettings {
+  enabled: boolean
+  mix: number
+  pre_delay_ms: number
+  room_size_ms: number
+  decay: number
+  damping: number
+  diffusion: number
 }
 
 interface ConvolutionReverbSettings {
@@ -70,6 +82,7 @@ interface LimiterSettings {
 
 type AudioEffectPayload =
   | { BasicReverbSettings: BasicReverbSettings }
+  | { DiffusionReverbSettings: DiffusionReverbSettings }
   | { ConvolutionReverbSettings: ConvolutionReverbSettings }
   | { LowPassFilterSettings: LowPassFilterSettings }
   | { HighPassFilterSettings: HighPassFilterSettings }
@@ -81,6 +94,7 @@ export type {
   AudioEffectKey,
   AudioEffectType,
   BasicReverbSettings,
+  DiffusionReverbSettings,
   ConvolutionReverbSettings,
   LowPassFilterSettings,
   HighPassFilterSettings,
