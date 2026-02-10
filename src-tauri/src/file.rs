@@ -93,7 +93,9 @@ pub fn push_file_id(
 
     match track {
         Some(track) => {
-            track.file_ids.push(file_id);
+            if !track.file_ids.iter().any(|id| id == &file_id) {
+                track.file_ids.push(file_id);
+            }
         }
         None => {
             // Create new track
@@ -118,25 +120,22 @@ pub async fn register_file(
     let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
 
     let project = project_state.lock().unwrap();
-
     let project_clone = project.clone();
     drop(project);
 
     // See if file is already registered
-    let mut found_file = project_clone
-        .files
-        .iter()
-        .find_map(|file| {
-            if file.path == file_path {
-                Some(file)
-            } else {
-                None
-            }
-        })
-        .clone();
+    if let Some(existing_file) = project_clone.files.iter().find(|file| file.path == file_path) {
+        push_file_id(track_id, existing_file.id.clone(), project_state.clone());
+        return Ok(FileInfoSkeleton {
+            id: existing_file.id.clone(),
+            path: existing_file.path.clone(),
+            name: existing_file.name.clone(),
+            extension: existing_file.extension.clone(),
+        });
+    }
 
     // If file is not registered, register it
-    if found_file.is_none() {
+    {
         // let peaks = proteus_audio::peaks::get_peaks(file_path, true);
 
         let path = std::path::Path::new(file_path);
@@ -163,19 +162,14 @@ pub async fn register_file(
         let peaks_start = std::time::Instant::now();
         let _peaks = get_json_peaks(&window, &file.id, None);
         println!("Peaks took {}ms", peaks_start.elapsed().as_millis());
+
+        Ok(FileInfoSkeleton {
+            id: file.id.clone(),
+            path: file.path.clone(),
+            name: file.name.clone(),
+            extension: file.extension.clone(),
+        })
     }
-
-    let project = project_state.lock().unwrap();
-    found_file = project.files.last();
-
-    let file_unwraped = found_file.unwrap().clone();
-
-    Ok(FileInfoSkeleton {
-        id: file_unwraped.id.clone(),
-        path: file_unwraped.path.clone(),
-        name: file_unwraped.name.clone(),
-        extension: file_unwraped.extension.clone(),
-    })
 }
 
 #[tauri::command]
