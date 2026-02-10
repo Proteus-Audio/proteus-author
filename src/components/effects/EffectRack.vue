@@ -14,11 +14,7 @@
     </div>
     <template #dropdown>
       <el-dropdown-menu>
-        <el-dropdown-item
-          v-for="type in effectTypes"
-          :key="type"
-          @click="() => addEffect(type)"
-        >
+        <el-dropdown-item v-for="type in effectTypes" :key="type" @click="() => addEffect(type)">
           {{ effectTypeLabels[type] }}
         </el-dropdown-item>
       </el-dropdown-menu>
@@ -54,6 +50,7 @@ const addEffect = (toAdd: AudioEffectType) => {
   bottom: 0;
   left: 0;
   height: 5em;
+  height: var(--effect-rack-height);
   transition: height 0.3s;
   align-content: center;
   cursor: pointer;
@@ -66,9 +63,6 @@ const addEffect = (toAdd: AudioEffectType) => {
     display: block;
   }
 
-  &:hover {
-    height: 7em;
-  }
   .no-effects {
     text-align: center;
     text-transform: uppercase;

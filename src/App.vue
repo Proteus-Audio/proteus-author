@@ -19,7 +19,7 @@
           <div class="padding"></div>
         </BaseContainer>
 
-        <EffectRack />
+        <EffectRack ref="effectRackRef" />
       </div>
 
       <aside class="app-meter">
@@ -47,6 +47,7 @@ import { useHeadStore } from './stores/head'
 import { useMenuStore } from './stores/menu'
 import { useTrackStore } from './stores/track'
 import type { AlertType, ProjectSkeleton } from './typings/proteus'
+import { useElementHover } from '@vueuse/core'
 
 const head = useHeadStore()
 const trackStore = useTrackStore()
@@ -109,6 +110,10 @@ const handleStartExport = async () => {
   console.log('exporting')
   await invoke('export_prot', { project: head.projectState() })
 }
+
+const effectRackRef = ref<HTMLElement | null>(null)
+const effectRackHover = useElementHover(effectRackRef)
+const effectRackHeight = computed(() => (effectRackHover.value ? `7rem` : `5rem`))
 
 onMounted(async () => {
   await menu.init()
@@ -206,7 +211,8 @@ body {
 }
 
 #proteus-author {
-  --meter-width: 72px;
+  --meter-width: 100px;
+  --effect-rack-height: v-bind(effectRackHeight);
 }
 
 .app-layout {
@@ -222,9 +228,11 @@ body {
   top: 0;
   right: 0;
   bottom: 0;
+  bottom: var(--effect-rack-height);
   width: var(--meter-width);
   background: #f6f6f6;
   border-left: 1px solid #d8d8d8;
+  transition: bottom 0.3s;
 }
 
 #effect-rack {
