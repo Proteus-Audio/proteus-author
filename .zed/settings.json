@@ -4,5 +4,15 @@
 // see the documentation: https://zed.dev/docs/configuring-zed#settings-files
 {
 	"format_on_save": "on",
-	"formatter": "prettier"
+	// "formatter": "prettier"
+	"formatter": {
+		"language_server": {
+			"name": "biome"
+		}
+	},
+	"languages": {
+		"Vue.js": {
+			"formatter": "prettier"
+		}
+	}
 }

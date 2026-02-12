@@ -133,7 +133,8 @@ const trackName = computed({
 const selectedFile = computed(() => {
   if (!track.value.selection) return undefined
   const file = trackStore.getFileFromId(track.value.selection)
-  return assignIn(file, { parentId: props.trackId })
+  if (!file) return undefined
+  return { ...file, parentId: props.trackId }
 })
 
 const loadFiles = async (files: string[]) => {

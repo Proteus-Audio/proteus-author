@@ -216,16 +216,14 @@ pub fn set_selections(window: Window) -> Vec<String> {
 
     println!("ids: {:?}", ids);
 
-    // Apply the selections to the project
+    // Apply the selections to the project, keeping selection per track.
     for track in project.tracks.iter_mut() {
         track.selection = None;
     }
 
-    for id in ids.iter() {
-        for track in project.tracks.iter_mut() {
-            if track.file_ids.contains(id) {
-                track.selection = Some(id.clone());
-            }
+    for (track, id) in project.tracks.iter_mut().zip(ids.iter()) {
+        if track.file_ids.contains(id) {
+            track.selection = Some(id.clone());
         }
     }
 
@@ -293,4 +291,28 @@ pub fn get_play_state(window: Window) -> PlayerState {
     }
 
     PlayerState::Stopped
+}
+
+#[tauri::command]
+pub fn get_levels(window: Window) -> Vec<f32> {
+    let player_state: State<Arc<Mutex<Option<Player>>>> = window.state();
+    let player = player_state.lock().unwrap();
+
+    if player.is_none() {
+        return vec![0.0, 0.0];
+    }
+
+    player.as_ref().unwrap().get_levels()
+}
+
+#[tauri::command]
+pub fn get_levels_db(window: Window) -> Vec<f32> {
+    let player_state: State<Arc<Mutex<Option<Player>>>> = window.state();
+    let player = player_state.lock().unwrap();
+
+    if player.is_none() {
+        return vec![f32::NEG_INFINITY, f32::NEG_INFINITY];
+    }
+
+    player.as_ref().unwrap().get_levels_db()
 }

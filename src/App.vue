@@ -4,20 +4,28 @@
       <title>Proteus Author - {{ windowTitle }}</title>
     </Teleport>
     <UtilBase />
-    <BaseContainer>
-      <BaseAlertBox />
-      <BaseTitle />
-      <el-affix :offset="0">
-        <BaseTransport />
-      </el-affix>
+    <div class="app-layout">
+      <div class="app-main">
+        <BaseContainer>
+          <BaseAlertBox />
+          <BaseTitle />
+          <el-affix :offset="0">
+            <BaseTransport />
+          </el-affix>
 
-      <div class="bin-container">
-        <TrackBin v-for="track in trackStore.tracks" :track-id="track.id" :key="track.id" />
+          <div class="bin-container">
+            <TrackBin v-for="track in trackStore.tracks" :track-id="track.id" :key="track.id" />
+          </div>
+          <div class="padding"></div>
+        </BaseContainer>
+
+        <EffectRack ref="effectRackRef" />
       </div>
-      <div class="padding"></div>
-    </BaseContainer>
 
-    <EffectRack />
+      <aside class="app-meter">
+        <BaseLevelMeter vertical />
+      </aside>
+    </div>
   </div>
 </template>
 
@@ -27,6 +35,7 @@ import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import BaseAlertBox from './components/base/BaseAlertBox.vue'
 import BaseContainer from './components/base/BaseContainer.vue'
+import BaseLevelMeter from './components/base/BaseLevelMeter.vue'
 import BaseTitle from './components/base/BaseTitle.vue'
 import BaseTransport from './components/base/BaseTransport.vue'
 import EffectRack from './components/effects/EffectRack.vue'
@@ -38,6 +47,7 @@ import { useHeadStore } from './stores/head'
 import { useMenuStore } from './stores/menu'
 import { useTrackStore } from './stores/track'
 import type { AlertType, ProjectSkeleton } from './typings/proteus'
+import { useElementHover } from '@vueuse/core'
 
 const head = useHeadStore()
 const trackStore = useTrackStore()
@@ -100,6 +110,10 @@ const handleStartExport = async () => {
   console.log('exporting')
   await invoke('export_prot', { project: head.projectState() })
 }
+
+const effectRackRef = ref<HTMLElement | null>(null)
+const effectRackHover = useElementHover(effectRackRef)
+const effectRackHeight = computed(() => (effectRackHover.value ? `7rem` : `5rem`))
 
 onMounted(async () => {
   await menu.init()
@@ -194,5 +208,35 @@ body {
   width: 100%;
   overflow-x: scroll;
   border-radius: 0.5em;
+}
+
+#proteus-author {
+  --meter-width: 100px;
+  --effect-rack-height: v-bind(effectRackHeight);
+}
+
+.app-layout {
+  min-height: 100vh;
+}
+
+.app-main {
+  padding-right: var(--meter-width);
+}
+
+.app-meter {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  bottom: var(--effect-rack-height);
+  width: var(--meter-width);
+  background: #f6f6f6;
+  border-left: 1px solid #d8d8d8;
+  transition: bottom 0.3s;
+}
+
+#effect-rack {
+  width: calc(100% - var(--meter-width));
+  right: var(--meter-width);
 }
 </style>

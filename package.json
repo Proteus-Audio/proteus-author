@@ -1,6 +1,6 @@
 {
   "name": "proteus-author",
-  "version": "0.8.3",
+  "version": "0.9.0",
   "description": "An authoring application for .prot files.",
   "type": "module",
   "scripts": {

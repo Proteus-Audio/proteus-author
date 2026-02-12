@@ -76,7 +76,7 @@ const getSimplifiedPeaks = async () => {
     zoom: audio.zoom.x,
   })
 
-  console.log('simplifiedPeaks', simplifiedPeaks)
+  // console.log('simplifiedPeaks', simplifiedPeaks)
 
   return simplifiedPeaks
 }
@@ -85,8 +85,6 @@ const peaksLength = computed(() => simplifiedPeaks.value[0]?.peaks.length || 0)
 
 const zoomLevel = computed(() => {
   const factor = (simplifiedPeaks.value[0]?.original_length || 100) / peaksLength.value
-
-  console.log('factor', factor)
 
   return 100 / factor
 })
@@ -119,7 +117,7 @@ const getAnnotation = (index: number): string => {
 
 const playheadPosition = computed(() => {
   const factor = audio.clock * zoomLevel.value * 2
-  console.log(audio.clock, factor, zoomLevel.value)
+  // console.log(audio.clock, factor, zoomLevel.value)
   return `${factor}px`
 })
 
@@ -129,10 +127,7 @@ const seek = (event: MouseEvent) => {
 }
 
 onMounted(() => {
-  console.log('starting file')
   void updateSimplifiedPeaks()
-
-  console.log(props.track)
 })
 </script>
 
