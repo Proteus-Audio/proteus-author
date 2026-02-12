@@ -31,7 +31,10 @@
 
         <div>impulse response</div>
         <div class="ir-picker">
-          <el-input v-model="convolutionImpulse" placeholder="attachment:ir.wav or /path/to/ir.wav" />
+          <el-input
+            v-model="convolutionImpulse"
+            placeholder="attachment:ir.wav or /path/to/ir.wav"
+          />
           <el-button size="small" @click="pickImpulseResponse">Choose File</el-button>
           <el-button size="small" @click="clearImpulseResponse">Clear</el-button>
         </div>
@@ -138,10 +141,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useAudioStore } from '../../stores/audio'
-import {
-  getEffectLabel,
-  getEffectType,
-} from '../../assets/effects'
+import { getEffectLabel, getEffectType } from '../../assets/effects'
 import type {
   AudioEffectPayload,
   BasicReverbSettings,

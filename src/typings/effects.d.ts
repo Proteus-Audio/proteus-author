@@ -1,4 +1,4 @@
-type AudioEffectKey =
+export type AudioEffectKey =
   | 'BasicReverbSettings'
   | 'ConvolutionReverbSettings'
   | 'LowPassFilterSettings'
@@ -7,7 +7,7 @@ type AudioEffectKey =
   | 'CompressorSettings'
   | 'LimiterSettings'
 
-type AudioEffectType =
+export type AudioEffectType =
   | 'BasicReverb'
   | 'ConvolutionReverb'
   | 'LowPassFilter'
@@ -16,14 +16,14 @@ type AudioEffectType =
   | 'Compressor'
   | 'Limiter'
 
-interface BasicReverbSettings {
+export interface BasicReverbSettings {
   enabled: boolean
   mix: number
   duration_ms: number
   amplitude: number
 }
 
-interface ConvolutionReverbSettings {
+export interface ConvolutionReverbSettings {
   enabled: boolean
   dry_wet: number
   impulse_response?: string | null
@@ -33,25 +33,25 @@ interface ConvolutionReverbSettings {
   impulse_response_tail?: number | null
 }
 
-interface LowPassFilterSettings {
+export interface LowPassFilterSettings {
   enabled: boolean
   freq_hz: number
   q: number
 }
 
-interface HighPassFilterSettings {
+export interface HighPassFilterSettings {
   enabled: boolean
   freq_hz: number
   q: number
 }
 
-interface DistortionSettings {
+export interface DistortionSettings {
   enabled: boolean
   gain: number
   threshold: number
 }
 
-interface CompressorSettings {
+export interface CompressorSettings {
   enabled: boolean
   threshold_db: number
   ratio: number
@@ -60,7 +60,7 @@ interface CompressorSettings {
   makeup_gain_db: number
 }
 
-interface LimiterSettings {
+export interface LimiterSettings {
   enabled: boolean
   threshold_db: number
   knee_width_db: number
@@ -68,7 +68,16 @@ interface LimiterSettings {
   release_ms: number
 }
 
-type AudioEffectPayload =
+export type EffectSettings =
+  | BasicReverbSettings
+  | ConvolutionReverbSettings
+  | LowPassFilterSettings
+  | HighPassFilterSettings
+  | DistortionSettings
+  | CompressorSettings
+  | LimiterSettings
+
+export type AudioEffectPayload =
   | { BasicReverbSettings: BasicReverbSettings }
   | { ConvolutionReverbSettings: ConvolutionReverbSettings }
   | { LowPassFilterSettings: LowPassFilterSettings }
@@ -76,16 +85,3 @@ type AudioEffectPayload =
   | { DistortionSettings: DistortionSettings }
   | { CompressorSettings: CompressorSettings }
   | { LimiterSettings: LimiterSettings }
-
-export type {
-  AudioEffectKey,
-  AudioEffectType,
-  BasicReverbSettings,
-  ConvolutionReverbSettings,
-  LowPassFilterSettings,
-  HighPassFilterSettings,
-  DistortionSettings,
-  CompressorSettings,
-  LimiterSettings,
-  AudioEffectPayload,
-}

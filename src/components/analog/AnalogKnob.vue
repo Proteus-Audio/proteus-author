@@ -2,18 +2,9 @@
   <div class="analog-knob" :style="knobStyle">
     <label v-if="label" class="analog-label">{{ label }}</label>
     <div class="knob-wrap">
-      <div class="knob">
+      <div class="knob" @pointerdown="onKnobPointerDown">
         <div class="knob-notch"></div>
       </div>
-      <input
-        class="knob-input"
-        type="range"
-        :min="min"
-        :max="max"
-        :step="step"
-        :value="modelValue"
-        @input="onKnobInput"
-      />
     </div>
     <div v-if="showValue" class="knob-readout">
       <input
@@ -36,7 +27,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 interface Props {
   modelValue: number
@@ -48,6 +39,7 @@ interface Props {
   units?: string
   showValue?: boolean
   allowNumericInput?: boolean
+  dragPixelsPerStep?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -59,12 +51,16 @@ const props = withDefaults(defineProps<Props>(), {
   units: '',
   showValue: true,
   allowNumericInput: true,
+  dragPixelsPerStep: 2,
 })
 
 const emit = defineEmits(['update:modelValue'])
 
 const isEditing = ref(false)
 const inputValue = ref('')
+const dragStartY = ref(0)
+const dragStartValue = ref(0)
+const isDragging = ref(false)
 
 const stepPrecision = computed(() => {
   const stepAsText = String(props.step)
@@ -85,9 +81,31 @@ const formatValue = (value: number) => {
   return Number(value).toFixed(stepPrecision.value)
 }
 
-const onKnobInput = (event: Event) => {
-  const next = Number((event.target as HTMLInputElement).value)
+const onPointerMove = (event: PointerEvent) => {
+  if (!isDragging.value) return
+  event.preventDefault()
+  const deltaY = dragStartY.value - event.clientY
+  const pixelsPerStep = Math.max(1, props.dragPixelsPerStep)
+  const stepDelta = deltaY / pixelsPerStep
+  const next = dragStartValue.value + stepDelta * props.step
   emit('update:modelValue', normalizeValue(next))
+}
+
+const stopDragging = () => {
+  isDragging.value = false
+  window.removeEventListener('pointermove', onPointerMove)
+  window.removeEventListener('pointerup', stopDragging)
+  window.removeEventListener('pointercancel', stopDragging)
+}
+
+const onKnobPointerDown = (event: PointerEvent) => {
+  event.preventDefault()
+  dragStartY.value = event.clientY
+  dragStartValue.value = props.modelValue
+  isDragging.value = true
+  window.addEventListener('pointermove', onPointerMove)
+  window.addEventListener('pointerup', stopDragging)
+  window.addEventListener('pointercancel', stopDragging)
 }
 
 const onValueFocus = () => {
@@ -131,6 +149,17 @@ watch(
   { immediate: true },
 )
 
+watch(
+  () => props.dragPixelsPerStep,
+  () => {
+    if (props.dragPixelsPerStep <= 0) stopDragging()
+  },
+)
+
+onBeforeUnmount(() => {
+  stopDragging()
+})
+
 const displayValue = computed(() => formatValue(props.modelValue))
 </script>
 
@@ -145,14 +174,9 @@ const displayValue = computed(() => formatValue(props.modelValue))
   position: relative;
   width: var(--knob-size);
   height: var(--knob-size);
-}
-
-.knob {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
+  border-radius: var(--knob-size);
   background:
-    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.35), transparent 55%),
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.15), transparent 55%),
     radial-gradient(circle at 70% 70%, rgba(0, 0, 0, 0.5), transparent 50%),
     linear-gradient(145deg, #3a3530, #1e1b18);
   border: 2px solid #151311;
@@ -160,9 +184,17 @@ const displayValue = computed(() => formatValue(props.modelValue))
     inset 0 2px 4px rgba(255, 255, 255, 0.08),
     inset 0 -6px 10px rgba(0, 0, 0, 0.6),
     0 6px 14px rgba(0, 0, 0, 0.5);
+}
+
+.knob {
+  width: 100%;
+  height: 100%;
   position: relative;
   transform: rotate(var(--knob-rotation));
   transition: transform 0.08s ease-out;
+  cursor: ns-resize;
+  cursor: pointer;
+  touch-action: none;
 }
 
 .knob-notch {
@@ -175,13 +207,6 @@ const displayValue = computed(() => formatValue(props.modelValue))
   transform: translateX(-50%);
   background: linear-gradient(180deg, var(--analog-accent), var(--analog-accent-deep));
   box-shadow: 0 0 4px var(--analog-glow);
-}
-
-.knob-input {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
 }
 
 .knob-readout {
