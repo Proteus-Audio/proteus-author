@@ -12,7 +12,7 @@ interface Props {
   state: boolean
   label?: string
   size?: 'small' | 'medium' | 'large'
-  color?: 'red' | 'green' | 'amber'
+  color?: 'red' | 'green' | 'lime' | 'amber' | 'yellow' | 'orange' | 'dark-red'
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -31,12 +31,11 @@ const colorClass = computed(() => `color-${props.color} ${props.size}`)
   justify-items: center;
 
   .light {
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
+    width: 100%;
+    height: 1rem;
     background: #2a2622;
-    border: 1px solid #0f0d0b;
-    box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.7);
+
+    border: 4px solid #0f0d0b;
     transition:
       box-shadow 0.15s ease-out,
       background 0.15s ease-out;
@@ -47,25 +46,32 @@ const colorClass = computed(() => `color-${props.color} ${props.size}`)
     height: 10px;
   }
 
-  &.color-amber .light.on {
-    background: #f2c94c;
-    box-shadow:
-      0 0 10px rgba(242, 201, 76, 0.8),
-      0 0 20px rgba(242, 201, 76, 0.4);
+  &.color-green .light.on {
+    background: oklch(72.3% 0.219 149.579);
   }
 
-  &.color-green .light.on {
-    background: #7dd36c;
-    box-shadow:
-      0 0 10px rgba(125, 211, 108, 0.8),
-      0 0 20px rgba(125, 211, 108, 0.4);
+  &.color-lime .light.on {
+    background: oklch(76.8% 0.233 130.85);
+  }
+
+  &.color-yellow .light.on {
+    background: oklch(79.5% 0.184 86.047);
+  }
+
+  &.color-amber .light.on {
+    background: oklch(76.9% 0.188 70.08);
+  }
+
+  &.color-orange .light.on {
+    background: oklch(64.6% 0.222 41.116);
   }
 
   &.color-red .light.on {
-    background: #e36a6a;
-    box-shadow:
-      0 0 10px rgba(227, 106, 106, 0.8),
-      0 0 20px rgba(227, 106, 106, 0.4);
+    background: oklch(57.7% 0.245 27.325);
+  }
+
+  &.color-dark-red .light.on {
+    background: oklch(44.4% 0.177 26.899);
   }
 }
 </style>
