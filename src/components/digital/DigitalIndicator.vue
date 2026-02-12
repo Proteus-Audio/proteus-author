@@ -1,7 +1,7 @@
 <template>
-  <div class="analog-indicator" :class="colorClass">
+  <div class="digital-indicator" :class="colorClass">
     <span class="light" :class="{ on: state }"></span>
-    <span v-if="label" class="analog-label">{{ label }}</span>
+    <span v-if="label" class="digital-label">{{ label }}</span>
   </div>
 </template>
 
@@ -13,6 +13,8 @@ interface Props {
   label?: string
   size?: 'small' | 'medium' | 'large'
   color?: 'red' | 'green' | 'lime' | 'amber' | 'yellow' | 'orange' | 'dark-red'
+  frozen?: boolean
+  peak?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -21,37 +23,47 @@ const props = withDefaults(defineProps<Props>(), {
   size: 'medium',
 })
 
-const colorClass = computed(() => `color-${props.color} ${props.size}`)
+const colorClass = computed(
+  () =>
+    `color-${props.color} ${props.size} ${props.frozen ? 'frozen' : ''} ${props.peak ? 'peak' : ''}`,
+)
 </script>
 
 <style lang="scss" scoped>
-.analog-indicator {
+.digital-indicator {
   display: grid;
   gap: 0.35rem;
-  justify-items: center;
+  justify-items: stretch;
 
   .light {
     width: 100%;
-    height: 1rem;
-    background: #2a2622;
+    height: 2rem;
+    background: oklch(92.9% 0.013 255.508);
 
-    border: 4px solid #0f0d0b;
+    border: 4px solid oklch(86.9% 0.022 252.894);
     transition:
       box-shadow 0.15s ease-out,
       background 0.15s ease-out;
   }
 
   &.small .light {
-    width: 10px;
-    height: 10px;
+    height: 0.75rem;
+  }
+
+  &.medium .light {
+    height: 1.25rem;
+  }
+
+  &.large .light {
+    height: 2rem;
   }
 
   &.color-green .light.on {
-    background: oklch(72.3% 0.219 149.579);
+    background: oklch(52.7% 0.154 150.069);
   }
 
   &.color-lime .light.on {
-    background: oklch(76.8% 0.233 130.85);
+    background: oklch(64.8% 0.2 131.684);
   }
 
   &.color-yellow .light.on {
@@ -72,6 +84,10 @@ const colorClass = computed(() => `color-${props.color} ${props.size}`)
 
   &.color-dark-red .light.on {
     background: oklch(44.4% 0.177 26.899);
+  }
+
+  &.frozen .light.on {
+    background: oklch(70.4% 0.04 256.788) !important;
   }
 }
 </style>
