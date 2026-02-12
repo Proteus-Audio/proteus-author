@@ -27,7 +27,7 @@
         "tone": "^15.1.22",
         "vue": "^3.5.28",
         "vue3-dropzone": "^2.0.1",
-        "vuedraggable": "^2.24.3",
+        "vuedraggable": "^4.1.0",
         "waveform-data": "^4.3.0",
       },
       "devDependencies": {
@@ -903,7 +903,7 @@
 
     "slash": ["slash@3.0.0", "", {}, "sha512-g9Q1haeby36OSStwb4ntCGGGaKsaVSjQ68fBxoQcutl5fS1vuY18H3wSt3jFyFtrkx+Kz0V1G85A4MyAdDMi2Q=="],
 
-    "sortablejs": ["sortablejs@1.10.2", "", {}, "sha512-YkPGufevysvfwn5rfdlGyrGjt7/CRHwvRPogD/lC+TnvcN29jDpCifKP+rBqf+LRldfXSTh+0CGLcSg0VIxq3A=="],
+    "sortablejs": ["sortablejs@1.14.0", "", {}, "sha512-pBXvQCs5/33fdN1/39pPL0NZF20LeRbLQ5jtnheIPN9JQAaufGjKdWduZn4U7wCtVuzKhmRkI0DFYHYRbB2H1w=="],
 
     "source-map-js": ["source-map-js@1.2.1", "", {}, "sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA=="],
 
@@ -983,7 +983,7 @@
 
     "vue3-dropzone": ["vue3-dropzone@2.2.1", "", { "dependencies": { "attr-accept": "^2.2.2", "file-selector": "^0.2.4" }, "peerDependencies": { "vue": ">=3" } }, "sha512-TWV/BWTMHePoAcHVn+S5a+a69S1Hwkpdn1LlcBkzvesGZTBqL0TDnKuXWMrF+aWlPLVBUfRJO0uIy9+n2jkDxA=="],
 
-    "vuedraggable": ["vuedraggable@2.24.3", "", { "dependencies": { "sortablejs": "1.10.2" } }, "sha512-6/HDXi92GzB+Hcs9fC6PAAozK1RLt1ewPTLjK0anTYguXLAeySDmcnqE8IC0xa7shvSzRjQXq3/+dsZ7ETGF3g=="],
+    "vuedraggable": ["vuedraggable@4.1.0", "", { "dependencies": { "sortablejs": "1.14.0" }, "peerDependencies": { "vue": "^3.0.1" } }, "sha512-FU5HCWBmsf20GpP3eudURW3WdWTKIbEIQxh9/8GE806hydR9qZqRRxRE3RjqX7PkuLuMQG/A7n3cfj9rCEchww=="],
 
     "waveform-data": ["waveform-data@4.5.2", "", {}, "sha512-1wDQ2LmaCM76xXXkOamWui1dp7uS2UHVeNccuHDS/qnoOrczrXR6g7Q9m/UjlibHfukxBrceoRIVTKKY1tDLdA=="],
 

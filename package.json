@@ -41,7 +41,7 @@
     "tone": "^15.1.22",
     "vue": "^3.5.28",
     "vue3-dropzone": "^2.0.1",
-    "vuedraggable": "^2.24.3",
+    "vuedraggable": "^4.1.0",
     "waveform-data": "^4.3.0"
   },
   "devDependencies": {

@@ -1,11 +1,13 @@
 <template>
   <div class="fx-icon" @click.stop="toggleEdit">
     <div class="fx-label">{{ label }}</div>
-    <div class="fx-controls" @click.stop>
-      <el-button size="small" :disabled="isFirst" @click="moveUp">Up</el-button>
-      <el-button size="small" :disabled="isLast" @click="moveDown">Down</el-button>
-    </div>
-    <el-dialog v-model="editOpen" width="calc(100% - 4em)" align-center :append-to-body="true">
+    <el-dialog
+      v-model="editOpen"
+      width="calc(100% - 4em)"
+      align-center
+      :append-to-body="true"
+      :close-on-click-modal="false"
+    >
       <div class="dialog-body" @click.stop>
         <EffectDialog :effectIndex="index" />
         <div class="dialog-actions">
@@ -35,9 +37,6 @@ const props = defineProps<Props>()
 const editOpen = ref(false)
 
 const label = computed(() => audio.effectLabel(props.item.effect))
-const isFirst = computed(() => props.index === 0)
-const isLast = computed(() => props.index === audio.effects.length - 1)
-
 const toggleEdit = () => {
   editOpen.value = !editOpen.value
 }
@@ -46,13 +45,6 @@ const removeEffect = () => {
   audio.removeEffect(props.item.id)
 }
 
-const moveUp = () => {
-  audio.moveEffect(props.index, props.index - 1)
-}
-
-const moveDown = () => {
-  audio.moveEffect(props.index, props.index + 1)
-}
 </script>
 
 <style lang="scss" scoped>
@@ -71,6 +63,7 @@ const moveDown = () => {
   transition:
     height 0.3s,
     margin 0.3s;
+  cursor: grab;
 
   &:hover {
     height: 110%;
@@ -83,12 +76,6 @@ const moveDown = () => {
   text-align: center;
   display: grid;
   align-items: center;
-}
-
-.fx-controls {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5em;
 }
 
 .dialog-actions {
