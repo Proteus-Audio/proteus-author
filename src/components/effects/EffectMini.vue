@@ -44,12 +44,12 @@ const toggleEdit = () => {
 const removeEffect = () => {
   audio.removeEffect(props.item.id)
 }
-
 </script>
 
 <style lang="scss" scoped>
 .fx-icon {
-  width: 100%;
+  width: max-content;
+  min-width: max-content;
   height: 100%;
   background-color: rgb(69, 69, 69);
   margin-top: 0em;
@@ -76,6 +76,7 @@ const removeEffect = () => {
   text-align: center;
   display: grid;
   align-items: center;
+  white-space: nowrap;
 }
 
 .dialog-actions {

@@ -79,14 +79,24 @@ const addEffect = (toAdd: AudioEffectType) => {
   }
 
   .effects-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: stretch;
     gap: 1em;
     height: 100%;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 0.25em;
+    scrollbar-gutter: stable;
   }
 
   .effect-wrapper {
-    transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+    flex: 0 0 auto;
+    width: max-content;
+    transition:
+      transform 0.15s ease-out,
+      box-shadow 0.15s ease-out;
   }
 
   .effect-ghost {
