@@ -107,27 +107,27 @@ const defaultHighPassFilter = (): HighPassFilterSettings => ({
 
 const defaultDistortion = (): DistortionSettings => ({
   enabled: true,
-  gain: 1.5,
-  threshold: 0.3,
+  gain: 1.0,
+  threshold: 1.0,
 })
 
 const defaultGain = (): GainSettings => ({
-  enabled: false,
+  enabled: true,
   gain: 1.0,
 })
 
 const defaultCompressor = (): CompressorSettings => ({
   enabled: true,
-  threshold_db: -12.0,
-  ratio: 2.5,
+  threshold_db: -18.0,
+  ratio: 4.0,
   attack_ms: 10.0,
-  release_ms: 80.0,
-  makeup_gain_db: 2.0,
+  release_ms: 100.0,
+  makeup_gain_db: 0.0,
 })
 
 const defaultLimiter = (): LimiterSettings => ({
   enabled: true,
-  threshold_db: -3.0,
+  threshold_db: -1.0,
   knee_width_db: 4.0,
   attack_ms: 5.0,
   release_ms: 100.0,

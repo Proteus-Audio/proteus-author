@@ -97,7 +97,7 @@
         <el-input type="text" v-model="compressorRelease" disabled="true" />
 
         <div>makeup (dB)</div>
-        <el-slider v-model="compressorMakeup" :min="-12" :max="12" :step="0.5" size="small" />
+        <el-slider v-model="compressorMakeup" :min="-30" :max="30" :step="0.5" size="small" />
         <el-input type="text" v-model="compressorMakeup" disabled="true" />
       </template>
 
@@ -107,11 +107,11 @@
         <div></div>
 
         <div>threshold (dB)</div>
-        <el-slider v-model="limiterThreshold" :min="-20" :max="0" :step="0.5" size="small" />
+        <el-slider v-model="limiterThreshold" :min="-30" :max="0" :step="0.5" size="small" />
         <el-input type="text" v-model="limiterThreshold" disabled="true" />
 
         <div>knee width (dB)</div>
-        <el-slider v-model="limiterKnee" :min="0" :max="12" :step="0.5" size="small" />
+        <el-slider v-model="limiterKnee" :min="0.1" :max="30" :step="0.5" size="small" />
         <el-input type="text" v-model="limiterKnee" disabled="true" />
 
         <div>attack (ms)</div>
@@ -156,12 +156,12 @@
         <el-switch v-model="distortionEnabled" />
         <div></div>
 
-        <div>gain</div>
-        <el-slider v-model="distortionGain" :min="0" :max="10" :step="0.1" size="small" />
+        <div>gain (dB)</div>
+        <el-slider v-model="distortionGain" :min="-30" :max="30" :step="0.5" size="small" />
         <el-input type="text" v-model="distortionGain" disabled="true" />
 
-        <div>threshold</div>
-        <el-slider v-model="distortionThreshold" :min="0.1" :max="2" :step="0.01" size="small" />
+        <div>threshold (dB)</div>
+        <el-slider v-model="distortionThreshold" :min="-30" :max="0" :step="0.5" size="small" />
         <el-input type="text" v-model="distortionThreshold" disabled="true" />
       </template>
 
@@ -170,8 +170,8 @@
         <el-switch v-model="gainEnabled" />
         <div></div>
 
-        <div>gain</div>
-        <el-slider v-model="gainAmount" :min="0" :max="4" :step="0.01" size="small" />
+        <div>gain (dB)</div>
+        <el-slider v-model="gainAmount" :min="-30" :max="30" :step="0.5" size="small" />
         <el-input type="text" v-model="gainAmount" disabled="true" />
       </template>
     </div>
@@ -247,6 +247,13 @@ const distortionSettings = computed(() =>
 const gainSettings = computed(() =>
   effect.value && 'GainSettings' in effect.value ? effect.value.GainSettings : undefined,
 )
+
+const DB_MIN = -30
+const DB_MAX = 30
+
+const dbToLinear = (db: number) => 10 ** (db / 20)
+const linearToDb = (linear: number) => 20 * Math.log10(Math.max(linear, 1e-8))
+const clampDb = (db: number) => Math.min(DB_MAX, Math.max(DB_MIN, db))
 
 const basicEnabled = computed({
   get: () => basicSettings.value?.enabled ?? false,
@@ -517,16 +524,16 @@ const distortionEnabled = computed({
 })
 
 const distortionGain = computed({
-  get: () => distortionSettings.value?.gain ?? 1,
+  get: () => clampDb(linearToDb(distortionSettings.value?.gain ?? 1)),
   set: (value: number) => {
-    if (distortionSettings.value) distortionSettings.value.gain = value
+    if (distortionSettings.value) distortionSettings.value.gain = dbToLinear(value)
   },
 })
 
 const distortionThreshold = computed({
-  get: () => distortionSettings.value?.threshold ?? 1,
+  get: () => clampDb(linearToDb(distortionSettings.value?.threshold ?? 1)),
   set: (value: number) => {
-    if (distortionSettings.value) distortionSettings.value.threshold = value
+    if (distortionSettings.value) distortionSettings.value.threshold = dbToLinear(value)
   },
 })
 
@@ -538,9 +545,9 @@ const gainEnabled = computed({
 })
 
 const gainAmount = computed({
-  get: () => gainSettings.value?.gain ?? 1,
+  get: () => clampDb(linearToDb(gainSettings.value?.gain ?? 1)),
   set: (value: number) => {
-    if (gainSettings.value) gainSettings.value.gain = value
+    if (gainSettings.value) gainSettings.value.gain = dbToLinear(value)
   },
 })
 </script>

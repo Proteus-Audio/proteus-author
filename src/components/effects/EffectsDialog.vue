@@ -80,8 +80,8 @@
           <AnalogKnob
             v-model="compressorMakeup"
             label="Makeup"
-            :min="-12"
-            :max="12"
+            :min="-30"
+            :max="30"
             :step="0.5"
             units="dB"
           />
@@ -94,7 +94,7 @@
           <AnalogKnob
             v-model="limiterThreshold"
             label="Threshold"
-            :min="-20"
+            :min="-30"
             :max="0"
             :step="0.5"
             units="dB"
@@ -102,8 +102,8 @@
           <AnalogKnob
             v-model="limiterKnee"
             label="Knee"
-            :min="0"
-            :max="12"
+            :min="0.1"
+            :max="30"
             :step="0.5"
             units="dB"
           />
@@ -159,13 +159,21 @@
       <template v-else-if="type === 'Distortion'">
         <div class="control-grid">
           <AnalogToggle v-model="distortionEnabled" label="Enabled" />
-          <AnalogKnob v-model="distortionGain" label="Gain" :min="0" :max="10" :step="0.1" />
+          <AnalogKnob
+            v-model="distortionGain"
+            label="Gain"
+            :min="-30"
+            :max="30"
+            :step="0.5"
+            units="dB"
+          />
           <AnalogKnob
             v-model="distortionThreshold"
             label="Threshold"
-            :min="0.1"
-            :max="2"
-            :step="0.01"
+            :min="-30"
+            :max="0"
+            :step="0.5"
+            units="dB"
           />
         </div>
       </template>
@@ -173,7 +181,14 @@
       <template v-else-if="type === 'Gain'">
         <div class="control-grid">
           <AnalogToggle v-model="gainEnabled" label="Enabled" />
-          <AnalogKnob v-model="gainAmount" label="Gain" :min="0" :max="4" :step="0.01" />
+          <AnalogKnob
+            v-model="gainAmount"
+            label="Gain"
+            :min="-30"
+            :max="30"
+            :step="0.5"
+            units="dB"
+          />
         </div>
       </template>
     </section>
@@ -246,6 +261,13 @@ const distortionSettings = computed(() =>
 const gainSettings = computed(() =>
   effect.value && 'GainSettings' in effect.value ? effect.value.GainSettings : undefined,
 )
+
+const DB_MIN = -30
+const DB_MAX = 30
+
+const dbToLinear = (db: number) => 10 ** (db / 20)
+const linearToDb = (linear: number) => 20 * Math.log10(Math.max(linear, 1e-8))
+const clampDb = (db: number) => Math.min(DB_MAX, Math.max(DB_MIN, db))
 
 const basicEnabled = computed({
   get: () => basicSettings.value?.enabled ?? false,
@@ -467,16 +489,16 @@ const distortionEnabled = computed({
 })
 
 const distortionGain = computed({
-  get: () => distortionSettings.value?.gain ?? 1,
+  get: () => clampDb(linearToDb(distortionSettings.value?.gain ?? 1)),
   set: (value: number) => {
-    if (distortionSettings.value) distortionSettings.value.gain = value
+    if (distortionSettings.value) distortionSettings.value.gain = dbToLinear(value)
   },
 })
 
 const distortionThreshold = computed({
-  get: () => distortionSettings.value?.threshold ?? 1,
+  get: () => clampDb(linearToDb(distortionSettings.value?.threshold ?? 1)),
   set: (value: number) => {
-    if (distortionSettings.value) distortionSettings.value.threshold = value
+    if (distortionSettings.value) distortionSettings.value.threshold = dbToLinear(value)
   },
 })
 
@@ -488,9 +510,9 @@ const gainEnabled = computed({
 })
 
 const gainAmount = computed({
-  get: () => gainSettings.value?.gain ?? 1,
+  get: () => clampDb(linearToDb(gainSettings.value?.gain ?? 1)),
   set: (value: number) => {
-    if (gainSettings.value) gainSettings.value.gain = value
+    if (gainSettings.value) gainSettings.value.gain = dbToLinear(value)
   },
 })
 
