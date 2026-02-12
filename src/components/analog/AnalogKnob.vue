@@ -12,18 +12,31 @@
         :max="max"
         :step="step"
         :value="modelValue"
-        @input="onInput"
+        @input="onKnobInput"
       />
     </div>
     <div v-if="showValue" class="knob-readout">
-      <span class="value">{{ displayValue }}</span>
+      <input
+        v-if="allowNumericInput"
+        class="value-input"
+        type="number"
+        :min="min"
+        :max="max"
+        :step="step"
+        :value="inputValue"
+        @focus="onValueFocus"
+        @input="onValueInput"
+        @blur="commitTypedValue"
+        @keydown.enter.prevent="commitTypedValue"
+      />
+      <span v-else class="value">{{ displayValue }}</span>
       <span v-if="units" class="units">{{ units }}</span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 interface Props {
   modelValue: number
@@ -34,6 +47,7 @@ interface Props {
   size?: number
   units?: string
   showValue?: boolean
+  allowNumericInput?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -44,13 +58,57 @@ const props = withDefaults(defineProps<Props>(), {
   size: 82,
   units: '',
   showValue: true,
+  allowNumericInput: true,
 })
 
 const emit = defineEmits(['update:modelValue'])
 
-const onInput = (event: Event) => {
+const isEditing = ref(false)
+const inputValue = ref('')
+
+const stepPrecision = computed(() => {
+  const stepAsText = String(props.step)
+  const decimalIndex = stepAsText.indexOf('.')
+  if (decimalIndex === -1) return 0
+  return stepAsText.length - decimalIndex - 1
+})
+
+const normalizeValue = (value: number) => {
+  const clamped = Math.min(props.max, Math.max(props.min, value))
+  if (props.step <= 0) return clamped
+  const stepped = Math.round((clamped - props.min) / props.step) * props.step + props.min
+  return Number(stepped.toFixed(stepPrecision.value))
+}
+
+const formatValue = (value: number) => {
+  if (stepPrecision.value === 0) return String(Math.round(value))
+  return Number(value).toFixed(stepPrecision.value)
+}
+
+const onKnobInput = (event: Event) => {
   const next = Number((event.target as HTMLInputElement).value)
-  emit('update:modelValue', next)
+  emit('update:modelValue', normalizeValue(next))
+}
+
+const onValueFocus = () => {
+  isEditing.value = true
+}
+
+const onValueInput = (event: Event) => {
+  inputValue.value = (event.target as HTMLInputElement).value
+}
+
+const commitTypedValue = () => {
+  isEditing.value = false
+  const parsed = Number(inputValue.value)
+  if (Number.isNaN(parsed)) {
+    inputValue.value = formatValue(props.modelValue)
+    return
+  }
+
+  const normalized = normalizeValue(parsed)
+  emit('update:modelValue', normalized)
+  inputValue.value = formatValue(normalized)
 }
 
 const rotation = computed(() => {
@@ -65,10 +123,15 @@ const knobStyle = computed(() => ({
   '--knob-rotation': `${rotation.value}deg`,
 }))
 
-const displayValue = computed(() => {
-  if (Number.isInteger(props.step)) return Math.round(props.modelValue)
-  return Number(props.modelValue).toFixed(2)
-})
+watch(
+  () => props.modelValue,
+  (value) => {
+    if (!isEditing.value) inputValue.value = formatValue(value)
+  },
+  { immediate: true },
+)
+
+const displayValue = computed(() => formatValue(props.modelValue))
 </script>
 
 <style lang="scss" scoped>
@@ -93,7 +156,8 @@ const displayValue = computed(() => {
     radial-gradient(circle at 70% 70%, rgba(0, 0, 0, 0.5), transparent 50%),
     linear-gradient(145deg, #3a3530, #1e1b18);
   border: 2px solid #151311;
-  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.08),
+  box-shadow:
+    inset 0 2px 4px rgba(255, 255, 255, 0.08),
     inset 0 -6px 10px rgba(0, 0, 0, 0.6),
     0 6px 14px rgba(0, 0, 0, 0.5);
   position: relative;
@@ -133,6 +197,31 @@ const displayValue = computed(() => {
 .knob-readout .value {
   color: var(--analog-text);
   font-variant-numeric: tabular-nums;
+}
+
+.value-input {
+  appearance: textfield;
+  width: 4.2rem;
+  border: 1px solid #3f372d;
+  border-radius: 4px;
+  background: #1f1b18;
+  color: var(--analog-text);
+  font: inherit;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-align: right;
+  padding: 0.2rem 0.35rem;
+}
+
+.value-input::-webkit-outer-spin-button,
+.value-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.value-input:focus {
+  outline: 1px solid var(--analog-accent);
+  border-color: var(--analog-accent-deep);
 }
 
 .knob-readout .units {
