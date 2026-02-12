@@ -77,7 +77,7 @@ export const useHeadStore = defineStore('head', () => {
       name: head.value.name,
       location: head.value.path,
       tracks: tracks,
-      effects: audio.effectsChain,
+      effects: audio.effectsChainForBackend as unknown as ProjectSkeleton['effects'],
       files: [],
     } as ProjectSkeleton
 

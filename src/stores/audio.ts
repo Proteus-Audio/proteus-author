@@ -7,6 +7,7 @@ import {
   type EffectChainItem,
   effectChainFromPayload,
   getEffectLabel,
+  serializeEffectChainForBackend,
 } from '../assets/effects'
 import { toneMaster } from '../assets/toneMaster'
 import type { AudioEffectPayload, AudioEffectType } from '../typings/effects'
@@ -46,6 +47,7 @@ export const useAudioStore = defineStore('prot', () => {
   const getXScale = computed((): number => zoom.value.x)
   const getYScale = computed((): number => zoom.value.y)
   const effectsChain = computed((): AudioEffectPayload[] => effects.value.map((e) => e.effect))
+  const effectsChainForBackend = computed(() => serializeEffectChainForBackend(effectsChain.value))
   const getLevelsDb = computed((): number[] => levelsDb.value)
 
   /////////////
@@ -125,7 +127,7 @@ export const useAudioStore = defineStore('prot', () => {
 
   const syncEffects = async () => {
     try {
-      await invoke('set_effects_chain', { effects: effectsChain.value })
+      await invoke('set_effects_chain', { effects: effectsChainForBackend.value })
     } catch (error) {
       console.error('Failed to sync effects chain', error)
       alert.addAlert('Failed to sync effects chain', 'error')
@@ -248,6 +250,7 @@ export const useAudioStore = defineStore('prot', () => {
     zoom,
     effects,
     effectsChain,
+    effectsChainForBackend,
     duration,
     watch,
     isPlaying,

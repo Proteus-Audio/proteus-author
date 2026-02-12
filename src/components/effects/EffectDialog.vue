@@ -248,13 +248,6 @@ const gainSettings = computed(() =>
   effect.value && 'GainSettings' in effect.value ? effect.value.GainSettings : undefined,
 )
 
-const DB_MIN = -30
-const DB_MAX = 30
-
-const dbToLinear = (db: number) => 10 ** (db / 20)
-const linearToDb = (linear: number) => 20 * Math.log10(Math.max(linear, 1e-8))
-const clampDb = (db: number) => Math.min(DB_MAX, Math.max(DB_MIN, db))
-
 const basicEnabled = computed({
   get: () => basicSettings.value?.enabled ?? false,
   set: (value: boolean) => {
@@ -524,16 +517,16 @@ const distortionEnabled = computed({
 })
 
 const distortionGain = computed({
-  get: () => clampDb(linearToDb(distortionSettings.value?.gain ?? 1)),
+  get: () => distortionSettings.value?.gain ?? 0,
   set: (value: number) => {
-    if (distortionSettings.value) distortionSettings.value.gain = dbToLinear(value)
+    if (distortionSettings.value) distortionSettings.value.gain = value
   },
 })
 
 const distortionThreshold = computed({
-  get: () => clampDb(linearToDb(distortionSettings.value?.threshold ?? 1)),
+  get: () => distortionSettings.value?.threshold ?? 0,
   set: (value: number) => {
-    if (distortionSettings.value) distortionSettings.value.threshold = dbToLinear(value)
+    if (distortionSettings.value) distortionSettings.value.threshold = value
   },
 })
 
@@ -545,9 +538,9 @@ const gainEnabled = computed({
 })
 
 const gainAmount = computed({
-  get: () => clampDb(linearToDb(gainSettings.value?.gain ?? 1)),
+  get: () => gainSettings.value?.gain ?? 0,
   set: (value: number) => {
-    if (gainSettings.value) gainSettings.value.gain = dbToLinear(value)
+    if (gainSettings.value) gainSettings.value.gain = value
   },
 })
 </script>

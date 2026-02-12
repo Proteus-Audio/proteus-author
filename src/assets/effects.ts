@@ -18,6 +18,15 @@ export interface EffectChainItem {
   effect: AudioEffectPayload
 }
 
+const DB_MIN_FLOOR = -120
+const DB_SUFFIX = 'db'
+
+const linearToDb = (linear: number): number => 20 * Math.log10(Math.max(linear, 1e-8))
+const formatDb = (db: number): string => {
+  const rounded = Number(db.toFixed(2))
+  return `${rounded}${DB_SUFFIX}`
+}
+
 const effectTypeToKey: Record<AudioEffectType, AudioEffectKey> = {
   BasicReverb: 'BasicReverbSettings',
   DiffusionReverb: 'DiffusionReverbSettings',
@@ -107,13 +116,13 @@ const defaultHighPassFilter = (): HighPassFilterSettings => ({
 
 const defaultDistortion = (): DistortionSettings => ({
   enabled: true,
-  gain: 1.0,
-  threshold: 1.0,
+  gain: 0.0,
+  threshold: 0.0,
 })
 
 const defaultGain = (): GainSettings => ({
   enabled: true,
-  gain: 1.0,
+  gain: 0.0,
 })
 
 const defaultCompressor = (): CompressorSettings => ({
@@ -208,10 +217,23 @@ export const normalizeEffect = (effect: AudioEffectPayload): AudioEffectPayload 
     }
   }
   if ('DistortionSettings' in effect) {
-    return { DistortionSettings: { ...defaultDistortion(), ...effect.DistortionSettings } }
+    const normalized = { ...defaultDistortion(), ...effect.DistortionSettings }
+    return {
+      DistortionSettings: {
+        ...normalized,
+        gain: linearToDb(normalized.gain),
+        threshold: linearToDb(normalized.threshold),
+      },
+    }
   }
   if ('GainSettings' in effect) {
-    return { GainSettings: { ...defaultGain(), ...effect.GainSettings } }
+    const normalized = { ...defaultGain(), ...effect.GainSettings }
+    return {
+      GainSettings: {
+        ...normalized,
+        gain: linearToDb(normalized.gain),
+      },
+    }
   }
   if ('LimiterSettings' in effect) {
     return { LimiterSettings: { ...defaultLimiter(), ...effect.LimiterSettings } }
@@ -232,3 +254,72 @@ export const effectChainFromPayload = (effects: AudioEffectPayload[]): EffectCha
     effect: normalizeEffect(effect),
   }))
 }
+
+const normalizeDbForBackend = (value: number): number => {
+  if (!Number.isFinite(value)) return 0
+  return Math.max(DB_MIN_FLOOR, value)
+}
+
+export const serializeEffectForBackend = (effect: AudioEffectPayload): Record<string, unknown> => {
+  if ('DistortionSettings' in effect) {
+    const value = effect.DistortionSettings
+    return {
+      DistortionSettings: {
+        ...value,
+        gain: formatDb(normalizeDbForBackend(value.gain)),
+        threshold: formatDb(normalizeDbForBackend(value.threshold)),
+      },
+    }
+  }
+
+  if ('GainSettings' in effect) {
+    const value = effect.GainSettings
+    return {
+      GainSettings: {
+        ...value,
+        gain: formatDb(normalizeDbForBackend(value.gain)),
+      },
+    }
+  }
+
+  if ('CompressorSettings' in effect) {
+    const value = effect.CompressorSettings
+    return {
+      CompressorSettings: {
+        ...value,
+        threshold_db: formatDb(normalizeDbForBackend(value.threshold_db)),
+        makeup_gain_db: formatDb(normalizeDbForBackend(value.makeup_gain_db)),
+      },
+    }
+  }
+
+  if ('LimiterSettings' in effect) {
+    const value = effect.LimiterSettings
+    return {
+      LimiterSettings: {
+        ...value,
+        threshold_db: formatDb(normalizeDbForBackend(value.threshold_db)),
+        knee_width_db: formatDb(normalizeDbForBackend(value.knee_width_db)),
+      },
+    }
+  }
+
+  if ('ConvolutionReverbSettings' in effect) {
+    const value = effect.ConvolutionReverbSettings
+    return {
+      ConvolutionReverbSettings: {
+        ...value,
+        impulse_response_tail_db:
+          value.impulse_response_tail_db == null
+            ? value.impulse_response_tail_db
+            : formatDb(normalizeDbForBackend(value.impulse_response_tail_db)),
+      },
+    }
+  }
+
+  return effect as unknown as Record<string, unknown>
+}
+
+export const serializeEffectChainForBackend = (
+  effects: AudioEffectPayload[],
+): Record<string, unknown>[] => effects.map((effect) => serializeEffectForBackend(effect))
