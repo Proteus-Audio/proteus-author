@@ -78,8 +78,11 @@ const removeEffect = () => {
   border-radius: 0.5em;
   padding: 0.75em 2em;
   color: white;
-  display: grid;
-  grid-template-rows: 1fr auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* grid-template-rows: 1fr auto; */
   gap: 0.5em;
   overflow: hidden;
   transition:

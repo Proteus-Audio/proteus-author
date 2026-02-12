@@ -6,13 +6,15 @@
     :style="{ gridTemplateColumns: `repeat(${levelsDb.length}, 1fr)` }"
   >
     <div v-for="(level, index) in levelsDb" :key="index" class="meter-column">
-      <!-- <div class="meter-channel peak-indicator">
-        <DigitalIndicator
-          :state="indicator.on"
-          color="dark-red"
-          size="small"
-        />
-      </div> -->
+      <button
+        type="button"
+        class="peak-button"
+        :aria-pressed="clipPeaks[index] ? 'true' : 'false'"
+        @click="clearAllClipPeaks"
+      >
+        <DigitalIndicator :state="clipPeaks[index] ?? false" color="dark-red" size="small" />
+      </button>
+
       <div class="meter-channel">
         <DigitalIndicator
           v-for="indicator in channelIndicators[index]"
@@ -23,14 +25,15 @@
           size="medium"
         />
       </div>
-      <div class="meter-label">{{ indicatorCount }} {{ `${level.toFixed(1)} dB` }}</div>
+
+      <div class="meter-label">{{ `${level.toFixed(1)} dB` }}</div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useElementSize } from '@vueuse/core'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { DigitalIndicator } from '../digital'
 import { useAudioStore } from '../../stores/audio'
 
@@ -49,25 +52,25 @@ const { height: meterHeight } = useElementSize(meterRef)
 
 const vertical = computed(() => props.vertical ?? false)
 
-const levelsDb = computed(() => {
+const rawLevelsDb = computed(() => {
   const levels = audio.getLevelsDb.length ? audio.getLevelsDb : [minDb, minDb]
-  return levels.map((value) => {
-    const safe = Number.isFinite(value) ? value : minDb
-    return Math.max(minDb, Math.min(0, safe))
-  })
+  return levels.map((value) => (Number.isFinite(value) ? value : minDb))
+})
+
+const levelsDb = computed(() => {
+  return rawLevelsDb.value.map((value) => Math.max(minDb, Math.min(0, value)))
 })
 
 const indicatorCount = computed(() => {
-  const labelAndPadding = vertical.value ? 38 : 30
+  const labelAndPadding = vertical.value ? 60 : 52
   const usableHeight = Math.max(0, meterHeight.value - labelAndPadding)
-  console.log('usableHeight', usableHeight)
   const cellHeight = indicatorHeightPx + indicatorGapPx
   const count = Math.floor((usableHeight + indicatorGapPx) / cellHeight)
   return Math.max(4, Math.min(48, count))
 })
 
 const colorForDb = (db: number): IndicatorColor => {
-  if (db >= -1) return 'dark-red'
+  // if (db >= -1) return 'dark-red'
   if (db >= -6) return 'red'
   if (db >= -12) return 'orange'
   if (db >= -24) return 'yellow'
@@ -84,11 +87,64 @@ const channelIndicators = computed(() => {
         id: `seg-${index}`,
         color: colorForDb(thresholdDb),
         on: level >= thresholdDb,
-        // peak: level > thresholdDb,
       }
     })
   })
 })
+
+const clipPeaks = ref<boolean[]>([])
+const stoppedSinceLastPlay = ref(true)
+
+const syncClipPeaks = (channelCount: number) => {
+  if (clipPeaks.value.length === channelCount) return
+  clipPeaks.value = Array.from(
+    { length: channelCount },
+    (_, index) => clipPeaks.value[index] ?? false,
+  )
+}
+
+const clearClipPeak = (channelIndex: number) => {
+  if (clipPeaks.value[channelIndex] == null) return
+  clipPeaks.value[channelIndex] = false
+}
+
+const clearAllClipPeaks = () => {
+  clipPeaks.value = clipPeaks.value.map(() => false)
+}
+
+watch(
+  rawLevelsDb,
+  (levels) => {
+    syncClipPeaks(levels.length)
+    if (!audio.isPlaying) return
+    clipPeaks.value = levels.map((level, index) => (clipPeaks.value[index] ?? false) || level > 0)
+  },
+  { immediate: true },
+)
+
+const isStopped = computed(() => {
+  return !audio.isPlaying && rawLevelsDb.value.every((level) => level <= minDb)
+})
+
+watch(
+  isStopped,
+  (stopped) => {
+    if (!stopped) return
+    clearAllClipPeaks()
+    stoppedSinceLastPlay.value = true
+  },
+  { immediate: true },
+)
+
+watch(
+  () => audio.isPlaying,
+  (playing) => {
+    if (!playing) return
+    if (!stoppedSinceLastPlay.value) return
+    clearAllClipPeaks()
+    stoppedSinceLastPlay.value = false
+  },
+)
 </script>
 
 <style scoped lang="scss">
@@ -121,6 +177,26 @@ const channelIndicators = computed(() => {
   height: 100%;
 }
 
+.peak-button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.peak-button :deep(.digital-indicator) {
+  gap: 2px;
+}
+
+.peak-button :deep(.digital-label) {
+  display: block;
+  font-size: 10px;
+  text-align: center;
+  color: #616161;
+  line-height: 1;
+}
+
 .meter-channel {
   display: grid;
   grid-auto-rows: minmax(0, 1fr);
@@ -136,6 +212,10 @@ const channelIndicators = computed(() => {
   color: #616161;
   line-height: 1;
   font-variant-numeric: tabular-nums;
+}
+
+.inactive .peak-button :deep(.digital-label) {
+  color: #8a8a8a;
 }
 
 .inactive .meter-label {
