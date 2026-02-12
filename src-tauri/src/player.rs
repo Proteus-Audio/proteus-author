@@ -64,7 +64,7 @@ pub async fn init_player(window: Window) {
         return;
     }
 
-    let mut new_player = Player::new_from_file_paths(&file_list);
+    let mut new_player = Player::new_from_file_paths_legacy(file_list);
     new_player.set_effects(project.effects.clone());
     let handle = window.app_handle().clone();
     let label = String::from(window.label());

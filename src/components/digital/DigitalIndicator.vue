@@ -1,5 +1,8 @@
 <template>
-  <div class="digital-indicator" :class="colorClass">
+  <div
+    class="digital-indicator"
+    :class="{ [colorClass]: true, 'blue-scale': blueScale, frozen, peak }"
+  >
     <span class="light" :class="{ on: state }"></span>
     <span v-if="label" class="digital-label">{{ label }}</span>
   </div>
@@ -13,6 +16,7 @@ interface Props {
   label?: string
   size?: 'small' | 'medium' | 'large'
   color?: 'red' | 'green' | 'lime' | 'amber' | 'yellow' | 'orange' | 'dark-red'
+  blueScale?: boolean
   frozen?: boolean
   peak?: boolean
 }
@@ -21,12 +25,10 @@ const props = withDefaults(defineProps<Props>(), {
   label: '',
   color: 'amber',
   size: 'medium',
+  blueScale: true,
 })
 
-const colorClass = computed(
-  () =>
-    `color-${props.color} ${props.size} ${props.frozen ? 'frozen' : ''} ${props.peak ? 'peak' : ''}`,
-)
+const colorClass = computed(() => `color-${props.color} ${props.size}`)
 </script>
 
 <style lang="scss" scoped>
@@ -88,6 +90,36 @@ const colorClass = computed(
 
   &.frozen .light.on {
     background: oklch(70.4% 0.04 256.788) !important;
+  }
+
+  &.blue-scale {
+    &.color-green .light.on {
+      background: oklch(82.8% 0.111 230.318);
+    }
+
+    &.color-lime .light.on {
+      background: oklch(74.6% 0.16 232.661);
+    }
+
+    &.color-yellow .light.on {
+      background: oklch(68.5% 0.169 237.323);
+    }
+
+    &.color-amber .light.on {
+      background: oklch(58.8% 0.158 241.966);
+    }
+
+    &.color-orange .light.on {
+      background: oklch(50% 0.134 242.749);
+    }
+
+    &.color-red .light.on {
+      background: oklch(44.3% 0.11 240.79);
+    }
+
+    &.color-dark-red .light.on {
+      background: oklch(44.4% 0.177 26.899);
+    }
   }
 }
 </style>

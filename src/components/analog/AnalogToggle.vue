@@ -50,7 +50,9 @@ const toggle = () => {
   border-radius: 999px;
   background: linear-gradient(180deg, #1d1a17, #2a2622);
   border: 1px solid #11100f;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.5);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.6),
+    0 4px 8px rgba(0, 0, 0, 0.5);
 }
 
 .toggle-handle {
@@ -62,12 +64,16 @@ const toggle = () => {
   top: 2px;
   left: 4px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+  transition:
+    transform 0.15s ease-out,
+    box-shadow 0.15s ease-out;
 }
 
 .analog-toggle.on .toggle-handle {
   transform: translateX(26px);
-  box-shadow: 0 0 8px rgba(224, 194, 92, 0.6), 0 2px 6px rgba(0, 0, 0, 0.4);
+  box-shadow:
+    0 0 8px rgba(224, 194, 92, 0.6),
+    0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 .analog-toggle.on .toggle-track {

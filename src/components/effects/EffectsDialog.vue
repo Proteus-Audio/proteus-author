@@ -10,7 +10,14 @@
         <div class="control-grid">
           <AnalogToggle v-model="basicEnabled" label="Enabled" />
           <AnalogKnob v-model="basicMix" label="Mix" :min="0" :max="1" :step="0.01" />
-          <AnalogKnob v-model="basicDuration" label="Duration" :min="0" :max="2000" :step="1" units="ms" />
+          <AnalogKnob
+            v-model="basicDuration"
+            label="Duration"
+            :min="0"
+            :max="2000"
+            :step="1"
+            units="ms"
+          />
           <AnalogKnob v-model="basicAmplitude" label="Amplitude" :min="0" :max="0.8" :step="0.01" />
         </div>
       </template>
@@ -170,16 +177,7 @@
 import { computed } from 'vue'
 import { useAudioStore } from '../../stores/audio'
 import { getEffectLabel, getEffectType } from '../../assets/effects'
-import type {
-  AudioEffectPayload,
-  BasicReverbSettings,
-  ConvolutionReverbSettings,
-  CompressorSettings,
-  LimiterSettings,
-  LowPassFilterSettings,
-  HighPassFilterSettings,
-  DistortionSettings,
-} from '../../typings/effects'
+import type { AudioEffectPayload } from '../../typings/effects'
 import AnalogIndicator from '../analog/AnalogIndicator.vue'
 import AnalogKnob from '../analog/AnalogKnob.vue'
 import AnalogToggle from '../analog/AnalogToggle.vue'
@@ -200,43 +198,41 @@ const label = computed(() => (effect.value ? getEffectLabel(effect.value) : 'Eff
 
 const basicSettings = computed(() =>
   effect.value && 'BasicReverbSettings' in effect.value
-    ? (effect.value.BasicReverbSettings as BasicReverbSettings)
+    ? effect.value.BasicReverbSettings
     : undefined,
 )
 
 const convolutionSettings = computed(() =>
   effect.value && 'ConvolutionReverbSettings' in effect.value
-    ? (effect.value.ConvolutionReverbSettings as ConvolutionReverbSettings)
+    ? effect.value.ConvolutionReverbSettings
     : undefined,
 )
 
 const compressorSettings = computed(() =>
   effect.value && 'CompressorSettings' in effect.value
-    ? (effect.value.CompressorSettings as CompressorSettings)
+    ? effect.value.CompressorSettings
     : undefined,
 )
 
 const limiterSettings = computed(() =>
-  effect.value && 'LimiterSettings' in effect.value
-    ? (effect.value.LimiterSettings as LimiterSettings)
-    : undefined,
+  effect.value && 'LimiterSettings' in effect.value ? effect.value.LimiterSettings : undefined,
 )
 
 const lowPassSettings = computed(() =>
   effect.value && 'LowPassFilterSettings' in effect.value
-    ? (effect.value.LowPassFilterSettings as LowPassFilterSettings)
+    ? effect.value.LowPassFilterSettings
     : undefined,
 )
 
 const highPassSettings = computed(() =>
   effect.value && 'HighPassFilterSettings' in effect.value
-    ? (effect.value.HighPassFilterSettings as HighPassFilterSettings)
+    ? effect.value.HighPassFilterSettings
     : undefined,
 )
 
 const distortionSettings = computed(() =>
   effect.value && 'DistortionSettings' in effect.value
-    ? (effect.value.DistortionSettings as DistortionSettings)
+    ? effect.value.DistortionSettings
     : undefined,
 )
 
@@ -476,7 +472,8 @@ const distortionThreshold = computed({
 const enabledState = computed(() => {
   if (!effect.value) return false
   if ('BasicReverbSettings' in effect.value) return effect.value.BasicReverbSettings.enabled
-  if ('ConvolutionReverbSettings' in effect.value) return effect.value.ConvolutionReverbSettings.enabled
+  if ('ConvolutionReverbSettings' in effect.value)
+    return effect.value.ConvolutionReverbSettings.enabled
   if ('CompressorSettings' in effect.value) return effect.value.CompressorSettings.enabled
   if ('LimiterSettings' in effect.value) return effect.value.LimiterSettings.enabled
   if ('LowPassFilterSettings' in effect.value) return effect.value.LowPassFilterSettings.enabled

@@ -1,10 +1,5 @@
 <template>
-  <button
-    class="analog-button"
-    type="button"
-    :class="{ active: modelValue }"
-    @click="toggle"
-  >
+  <button class="analog-button" type="button" :class="{ active: modelValue }" @click="toggle">
     <span class="button-cap"></span>
     <span v-if="label" class="analog-label">{{ label }}</span>
   </button>
@@ -47,14 +42,20 @@ const toggle = () => {
     linear-gradient(145deg, #d6cdbf, #9f978b),
     linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(0, 0, 0, 0.2));
   border: 1px solid #6d645a;
-  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.5), 0 6px 12px rgba(0, 0, 0, 0.4);
+  box-shadow:
+    inset 0 2px 4px rgba(255, 255, 255, 0.5),
+    0 6px 12px rgba(0, 0, 0, 0.4);
   position: relative;
-  transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
+  transition:
+    transform 0.1s ease-out,
+    box-shadow 0.1s ease-out;
 }
 
 .analog-button.active .button-cap {
   transform: translateY(2px);
-  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6), 0 2px 4px rgba(0, 0, 0, 0.4);
+  box-shadow:
+    inset 0 2px 6px rgba(0, 0, 0, 0.6),
+    0 2px 4px rgba(0, 0, 0, 0.4);
   background: linear-gradient(145deg, #c9b56b, #8b6f26);
 }
 </style>

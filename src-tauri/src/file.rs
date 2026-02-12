@@ -493,6 +493,7 @@ pub fn export_prot(project_state: State<Arc<Mutex<ProjectSkeleton>>>, window: Wi
                 ids: Vec::new(),
                 name: track.name.clone(),
                 safe_name: track.name.clone(),
+                selections_count: 1,
             };
 
             for file_id in &track.file_ids {

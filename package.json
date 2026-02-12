@@ -8,6 +8,7 @@
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
+    "typecheck": "vue-tsc --noEmit",
     "lint": "eslint src/ --ext .vue --ext .ts",
     "bump:patch": "bun ./scripts/bump-version.ts patch",
     "bump:minor": "bun ./scripts/bump-version.ts minor",

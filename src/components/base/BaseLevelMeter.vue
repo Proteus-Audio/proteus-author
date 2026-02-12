@@ -103,10 +103,10 @@ const syncClipPeaks = (channelCount: number) => {
   )
 }
 
-const clearClipPeak = (channelIndex: number) => {
-  if (clipPeaks.value[channelIndex] == null) return
-  clipPeaks.value[channelIndex] = false
-}
+// const clearClipPeak = (channelIndex: number) => {
+//   if (clipPeaks.value[channelIndex] == null) return
+//   clipPeaks.value[channelIndex] = false
+// }
 
 const clearAllClipPeaks = () => {
   clipPeaks.value = clipPeaks.value.map(() => false)

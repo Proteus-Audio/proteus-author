@@ -172,17 +172,7 @@
 import { computed } from 'vue'
 import { useAudioStore } from '../../stores/audio'
 import { getEffectLabel, getEffectType } from '../../assets/effects'
-import type {
-  AudioEffectPayload,
-  BasicReverbSettings,
-  ConvolutionReverbSettings,
-  DiffusionReverbSettings,
-  CompressorSettings,
-  LimiterSettings,
-  LowPassFilterSettings,
-  HighPassFilterSettings,
-  DistortionSettings,
-} from '../../typings/effects'
+import type { AudioEffectPayload } from '../../typings/effects'
 
 interface Props {
   effectIndex: number
@@ -200,49 +190,47 @@ const label = computed(() => (effect.value ? getEffectLabel(effect.value) : 'Eff
 
 const basicSettings = computed(() =>
   effect.value && 'BasicReverbSettings' in effect.value
-    ? (effect.value.BasicReverbSettings as BasicReverbSettings)
+    ? effect.value.BasicReverbSettings
     : undefined,
 )
 
 const convolutionSettings = computed(() =>
   effect.value && 'ConvolutionReverbSettings' in effect.value
-    ? (effect.value.ConvolutionReverbSettings as ConvolutionReverbSettings)
+    ? effect.value.ConvolutionReverbSettings
     : undefined,
 )
 
 const diffusionSettings = computed(() =>
   effect.value && 'DiffusionReverbSettings' in effect.value
-    ? (effect.value.DiffusionReverbSettings as DiffusionReverbSettings)
+    ? effect.value.DiffusionReverbSettings
     : undefined,
 )
 
 const compressorSettings = computed(() =>
   effect.value && 'CompressorSettings' in effect.value
-    ? (effect.value.CompressorSettings as CompressorSettings)
+    ? effect.value.CompressorSettings
     : undefined,
 )
 
 const limiterSettings = computed(() =>
-  effect.value && 'LimiterSettings' in effect.value
-    ? (effect.value.LimiterSettings as LimiterSettings)
-    : undefined,
+  effect.value && 'LimiterSettings' in effect.value ? effect.value.LimiterSettings : undefined,
 )
 
 const lowPassSettings = computed(() =>
   effect.value && 'LowPassFilterSettings' in effect.value
-    ? (effect.value.LowPassFilterSettings as LowPassFilterSettings)
+    ? effect.value.LowPassFilterSettings
     : undefined,
 )
 
 const highPassSettings = computed(() =>
   effect.value && 'HighPassFilterSettings' in effect.value
-    ? (effect.value.HighPassFilterSettings as HighPassFilterSettings)
+    ? effect.value.HighPassFilterSettings
     : undefined,
 )
 
 const distortionSettings = computed(() =>
   effect.value && 'DistortionSettings' in effect.value
-    ? (effect.value.DistortionSettings as DistortionSettings)
+    ? effect.value.DistortionSettings
     : undefined,
 )
 
