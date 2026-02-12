@@ -48,6 +48,7 @@ const toggleEdit = () => {
 }
 
 const effect = computed((): EffectSettings | undefined => {
+  return undefined
   return Object.values(props.item.effect)[0]
 })
 
