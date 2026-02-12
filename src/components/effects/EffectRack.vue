@@ -2,15 +2,22 @@
   <el-dropdown id="effect-rack" :class="rackClass" trigger="click">
     <div>
       <div class="no-effects" v-if="noEffects">There are no effects, click to add one</div>
-      <div class="effects-list" v-else>
-        <EffectMini
-          class="effect"
-          v-for="(effect, i) in effects"
-          :key="effect.id"
-          :item="effect"
-          :index="i"
-        />
-      </div>
+      <Draggable
+        v-else
+        class="effects-list"
+        :list="effects"
+        item-key="id"
+        ghost-class="effect-ghost"
+        chosen-class="effect-chosen"
+        drag-class="effect-drag"
+        :animation="160"
+      >
+        <template #item="{ element, index }">
+          <div class="effect-wrapper">
+            <EffectMini class="effect" :item="element" :index="index" />
+          </div>
+        </template>
+      </Draggable>
     </div>
     <template #dropdown>
       <el-dropdown-menu>
@@ -24,6 +31,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import Draggable from 'vuedraggable'
 import { useAudioStore } from '../../stores/audio'
 import EffectMini from './EffectMini.vue'
 import { effectTypes, effectTypeLabels } from '../../assets/effects'
@@ -71,10 +79,38 @@ const addEffect = (toAdd: AudioEffectType) => {
   }
 
   .effects-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: stretch;
     gap: 1em;
     height: 100%;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 0.25em;
+    scrollbar-gutter: stable;
+  }
+
+  .effect-wrapper {
+    flex: 0 0 auto;
+    width: max-content;
+    transition:
+      transform 0.15s ease-out,
+      box-shadow 0.15s ease-out;
+  }
+
+  .effect-ghost {
+    opacity: 0.4;
+  }
+
+  .effect-chosen {
+    opacity: 0.85;
+    transform: scale(0.98);
+  }
+
+  .effect-drag {
+    opacity: 0.9;
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.35);
   }
 }
 </style>

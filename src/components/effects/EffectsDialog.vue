@@ -1,170 +1,168 @@
 <template>
-  <div class="effects-controls" v-if="effect">
-    <h2>{{ label }}</h2>
-    <div class="control-bin">
+  <div class="effects-dialog" v-if="effect">
+    <header class="dialog-header">
+      <h2>{{ label }}</h2>
+      <AnalogIndicator :state="enabledState" label="Active" color="green" />
+    </header>
+
+    <section class="analog-panel dialog-panel">
       <template v-if="type === 'BasicReverb'">
-        <div>enabled</div>
-        <el-switch v-model="basicEnabled" />
-        <div></div>
-
-        <div>mix</div>
-        <el-slider v-model="basicMix" :min="0" :max="1" :step="0.01" size="small" />
-        <el-input type="text" v-model="basicMix" disabled="true" />
-
-        <div>duration (ms)</div>
-        <el-slider v-model="basicDuration" :min="0" :max="2000" :step="1" size="small" />
-        <el-input type="text" v-model="basicDuration" disabled="true" />
-
-        <div>amplitude</div>
-        <el-slider v-model="basicAmplitude" :min="0" :max="0.8" :step="0.01" size="small" />
-        <el-input type="text" v-model="basicAmplitude" disabled="true" />
-      </template>
-
-      <template v-else-if="type === 'DiffusionReverb'">
-        <div>enabled</div>
-        <el-switch v-model="diffusionEnabled" />
-        <div></div>
-
-        <div>mix</div>
-        <el-slider v-model="diffusionMix" :min="0" :max="1" :step="0.01" size="small" />
-        <el-input type="text" v-model="diffusionMix" disabled="true" />
-
-        <div>pre-delay (ms)</div>
-        <el-slider v-model="diffusionPreDelay" :min="0" :max="200" :step="1" size="small" />
-        <el-input type="text" v-model="diffusionPreDelay" disabled="true" />
-
-        <div>room size (ms)</div>
-        <el-slider v-model="diffusionRoomSize" :min="0" :max="200" :step="1" size="small" />
-        <el-input type="text" v-model="diffusionRoomSize" disabled="true" />
-
-        <div>decay</div>
-        <el-slider v-model="diffusionDecay" :min="0" :max="0.98" :step="0.01" size="small" />
-        <el-input type="text" v-model="diffusionDecay" disabled="true" />
-
-        <div>damping</div>
-        <el-slider v-model="diffusionDamping" :min="0" :max="0.99" :step="0.01" size="small" />
-        <el-input type="text" v-model="diffusionDamping" disabled="true" />
-
-        <div>diffusion</div>
-        <el-slider v-model="diffusionAmount" :min="0" :max="0.9" :step="0.01" size="small" />
-        <el-input type="text" v-model="diffusionAmount" disabled="true" />
+        <div class="control-grid">
+          <AnalogToggle v-model="basicEnabled" label="Enabled" />
+          <AnalogKnob v-model="basicMix" label="Mix" :min="0" :max="1" :step="0.01" />
+          <AnalogKnob v-model="basicDuration" label="Duration" :min="0" :max="2000" :step="1" units="ms" />
+          <AnalogKnob v-model="basicAmplitude" label="Amplitude" :min="0" :max="0.8" :step="0.01" />
+        </div>
       </template>
 
       <template v-else-if="type === 'ConvolutionReverb'">
-        <div>enabled</div>
-        <el-switch v-model="convolutionEnabled" />
-        <div></div>
-
-        <div>dry/wet</div>
-        <el-slider v-model="convolutionMix" :min="0" :max="1" :step="0.01" size="small" />
-        <el-input type="text" v-model="convolutionMix" disabled="true" />
-
-        <div>impulse response</div>
-        <div class="ir-picker">
-          <el-input
-            v-model="convolutionImpulse"
-            placeholder="attachment:ir.wav or /path/to/ir.wav"
+        <div class="control-grid">
+          <AnalogToggle v-model="convolutionEnabled" label="Enabled" />
+          <AnalogKnob v-model="convolutionMix" label="Dry/Wet" :min="0" :max="1" :step="0.01" />
+          <AnalogKnob
+            v-model="convolutionTailDb"
+            label="Tail"
+            :min="-120"
+            :max="0"
+            :step="1"
+            units="dB"
           />
-          <el-button size="small" @click="pickImpulseResponse">Choose File</el-button>
-          <el-button size="small" @click="clearImpulseResponse">Clear</el-button>
+          <div class="ir-picker">
+            <span class="analog-label">Impulse Response</span>
+            <input
+              class="ir-input"
+              v-model="convolutionImpulse"
+              placeholder="attachment:ir.wav or /path/to/ir.wav"
+            />
+            <div class="ir-actions">
+              <el-button size="small" @click="pickImpulseResponse">Choose File</el-button>
+              <el-button size="small" @click="clearImpulseResponse">Clear</el-button>
+            </div>
+          </div>
         </div>
-        <div></div>
-
-        <div>tail (dB)</div>
-        <el-slider v-model="convolutionTailDb" :min="-120" :max="0" :step="1" size="small" />
-        <el-input type="text" v-model="convolutionTailDb" disabled="true" />
       </template>
 
       <template v-else-if="type === 'Compressor'">
-        <div>enabled</div>
-        <el-switch v-model="compressorEnabled" />
-        <div></div>
-
-        <div>threshold (dB)</div>
-        <el-slider v-model="compressorThreshold" :min="-60" :max="0" :step="0.5" size="small" />
-        <el-input type="text" v-model="compressorThreshold" disabled="true" />
-
-        <div>ratio</div>
-        <el-slider v-model="compressorRatio" :min="1" :max="20" :step="0.1" size="small" />
-        <el-input type="text" v-model="compressorRatio" disabled="true" />
-
-        <div>attack (ms)</div>
-        <el-slider v-model="compressorAttack" :min="1" :max="200" :step="1" size="small" />
-        <el-input type="text" v-model="compressorAttack" disabled="true" />
-
-        <div>release (ms)</div>
-        <el-slider v-model="compressorRelease" :min="1" :max="500" :step="1" size="small" />
-        <el-input type="text" v-model="compressorRelease" disabled="true" />
-
-        <div>makeup (dB)</div>
-        <el-slider v-model="compressorMakeup" :min="-12" :max="12" :step="0.5" size="small" />
-        <el-input type="text" v-model="compressorMakeup" disabled="true" />
+        <div class="control-grid">
+          <AnalogToggle v-model="compressorEnabled" label="Enabled" />
+          <AnalogKnob
+            v-model="compressorThreshold"
+            label="Threshold"
+            :min="-60"
+            :max="0"
+            :step="0.5"
+            units="dB"
+          />
+          <AnalogKnob v-model="compressorRatio" label="Ratio" :min="1" :max="20" :step="0.1" />
+          <AnalogKnob
+            v-model="compressorAttack"
+            label="Attack"
+            :min="1"
+            :max="200"
+            :step="1"
+            units="ms"
+          />
+          <AnalogKnob
+            v-model="compressorRelease"
+            label="Release"
+            :min="1"
+            :max="500"
+            :step="1"
+            units="ms"
+          />
+          <AnalogKnob
+            v-model="compressorMakeup"
+            label="Makeup"
+            :min="-12"
+            :max="12"
+            :step="0.5"
+            units="dB"
+          />
+        </div>
       </template>
 
       <template v-else-if="type === 'Limiter'">
-        <div>enabled</div>
-        <el-switch v-model="limiterEnabled" />
-        <div></div>
-
-        <div>threshold (dB)</div>
-        <el-slider v-model="limiterThreshold" :min="-20" :max="0" :step="0.5" size="small" />
-        <el-input type="text" v-model="limiterThreshold" disabled="true" />
-
-        <div>knee width (dB)</div>
-        <el-slider v-model="limiterKnee" :min="0" :max="12" :step="0.5" size="small" />
-        <el-input type="text" v-model="limiterKnee" disabled="true" />
-
-        <div>attack (ms)</div>
-        <el-slider v-model="limiterAttack" :min="1" :max="100" :step="1" size="small" />
-        <el-input type="text" v-model="limiterAttack" disabled="true" />
-
-        <div>release (ms)</div>
-        <el-slider v-model="limiterRelease" :min="1" :max="500" :step="1" size="small" />
-        <el-input type="text" v-model="limiterRelease" disabled="true" />
+        <div class="control-grid">
+          <AnalogToggle v-model="limiterEnabled" label="Enabled" />
+          <AnalogKnob
+            v-model="limiterThreshold"
+            label="Threshold"
+            :min="-20"
+            :max="0"
+            :step="0.5"
+            units="dB"
+          />
+          <AnalogKnob
+            v-model="limiterKnee"
+            label="Knee"
+            :min="0"
+            :max="12"
+            :step="0.5"
+            units="dB"
+          />
+          <AnalogKnob
+            v-model="limiterAttack"
+            label="Attack"
+            :min="1"
+            :max="100"
+            :step="1"
+            units="ms"
+          />
+          <AnalogKnob
+            v-model="limiterRelease"
+            label="Release"
+            :min="1"
+            :max="500"
+            :step="1"
+            units="ms"
+          />
+        </div>
       </template>
 
       <template v-else-if="type === 'LowPassFilter'">
-        <div>enabled</div>
-        <el-switch v-model="lowPassEnabled" />
-        <div></div>
-
-        <div>freq (Hz)</div>
-        <el-slider v-model="lowPassFreq" :min="20" :max="20000" :step="10" size="small" />
-        <el-input type="text" v-model="lowPassFreq" disabled="true" />
-
-        <div>q</div>
-        <el-slider v-model="lowPassQ" :min="0.1" :max="2" :step="0.01" size="small" />
-        <el-input type="text" v-model="lowPassQ" disabled="true" />
+        <div class="control-grid">
+          <AnalogToggle v-model="lowPassEnabled" label="Enabled" />
+          <AnalogKnob
+            v-model="lowPassFreq"
+            label="Freq"
+            :min="20"
+            :max="20000"
+            :step="10"
+            units="Hz"
+          />
+          <AnalogKnob v-model="lowPassQ" label="Res" :min="0.1" :max="2" :step="0.01" />
+        </div>
       </template>
 
       <template v-else-if="type === 'HighPassFilter'">
-        <div>enabled</div>
-        <el-switch v-model="highPassEnabled" />
-        <div></div>
-
-        <div>freq (Hz)</div>
-        <el-slider v-model="highPassFreq" :min="20" :max="20000" :step="10" size="small" />
-        <el-input type="text" v-model="highPassFreq" disabled="true" />
-
-        <div>q</div>
-        <el-slider v-model="highPassQ" :min="0.1" :max="2" :step="0.01" size="small" />
-        <el-input type="text" v-model="highPassQ" disabled="true" />
+        <div class="control-grid">
+          <AnalogToggle v-model="highPassEnabled" label="Enabled" />
+          <AnalogKnob
+            v-model="highPassFreq"
+            label="Freq"
+            :min="20"
+            :max="20000"
+            :step="10"
+            units="Hz"
+          />
+          <AnalogKnob v-model="highPassQ" label="Res" :min="0.1" :max="2" :step="0.01" />
+        </div>
       </template>
 
       <template v-else-if="type === 'Distortion'">
-        <div>enabled</div>
-        <el-switch v-model="distortionEnabled" />
-        <div></div>
-
-        <div>gain</div>
-        <el-slider v-model="distortionGain" :min="0" :max="10" :step="0.1" size="small" />
-        <el-input type="text" v-model="distortionGain" disabled="true" />
-
-        <div>threshold</div>
-        <el-slider v-model="distortionThreshold" :min="0.1" :max="2" :step="0.01" size="small" />
-        <el-input type="text" v-model="distortionThreshold" disabled="true" />
+        <div class="control-grid">
+          <AnalogToggle v-model="distortionEnabled" label="Enabled" />
+          <AnalogKnob v-model="distortionGain" label="Gain" :min="0" :max="10" :step="0.1" />
+          <AnalogKnob
+            v-model="distortionThreshold"
+            label="Threshold"
+            :min="0.1"
+            :max="2"
+            :step="0.01"
+          />
+        </div>
       </template>
-    </div>
+    </section>
   </div>
 </template>
 
@@ -176,13 +174,15 @@ import type {
   AudioEffectPayload,
   BasicReverbSettings,
   ConvolutionReverbSettings,
-  DiffusionReverbSettings,
   CompressorSettings,
   LimiterSettings,
   LowPassFilterSettings,
   HighPassFilterSettings,
   DistortionSettings,
 } from '../../typings/effects'
+import AnalogIndicator from '../analog/AnalogIndicator.vue'
+import AnalogKnob from '../analog/AnalogKnob.vue'
+import AnalogToggle from '../analog/AnalogToggle.vue'
 
 interface Props {
   effectIndex: number
@@ -207,12 +207,6 @@ const basicSettings = computed(() =>
 const convolutionSettings = computed(() =>
   effect.value && 'ConvolutionReverbSettings' in effect.value
     ? (effect.value.ConvolutionReverbSettings as ConvolutionReverbSettings)
-    : undefined,
-)
-
-const diffusionSettings = computed(() =>
-  effect.value && 'DiffusionReverbSettings' in effect.value
-    ? (effect.value.DiffusionReverbSettings as DiffusionReverbSettings)
     : undefined,
 )
 
@@ -271,55 +265,6 @@ const basicAmplitude = computed({
   get: () => basicSettings.value?.amplitude ?? 0,
   set: (value: number) => {
     if (basicSettings.value) basicSettings.value.amplitude = value
-  },
-})
-
-const diffusionEnabled = computed({
-  get: () => diffusionSettings.value?.enabled ?? false,
-  set: (value: boolean) => {
-    if (diffusionSettings.value) diffusionSettings.value.enabled = value
-  },
-})
-
-const diffusionMix = computed({
-  get: () => diffusionSettings.value?.mix ?? 0,
-  set: (value: number) => {
-    if (diffusionSettings.value) diffusionSettings.value.mix = value
-  },
-})
-
-const diffusionPreDelay = computed({
-  get: () => diffusionSettings.value?.pre_delay_ms ?? 0,
-  set: (value: number) => {
-    if (diffusionSettings.value) diffusionSettings.value.pre_delay_ms = Math.round(value)
-  },
-})
-
-const diffusionRoomSize = computed({
-  get: () => diffusionSettings.value?.room_size_ms ?? 0,
-  set: (value: number) => {
-    if (diffusionSettings.value) diffusionSettings.value.room_size_ms = Math.round(value)
-  },
-})
-
-const diffusionDecay = computed({
-  get: () => diffusionSettings.value?.decay ?? 0,
-  set: (value: number) => {
-    if (diffusionSettings.value) diffusionSettings.value.decay = value
-  },
-})
-
-const diffusionDamping = computed({
-  get: () => diffusionSettings.value?.damping ?? 0,
-  set: (value: number) => {
-    if (diffusionSettings.value) diffusionSettings.value.damping = value
-  },
-})
-
-const diffusionAmount = computed({
-  get: () => diffusionSettings.value?.diffusion ?? 0,
-  set: (value: number) => {
-    if (diffusionSettings.value) diffusionSettings.value.diffusion = value
   },
 })
 
@@ -527,29 +472,72 @@ const distortionThreshold = computed({
     if (distortionSettings.value) distortionSettings.value.threshold = value
   },
 })
+
+const enabledState = computed(() => {
+  if (!effect.value) return false
+  if ('BasicReverbSettings' in effect.value) return effect.value.BasicReverbSettings.enabled
+  if ('ConvolutionReverbSettings' in effect.value) return effect.value.ConvolutionReverbSettings.enabled
+  if ('CompressorSettings' in effect.value) return effect.value.CompressorSettings.enabled
+  if ('LimiterSettings' in effect.value) return effect.value.LimiterSettings.enabled
+  if ('LowPassFilterSettings' in effect.value) return effect.value.LowPassFilterSettings.enabled
+  if ('HighPassFilterSettings' in effect.value) return effect.value.HighPassFilterSettings.enabled
+  if ('DistortionSettings' in effect.value) return effect.value.DistortionSettings.enabled
+  return false
+})
 </script>
 
 <style lang="scss" scoped>
-.effects-controls {
-  padding-bottom: 3em;
+.effects-dialog {
+  display: grid;
+  gap: 1.25rem;
+}
 
-  h2 {
-    margin-top: 0;
-  }
-  .control-bin {
-    display: grid;
-    grid-template-columns: 140px 1fr 140px;
-    column-gap: 1em;
-    row-gap: 1em;
-    text-align: right;
-    align-items: center;
-  }
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
 
-  .ir-picker {
-    display: grid;
-    grid-template-columns: 1fr auto auto;
-    gap: 0.5em;
-    align-items: center;
-  }
+.dialog-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.dialog-panel {
+  padding: 1.5rem;
+  border-radius: 18px;
+}
+
+.control-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.ir-picker {
+  display: grid;
+  gap: 0.6rem;
+  align-content: start;
+}
+
+.ir-input {
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid #2a241d;
+  background: #1f1b18;
+  color: var(--analog-text);
+  font-family: var(--analog-font);
+  font-size: 0.85rem;
+}
+
+.ir-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 0.5rem;
 }
 </style>
