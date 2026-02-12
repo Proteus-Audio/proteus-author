@@ -75,6 +75,9 @@ pub async fn init_player(window: Window) {
     new_player.set_reporting(Arc::new(Mutex::new(reporter)), Duration::from_millis(100));
     // new_player.set_reporting(reporting, reporting_interval)
     new_player.pause();
+    new_player.set_start_sink_chunks(1);
+    new_player.set_start_buffer_ms(10.0);
+    new_player.set_startup_fade_ms(5.0);
 
     player_state.lock().unwrap().replace(new_player);
 
