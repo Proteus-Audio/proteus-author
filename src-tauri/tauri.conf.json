@@ -1,56 +1,60 @@
 {
-	"build": {
-		"beforeDevCommand": "bun run dev",
-		"beforeBuildCommand": "bun run build",
-		"frontendDist": "../dist",
-		"devUrl": "http://localhost:1420"
-	},
-	"bundle": {
-		"active": true,
-		"category": "Music",
-		"copyright": "",
-		"targets": "all",
-		"externalBin": ["../ffmpeg/small/ffmpeg"],
-		"icon": [
-			"icons/32x32.png",
-			"icons/128x128.png",
-			"icons/128x128@2x.png",
-			"icons/icon.icns",
-			"icons/icon.ico"
-		],
-		"windows": {
-			"certificateThumbprint": null,
-			"digestAlgorithm": "sha256",
-			"timestampUrl": ""
-		},
-		"longDescription": "",
-		"macOS": {
-			"entitlements": null,
-			"exceptionDomain": "",
-			"frameworks": [],
-			"providerShortName": null,
-			"signingIdentity": null
-		},
-		"resources": [],
-		"shortDescription": "",
-		"linux": {
-			"deb": {
-				"depends": []
-			}
-		}
-	},
-	"productName": "Proteus Author",
-	"version": "0.8.3",
-	"identifier": "com.proteus.author",
-	"plugins": {},
-	"app": {
-		"withGlobalTauri": false,
-		"security": {
-			"assetProtocol": {
-				"scope": ["$HOME/**/*"],
-				"enable": true
-			},
-			"csp": "default-src 'self'; img-src 'self' asset: https://asset.localhost; worker-src * data: blob:; child-src * data: blob:; connect-src ipc: http://ipc.localhost 'self' asset: https://asset.localhost; media-src * asset: https://asset.localhost data: blob:;"
-		}
-	}
+  "build": {
+    "beforeDevCommand": "bun run dev",
+    "beforeBuildCommand": "bun run build",
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:1420"
+  },
+  "bundle": {
+    "active": true,
+    "category": "Music",
+    "copyright": "",
+    "targets": "all",
+    "externalBin": [
+      "../ffmpeg/small/ffmpeg"
+    ],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": ""
+    },
+    "longDescription": "",
+    "macOS": {
+      "entitlements": null,
+      "exceptionDomain": "",
+      "frameworks": [],
+      "providerShortName": null,
+      "signingIdentity": null
+    },
+    "resources": [],
+    "shortDescription": "",
+    "linux": {
+      "deb": {
+        "depends": []
+      }
+    }
+  },
+  "productName": "Proteus Author",
+  "version": "0.9.0",
+  "identifier": "com.proteus.author",
+  "plugins": {},
+  "app": {
+    "withGlobalTauri": false,
+    "security": {
+      "assetProtocol": {
+        "scope": [
+          "$HOME/**/*"
+        ],
+        "enable": true
+      },
+      "csp": "default-src 'self'; img-src 'self' asset: https://asset.localhost; worker-src * data: blob:; child-src * data: blob:; connect-src ipc: http://ipc.localhost 'self' asset: https://asset.localhost; media-src * asset: https://asset.localhost data: blob:;"
+    }
+  }
 }

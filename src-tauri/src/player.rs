@@ -216,16 +216,14 @@ pub fn set_selections(window: Window) -> Vec<String> {
 
     println!("ids: {:?}", ids);
 
-    // Apply the selections to the project
+    // Apply the selections to the project, keeping selection per track.
     for track in project.tracks.iter_mut() {
         track.selection = None;
     }
 
-    for id in ids.iter() {
-        for track in project.tracks.iter_mut() {
-            if track.file_ids.contains(id) {
-                track.selection = Some(id.clone());
-            }
+    for (track, id) in project.tracks.iter_mut().zip(ids.iter()) {
+        if track.file_ids.contains(id) {
+            track.selection = Some(id.clone());
         }
     }
 
