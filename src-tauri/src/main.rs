@@ -69,6 +69,7 @@ fn main() {
     // windows::create_docs_window(&handle);
 
     app.run(|_app_handle, event| match event {
+        #[cfg(target_os = "macos")]
         tauri::RunEvent::ExitRequested { api, .. } => {
             println!("exit requested");
             api.prevent_exit();
