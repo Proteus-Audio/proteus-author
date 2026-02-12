@@ -2,22 +2,11 @@
   <el-dropdown id="effect-rack" :class="rackClass" trigger="click">
     <div>
       <div class="no-effects" v-if="noEffects">There are no effects, click to add one</div>
-      <Draggable
-        v-else
-        class="effects-list"
-        :list="effects"
-        item-key="id"
-        ghost-class="effect-ghost"
-        chosen-class="effect-chosen"
-        drag-class="effect-drag"
-        :animation="160"
-      >
-        <template #item="{ element, index }">
-          <div class="effect-wrapper">
-            <EffectMini class="effect" :item="element" :index="index" />
-          </div>
-        </template>
-      </Draggable>
+      <div v-else class="effects-list">
+        <div class="effect-wrapper" v-for="(effect, index) in effects" :key="effect.id">
+          <EffectMini class="effect" :item="effect" :index="index" />
+        </div>
+      </div>
     </div>
     <template #dropdown>
       <el-dropdown-menu>
@@ -31,7 +20,6 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import Draggable from 'vuedraggable'
 import { useAudioStore } from '../../stores/audio'
 import EffectMini from './EffectMini.vue'
 import { effectTypes, effectTypeLabels } from '../../assets/effects'
