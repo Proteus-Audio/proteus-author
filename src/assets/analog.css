@@ -1,0 +1,29 @@
+:root {
+  --analog-panel: #2b2925;
+  --analog-panel-highlight: #3a3631;
+  --analog-panel-edge: #161412;
+  --analog-text: #efe7d8;
+  --analog-muted: #b9b09e;
+  --analog-accent: #e0c25c;
+  --analog-accent-deep: #b78f30;
+  --analog-metal: #bdb6aa;
+  --analog-shadow: rgba(0, 0, 0, 0.5);
+  --analog-glow: rgba(224, 194, 92, 0.55);
+  --analog-font: 'Inter', 'Silkscreen', sans-serif;
+}
+
+.analog-panel {
+  background: linear-gradient(180deg, var(--analog-panel-highlight), var(--analog-panel));
+  border: 1px solid var(--analog-panel-edge);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 6px 18px var(--analog-shadow);
+  color: var(--analog-text);
+  font-family: var(--analog-font);
+}
+
+.analog-label {
+  color: var(--analog-muted);
+  font-family: var(--analog-font);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
