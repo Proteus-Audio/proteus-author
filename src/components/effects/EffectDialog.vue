@@ -164,6 +164,16 @@
         <el-slider v-model="distortionThreshold" :min="0.1" :max="2" :step="0.01" size="small" />
         <el-input type="text" v-model="distortionThreshold" disabled="true" />
       </template>
+
+      <template v-else-if="type === 'Gain'">
+        <div>enabled</div>
+        <el-switch v-model="gainEnabled" />
+        <div></div>
+
+        <div>gain</div>
+        <el-slider v-model="gainAmount" :min="0" :max="4" :step="0.01" size="small" />
+        <el-input type="text" v-model="gainAmount" disabled="true" />
+      </template>
     </div>
   </div>
 </template>
@@ -232,6 +242,10 @@ const distortionSettings = computed(() =>
   effect.value && 'DistortionSettings' in effect.value
     ? effect.value.DistortionSettings
     : undefined,
+)
+
+const gainSettings = computed(() =>
+  effect.value && 'GainSettings' in effect.value ? effect.value.GainSettings : undefined,
 )
 
 const basicEnabled = computed({
@@ -513,6 +527,20 @@ const distortionThreshold = computed({
   get: () => distortionSettings.value?.threshold ?? 1,
   set: (value: number) => {
     if (distortionSettings.value) distortionSettings.value.threshold = value
+  },
+})
+
+const gainEnabled = computed({
+  get: () => gainSettings.value?.enabled ?? false,
+  set: (value: boolean) => {
+    if (gainSettings.value) gainSettings.value.enabled = value
+  },
+})
+
+const gainAmount = computed({
+  get: () => gainSettings.value?.gain ?? 1,
+  set: (value: number) => {
+    if (gainSettings.value) gainSettings.value.gain = value
   },
 })
 </script>

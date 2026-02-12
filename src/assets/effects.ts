@@ -7,6 +7,7 @@ import type {
   ConvolutionReverbSettings,
   DiffusionReverbSettings,
   DistortionSettings,
+  GainSettings,
   HighPassFilterSettings,
   LimiterSettings,
   LowPassFilterSettings,
@@ -24,6 +25,7 @@ const effectTypeToKey: Record<AudioEffectType, AudioEffectKey> = {
   LowPassFilter: 'LowPassFilterSettings',
   HighPassFilter: 'HighPassFilterSettings',
   Distortion: 'DistortionSettings',
+  Gain: 'GainSettings',
   Compressor: 'CompressorSettings',
   Limiter: 'LimiterSettings',
 }
@@ -35,6 +37,7 @@ const effectKeyToType: Record<AudioEffectKey, AudioEffectType> = {
   LowPassFilterSettings: 'LowPassFilter',
   HighPassFilterSettings: 'HighPassFilter',
   DistortionSettings: 'Distortion',
+  GainSettings: 'Gain',
   CompressorSettings: 'Compressor',
   LimiterSettings: 'Limiter',
 }
@@ -48,6 +51,7 @@ export const effectTypes: AudioEffectType[] = [
   'LowPassFilter',
   'HighPassFilter',
   'Distortion',
+  'Gain',
 ]
 
 export const effectTypeLabels: Record<AudioEffectType, string> = {
@@ -59,6 +63,7 @@ export const effectTypeLabels: Record<AudioEffectType, string> = {
   LowPassFilter: 'Low-Pass Filter',
   HighPassFilter: 'High-Pass Filter',
   Distortion: 'Distortion',
+  Gain: 'Gain',
 }
 
 const defaultBasicReverb = (): BasicReverbSettings => ({
@@ -106,6 +111,11 @@ const defaultDistortion = (): DistortionSettings => ({
   threshold: 0.3,
 })
 
+const defaultGain = (): GainSettings => ({
+  enabled: false,
+  gain: 1.0,
+})
+
 const defaultCompressor = (): CompressorSettings => ({
   enabled: true,
   threshold_db: -12.0,
@@ -137,6 +147,8 @@ export const createEffect = (type: AudioEffectType): AudioEffectPayload => {
       return { HighPassFilterSettings: defaultHighPassFilter() }
     case 'Distortion':
       return { DistortionSettings: defaultDistortion() }
+    case 'Gain':
+      return { GainSettings: defaultGain() }
     case 'Limiter':
       return { LimiterSettings: defaultLimiter() }
     case 'Compressor':
@@ -153,6 +165,7 @@ export const getEffectKey = (effect: AudioEffectPayload): AudioEffectKey => {
   if ('LowPassFilterSettings' in effect) return 'LowPassFilterSettings'
   if ('HighPassFilterSettings' in effect) return 'HighPassFilterSettings'
   if ('DistortionSettings' in effect) return 'DistortionSettings'
+  if ('GainSettings' in effect) return 'GainSettings'
   if ('LimiterSettings' in effect) return 'LimiterSettings'
   return 'CompressorSettings'
 }
@@ -196,6 +209,9 @@ export const normalizeEffect = (effect: AudioEffectPayload): AudioEffectPayload 
   }
   if ('DistortionSettings' in effect) {
     return { DistortionSettings: { ...defaultDistortion(), ...effect.DistortionSettings } }
+  }
+  if ('GainSettings' in effect) {
+    return { GainSettings: { ...defaultGain(), ...effect.GainSettings } }
   }
   if ('LimiterSettings' in effect) {
     return { LimiterSettings: { ...defaultLimiter(), ...effect.LimiterSettings } }

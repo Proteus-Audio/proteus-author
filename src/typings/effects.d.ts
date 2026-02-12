@@ -5,6 +5,7 @@ export type AudioEffectKey =
   | 'LowPassFilterSettings'
   | 'HighPassFilterSettings'
   | 'DistortionSettings'
+  | 'GainSettings'
   | 'CompressorSettings'
   | 'LimiterSettings'
 
@@ -15,6 +16,7 @@ export type AudioEffectType =
   | 'LowPassFilter'
   | 'HighPassFilter'
   | 'Distortion'
+  | 'Gain'
   | 'Compressor'
   | 'Limiter'
 
@@ -63,6 +65,11 @@ export interface DistortionSettings {
   threshold: number
 }
 
+export interface GainSettings {
+  enabled: boolean
+  gain: number
+}
+
 export interface CompressorSettings {
   enabled: boolean
   threshold_db: number
@@ -82,10 +89,12 @@ export interface LimiterSettings {
 
 export type EffectSettings =
   | BasicReverbSettings
+  | DiffusionReverbSettings
   | ConvolutionReverbSettings
   | LowPassFilterSettings
   | HighPassFilterSettings
   | DistortionSettings
+  | GainSettings
   | CompressorSettings
   | LimiterSettings
 
@@ -96,5 +105,6 @@ export type AudioEffectPayload =
   | { LowPassFilterSettings: LowPassFilterSettings }
   | { HighPassFilterSettings: HighPassFilterSettings }
   | { DistortionSettings: DistortionSettings }
+  | { GainSettings: GainSettings }
   | { CompressorSettings: CompressorSettings }
   | { LimiterSettings: LimiterSettings }

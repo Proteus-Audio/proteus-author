@@ -169,6 +169,13 @@
           />
         </div>
       </template>
+
+      <template v-else-if="type === 'Gain'">
+        <div class="control-grid">
+          <AnalogToggle v-model="gainEnabled" label="Enabled" />
+          <AnalogKnob v-model="gainAmount" label="Gain" :min="0" :max="4" :step="0.01" />
+        </div>
+      </template>
     </section>
   </div>
 </template>
@@ -234,6 +241,10 @@ const distortionSettings = computed(() =>
   effect.value && 'DistortionSettings' in effect.value
     ? effect.value.DistortionSettings
     : undefined,
+)
+
+const gainSettings = computed(() =>
+  effect.value && 'GainSettings' in effect.value ? effect.value.GainSettings : undefined,
 )
 
 const basicEnabled = computed({
@@ -469,6 +480,20 @@ const distortionThreshold = computed({
   },
 })
 
+const gainEnabled = computed({
+  get: () => gainSettings.value?.enabled ?? false,
+  set: (value: boolean) => {
+    if (gainSettings.value) gainSettings.value.enabled = value
+  },
+})
+
+const gainAmount = computed({
+  get: () => gainSettings.value?.gain ?? 1,
+  set: (value: number) => {
+    if (gainSettings.value) gainSettings.value.gain = value
+  },
+})
+
 const enabledState = computed(() => {
   if (!effect.value) return false
   if ('BasicReverbSettings' in effect.value) return effect.value.BasicReverbSettings.enabled
@@ -479,6 +504,7 @@ const enabledState = computed(() => {
   if ('LowPassFilterSettings' in effect.value) return effect.value.LowPassFilterSettings.enabled
   if ('HighPassFilterSettings' in effect.value) return effect.value.HighPassFilterSettings.enabled
   if ('DistortionSettings' in effect.value) return effect.value.DistortionSettings.enabled
+  if ('GainSettings' in effect.value) return effect.value.GainSettings.enabled
   return false
 })
 </script>
