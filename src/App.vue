@@ -60,11 +60,45 @@ const menu = useMenuStore()
 const windowTitle = computed(() => {
   return head.name.replace('.protproject', '')
 })
+const timelineWidthPx = ref(0)
 const timelineWidth = computed(() =>
-  audio.duration === 0 ? '100%' : `${audio.zoom.x * audio.duration + 30}px`,
+  timelineWidthPx.value > 0 ? `${timelineWidthPx.value + 30}px` : '100%',
 )
 
 const unlisteners = ref<UnlistenFn[]>([])
+
+interface SimplifiedPeaks {
+  peaks: number[]
+  zoom: number
+  original_length: number
+}
+
+const refreshTimelineWidth = async () => {
+  const selectedFileIds = trackStore.tracks
+    .map((track) => track.selection)
+    .filter((id): id is string => !!id)
+
+  if (selectedFileIds.length === 0) {
+    timelineWidthPx.value = 0
+    return
+  }
+
+  const peakGroups = await Promise.all(
+    selectedFileIds.map((fileId) =>
+      invoke<SimplifiedPeaks[]>('get_simplified_peaks', {
+        fileId,
+        zoom: audio.zoom.x,
+      }),
+    ),
+  )
+
+  const maxPeaksLength = peakGroups.reduce((max, peaks) => {
+    const channelLength = peaks[0]?.peaks.length || 0
+    return Math.max(max, channelLength)
+  }, 0)
+
+  timelineWidthPx.value = maxPeaksLength * 2
+}
 
 watch(
   [trackStore.tracks, audio.effects],
@@ -174,6 +208,7 @@ onMounted(async () => {
   console.log(await invoke('get_play_state'))
 
   await trackStore.sync()
+  await refreshTimelineWidth()
 })
 
 onUnmounted(() => {
@@ -184,7 +219,16 @@ onUnmounted(() => {
 
 watch(audio.zoom, () => {
   window.dispatchEvent(new Event('resize'))
+  void refreshTimelineWidth()
 })
+
+watch(
+  () => trackStore.tracks,
+  () => {
+    void refreshTimelineWidth()
+  },
+  { deep: true },
+)
 </script>
 
 <style lang="scss">
