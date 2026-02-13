@@ -34,12 +34,11 @@ const volume = computed({
 })
 
 const zoomInDisabled = computed(() => {
-  if (audio.duration <= 0) return true
   return audio.getViewDuration <= 0.51
 })
 
 const zoomOutDisabled = computed(() => {
-  if (audio.duration <= 0) return true
+  if (audio.duration <= 0) return false
   return audio.getViewDuration >= audio.duration - 0.01
 })
 

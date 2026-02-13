@@ -1,7 +1,7 @@
 <template>
   <div class="track">
     <div ref="overviewContainerRef" :id="`overview-container-${identifier}`" class="overview-container">
-      <canvas ref="canvasRef" class="waveform-canvas" @click="seek"></canvas>
+      <canvas ref="canvasRef" class="waveform-canvas" @click="seek" @wheel.prevent="onWheel"></canvas>
       <div class="playhead"></div>
     </div>
   </div>
@@ -150,6 +150,21 @@ const seek = (event: MouseEvent) => {
   const ratio = x / Math.max(rect.width, 1)
   const seconds = audio.getViewStart + ratio * viewDuration.value
   void audio.seek(seconds)
+}
+
+const onWheel = (event: WheelEvent) => {
+  const canvas = canvasRef.value
+  if (!canvas) return
+
+  let delta = event.deltaX
+  if (Math.abs(delta) < 0.01 && event.shiftKey) {
+    delta = event.deltaY
+  }
+  if (Math.abs(delta) < 0.01) return
+
+  const width = Math.max(canvas.clientWidth, 1)
+  const fraction = delta / width
+  audio.panViewByFraction(fraction)
 }
 
 watch(

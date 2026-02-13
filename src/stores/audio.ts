@@ -110,7 +110,12 @@ export const useAudioStore = defineStore('prot', () => {
     const minSpan = timelineDuration > 0 ? Math.min(0.5, timelineDuration) : 0.5
 
     if (timelineDuration <= 0) {
-      view.value = { start: 0, end: 10 }
+      let nextStart = Math.max(0, start)
+      let nextEnd = Math.max(end, nextStart + minSpan)
+      if (nextEnd - nextStart < minSpan) {
+        nextEnd = nextStart + minSpan
+      }
+      view.value = { start: nextStart, end: nextEnd }
       return
     }
 
@@ -138,12 +143,19 @@ export const useAudioStore = defineStore('prot', () => {
     clampViewRange(start, end)
   }
 
+  const panViewByFraction = (fraction: number) => {
+    if (!Number.isFinite(fraction) || fraction === 0) return
+    const span = getViewDuration.value
+    if (span <= 0) return
+    const shiftSeconds = span * fraction
+    setViewRange(view.value.start + shiftSeconds, view.value.end + shiftSeconds)
+  }
+
   const zoomView = (multiplier: number) => {
     const currentSpan = getViewDuration.value
-    const timelineDuration = Math.max(duration.value, 0)
-    if (timelineDuration <= 0 || currentSpan <= 0) return
+    if (currentSpan <= 0) return
 
-    const anchor = Math.min(Math.max(clock.value, view.value.start), view.value.end)
+    const anchor = Math.max(clock.value, 0)
     const nextSpan = currentSpan * multiplier
     const half = nextSpan / 2
     setViewRange(anchor - half, anchor + half)
@@ -162,8 +174,12 @@ export const useAudioStore = defineStore('prot', () => {
   }
 
   const setDuration = async () => {
-    await Tone.loaded()
-    duration.value = toneMaster.duration
+    try {
+      duration.value = await invoke<number>('get_duration')
+    } catch {
+      await Tone.loaded()
+      duration.value = toneMaster.duration
+    }
     setViewRange(0, duration.value)
   }
 
@@ -307,6 +323,7 @@ export const useAudioStore = defineStore('prot', () => {
     stop,
     setYScale,
     setViewRange,
+    panViewByFraction,
     zoomIn,
     zoomOut,
     setPlaying,
