@@ -76,7 +76,7 @@ fn main() {
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
 
-    let main_window = windows::create_main_window(&app.handle());
+    let _main_window = windows::create_main_window(&app.handle());
     // windows::create_docs_window(&handle);
 
     app.run(|_app_handle, event| match event {
@@ -91,7 +91,14 @@ fn main() {
             ..
         } => {
             if !has_visible_windows {
-                windows::create_main_window(&_app_handle);
+                if let Some(window) = _app_handle.get_webview_window("main-window-1") {
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                } else {
+                    let window = windows::create_main_window(&_app_handle);
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
             }
         }
 

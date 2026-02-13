@@ -119,6 +119,7 @@ const effectRackHeight = computed(() => (effectRackHover.value ? `7rem` : `5rem`
 
 onMounted(async () => {
   registerShortcuts()
+
   // listen to the `click` event and get a function to remove the event listener
   // there's also a `once` function that subscribes to an event and automatically unsubscribes the listener on the first event
   const fileLoaded = await listen('FILE_LOADED', (event) => {
