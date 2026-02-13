@@ -3,45 +3,65 @@
     <div class="fader-label">GAIN</div>
 
     <div class="fader-container">
-        <div ref="trackRef" class="fader-track" @pointerdown="onTrackPointerDown">
+      <!-- <div class="scale-label scale-top">+10</div> -->
+      <!-- <div class="scale-label scale-mid">-25</div> -->
+      <!-- <div class="scale-label scale-bottom">-60</div> -->
+
+      <div ref="trackRef" class="fader-track" @pointerdown="onTrackPointerDown">
         <div class="fader-grid"></div>
         <div class="fader-fill" :style="{ height: `${fillPercent}%` }"></div>
         <button
-            type="button"
-            class="fader-cap"
-            :style="{ bottom: capBottom }"
-            aria-label="Volume fader"
-            @pointerdown.stop="onCapPointerDown"
+          type="button"
+          class="fader-cap"
+          :style="{ bottom: capBottom }"
+          aria-label="Volume fader"
+          @pointerdown.stop="onCapPointerDown"
         >
-            <span class="cap-grip"></span>
+          <span class="cap-grip"></span>
         </button>
-        </div>
+      </div>
     </div>
 
-    <div class="fader-readout">{{ `${Math.ceil((value / 100) * 30) / 10}` }}</div>
-    <!-- <div class="fader-readout">{{ `${Math.round(fillPercent)}%` }}</div> -->
+    <div class="fader-readout">{{ dbReadout }}</div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { invoke } from '@tauri-apps/api/core'
-import { computed, onBeforeUnmount, ref } from 'vue'
-import { toneMaster } from '../../assets/toneMaster'
+import { listen } from '@tauri-apps/api/event'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
-const minValue = 0
-const maxValue = 75
-const capHeight = 22
+const minDb = -60
+const maxDb = 10
+const capHeight = 42
 
 const trackRef = ref<HTMLElement | null>(null)
-const value = ref(Math.min(maxValue, Math.max(minValue, Math.round(toneMaster.volume * 75))))
+const dbValue = ref(0)
+let removePlayerChangedListener: (() => void) | null = null
 
-const fillPercent = computed(() => (value.value / maxValue) * 100)
+const clampDb = (db: number) => Math.min(maxDb, Math.max(minDb, db))
+const dbToLinear = (db: number) => Math.pow(10, db / 20)
+const linearToDb = (linear: number) => {
+  const safe = Math.max(linear, 0.0001)
+  return clampDb(20 * Math.log10(safe))
+}
+
+const fillPercent = computed(() => ((dbValue.value - minDb) / (maxDb - minDb)) * 100)
 const capBottom = computed(() => `calc(${fillPercent.value}% - ${capHeight / 2}px)`)
-
-const clamp = (next: number) => Math.min(maxValue, Math.max(minValue, next))
+const dbReadout = computed(() => `${dbValue.value >= 0 ? '+' : ''}${dbValue.value.toFixed(1)} dB`)
 
 const commitVolume = () => {
-  void invoke('set_volume', { volume: (value.value / 100) * 3 })
+  const linear = dbToLinear(dbValue.value)
+  void invoke('set_volume', { volume: linear })
+}
+
+const refreshFromBackend = async () => {
+  try {
+    const linear = await invoke<number>('get_volume')
+    dbValue.value = linearToDb(linear)
+  } catch {
+    // Keep current UI value on failures.
+  }
 }
 
 const setFromPointer = (clientY: number) => {
@@ -49,9 +69,9 @@ const setFromPointer = (clientY: number) => {
   if (!track) return
   const rect = track.getBoundingClientRect()
   const ratio = (rect.bottom - clientY) / Math.max(rect.height, 1)
-  const next = clamp(Math.round(ratio * maxValue))
-  if (next === value.value) return
-  value.value = next
+  const nextDb = clampDb(minDb + ratio * (maxDb - minDb))
+  if (Math.abs(nextDb - dbValue.value) < 0.05) return
+  dbValue.value = nextDb
   commitVolume()
 }
 
@@ -75,8 +95,18 @@ const onCapPointerDown = (event: PointerEvent) => {
   window.addEventListener('pointerup', clearDragging)
 }
 
+onMounted(async () => {
+  await refreshFromBackend()
+  removePlayerChangedListener = await listen('PLAYER_CHANGED', async () => {
+    await refreshFromBackend()
+  })
+})
+
 onBeforeUnmount(() => {
   clearDragging()
+  if (removePlayerChangedListener) {
+    removePlayerChangedListener()
+  }
 })
 </script>
 
@@ -93,11 +123,34 @@ onBeforeUnmount(() => {
 }
 
 .fader-container {
-    position: relative;
-    border: 2px solid #8f8f8f;
-    border-radius: 2px;
-    background: #d2d2d2;
-    overflow: hidden;
+  position: relative;
+  border: 2px solid #8f8f8f;
+  border-radius: 2px;
+  background: #d2d2d2;
+  overflow: hidden;
+}
+
+.scale-label {
+  position: absolute;
+  right: 2px;
+  font-size: 8px;
+  color: #5d5d5d;
+  z-index: 2;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.scale-top {
+  top: 3px;
+}
+
+.scale-mid {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.scale-bottom {
+  bottom: 3px;
 }
 
 .fader-label,

@@ -67,6 +67,7 @@ fn main() {
             get_play_state,
             get_levels,
             get_levels_db,
+            get_volume,
             set_selections,
             set_volume,
             set_effects_chain,

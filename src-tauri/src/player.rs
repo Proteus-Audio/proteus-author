@@ -61,6 +61,7 @@ pub async fn init_player(window: Window) {
 
     if file_list.len() == 0 {
         player_state.lock().unwrap().take();
+        window.emit("PLAYER_CHANGED", ()).unwrap_or(());
         return;
     }
 
@@ -81,6 +82,7 @@ pub async fn init_player(window: Window) {
     new_player.set_max_sink_chunks(15);
 
     player_state.lock().unwrap().replace(new_player);
+    window.emit("PLAYER_CHANGED", ()).unwrap_or(());
 
     println!(
         "init_player took {}ms",
@@ -245,6 +247,18 @@ pub fn set_volume(volume: f32, window: Window) {
     }
 
     player.as_mut().unwrap().set_volume(volume);
+}
+
+#[tauri::command]
+pub fn get_volume(window: Window) -> f32 {
+    let player_state: State<Arc<Mutex<Option<Player>>>> = window.state();
+    let player = player_state.lock().unwrap();
+
+    if player.is_none() {
+        return 1.0;
+    }
+
+    player.as_ref().unwrap().get_volume()
 }
 
 #[tauri::command]
