@@ -4,7 +4,7 @@
 )]
 
 mod file;
-// mod menu;
+mod menu;
 mod helpers;
 mod peaks;
 mod player;
@@ -18,6 +18,7 @@ use player::*;
 use project::*;
 use proteus_lib::playback::player::Player;
 use dotenv::dotenv;
+use tauri::Manager;
 
 fn main() {
     dotenv().ok();
@@ -34,6 +35,12 @@ fn main() {
         // .plugin(tauri_plugin_fs::init())
         .manage(project::create_project())
         .manage(Arc::new(Mutex::new(None::<Player>)))
+        .manage(Arc::new(Mutex::new(false)))
+        .menu(|app_handle| menu::build_menu(app_handle))
+        .on_menu_event(|app_handle, event| {
+            let follow_mode_state: tauri::State<Arc<Mutex<bool>>> = app_handle.state();
+            menu::handle_menu_event(app_handle, event, follow_mode_state.inner());
+        })
         .invoke_handler(tauri::generate_handler![
             project_changes,
             auto_save,
@@ -63,7 +70,6 @@ fn main() {
             set_volume,
             set_effects_chain
         ])
-        // .menu(menu::get_menu())
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
 

@@ -44,7 +44,6 @@ import UtilBase from './components/util/UtilBase.vue'
 import { useAlertStore } from './stores/alerts'
 import { useAudioStore } from './stores/audio'
 import { useHeadStore } from './stores/head'
-import { useMenuStore } from './stores/menu'
 import { useTrackStore } from './stores/track'
 import type { AlertType, ProjectSkeleton } from './typings/proteus'
 import { useElementHover } from '@vueuse/core'
@@ -53,32 +52,12 @@ const head = useHeadStore()
 const trackStore = useTrackStore()
 const audio = useAudioStore()
 const alerts = useAlertStore()
-const menu = useMenuStore()
 
 const windowTitle = computed(() => {
   return head.name.replace('.protproject', '')
 })
 
 const unlisteners = ref<UnlistenFn[]>([])
-const domUnlisteners: Array<() => void> = []
-
-const onMenuZoomIn = () => audio.zoomIn('x')
-const onMenuZoomOut = () => audio.zoomOut('x')
-const onMenuPanLeft = () => audio.panViewLeft(0.2)
-const onMenuPanRight = () => audio.panViewRight(0.2)
-const onMenuFollowMode = (event: Event) => {
-  const customEvent = event as CustomEvent<{ enabled?: boolean }>
-  const enabled = !!customEvent.detail?.enabled
-  audio.setFollowMode(enabled)
-}
-
-const registerDomListener = (
-  name: string,
-  handler: EventListenerOrEventListenerObject,
-) => {
-  window.addEventListener(name, handler)
-  domUnlisteners.push(() => window.removeEventListener(name, handler))
-}
 
 watch(
   [trackStore.tracks, audio.effects],
@@ -135,8 +114,6 @@ const effectRackHover = useElementHover(effectRackRef)
 const effectRackHeight = computed(() => (effectRackHover.value ? `7rem` : `5rem`))
 
 onMounted(async () => {
-  await menu.init()
-
   // listen to the `click` event and get a function to remove the event listener
   // there's also a `once` function that subscribes to an event and automatically unsubscribes the listener on the first event
   const fileLoaded = await listen('FILE_LOADED', (event) => {
@@ -156,6 +133,11 @@ onMounted(async () => {
     void handleSaveFileAs()
   })
   unlisteners.value.push(saveFileAs)
+
+  const openFile = await listen('OPEN_FILE', () => {
+    void invoke('open_file')
+  })
+  unlisteners.value.push(openFile)
 
   const startExport = await listen('START_EXPORT', () => {
     void handleStartExport()
@@ -183,24 +165,43 @@ onMounted(async () => {
   })
   unlisteners.value.push(updatePlayhead)
 
+  const menuZoomIn = await listen('MENU_ZOOM_IN', () => {
+    audio.zoomIn('x')
+  })
+  unlisteners.value.push(menuZoomIn)
+
+  const menuZoomOut = await listen('MENU_ZOOM_OUT', () => {
+    audio.zoomOut('x')
+  })
+  unlisteners.value.push(menuZoomOut)
+
+  const menuPanLeft = await listen('MENU_PAN_LEFT', () => {
+    audio.panViewLeft(0.2)
+  })
+  unlisteners.value.push(menuPanLeft)
+
+  const menuPanRight = await listen('MENU_PAN_RIGHT', () => {
+    audio.panViewRight(0.2)
+  })
+  unlisteners.value.push(menuPanRight)
+
+  const menuFollowMode = await listen('MENU_FOLLOW_MODE', (event) => {
+    const payload = event.payload as { enabled?: boolean }
+    audio.setFollowMode(!!payload.enabled)
+  })
+  unlisteners.value.push(menuFollowMode)
+
   trackStore.addEmptyTrackIfNone()
 
   console.log(await invoke('get_play_state'))
 
   await trackStore.sync()
-
-  registerDomListener('MENU_ZOOM_IN', onMenuZoomIn)
-  registerDomListener('MENU_ZOOM_OUT', onMenuZoomOut)
-  registerDomListener('MENU_PAN_LEFT', onMenuPanLeft)
-  registerDomListener('MENU_PAN_RIGHT', onMenuPanRight)
-  registerDomListener('MENU_FOLLOW_MODE', onMenuFollowMode)
 })
 
 onUnmounted(() => {
   unlisteners.value.forEach((unlistener) => {
     unlistener()
   })
-  domUnlisteners.forEach((unlisten) => unlisten())
 })
 
 watch(
