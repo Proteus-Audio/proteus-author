@@ -1,38 +1,20 @@
 <template>
   <div class="track">
     <div
-      :style="`width:${width};`"
+      ref="overviewContainerRef"
+      :style="`width:${canvasWidth};`"
       :id="`overview-container-${identifier}`"
       class="overview-container"
     >
-      <div class="channels">
-        <div class="channel" v-for="(peaks, channel) in simplifiedPeaks" :key="channel">
-          <div @click="seek" class="control"></div>
-          <div class="playhead"></div>
-          <template v-for="annotation in peaksLength" :key="`annotation-${channel}-${annotation}`">
-            <div
-              v-if="annotate(annotation)"
-              :style="{ left: `${(annotation - 1) * 2}px` }"
-              class="annotation"
-            >
-              <div class="timestamp">{{ getAnnotation(annotation) }}</div>
-            </div>
-          </template>
-          <template v-for="(peak, index) in peaks.peaks" :key="`${channel}-${index}`">
-            <div :style="{ height: `${calcHeight(peak)}%` }" class="peak"></div>
-          </template>
-        </div>
-      </div>
+      <canvas ref="canvasRef" class="waveform-canvas" @click="seek"></canvas>
+      <div class="playhead"></div>
     </div>
-    <!-- <audio v-if="track" :class="`player ${selected ? 'playable' : 'non-playable'}`" :id="`audio-${identifier}`" controls>
-      <source :src="`file://${track.path}`" type="audio/mp3" />
-    </audio> -->
   </div>
 </template>
 
 <script setup lang="ts">
 import { invoke } from '@tauri-apps/api/core'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useAudioStore } from '../../stores/audio'
 import type { TrackFile } from '../../typings/tracks'
 
@@ -50,43 +32,26 @@ interface SimplifiedPeaks {
 const audio = useAudioStore()
 const props = defineProps<Props>()
 
-const duration = ref(0)
 const identifier = computed(() => `${props.track.parentId}-${props.track.id}`)
-const widthVal = computed((): number => duration.value * audio.getXScale)
-const width = computed((): string => (widthVal.value > 0 ? `${widthVal.value}px` : '100%'))
 
-const calcHeight = (peak: number) => {
-  return peak * 200 + 1
-}
-
+const canvasRef = ref<HTMLCanvasElement | null>(null)
+const overviewContainerRef = ref<HTMLDivElement | null>(null)
 const simplifiedPeaks = ref([] as SimplifiedPeaks[])
-
-const updateSimplifiedPeaks = async () => {
-  simplifiedPeaks.value = await getSimplifiedPeaks()
-}
-
-watch(audio.zoom, () => {
-  // console.log('zoom changed')
-  void updateSimplifiedPeaks()
-})
-
-const getSimplifiedPeaks = async () => {
-  const simplifiedPeaks = await invoke<SimplifiedPeaks[]>('get_simplified_peaks', {
-    fileId: props.track.id,
-    zoom: audio.zoom.x,
-  })
-
-  // console.log('simplifiedPeaks', simplifiedPeaks)
-
-  return simplifiedPeaks
-}
 
 const peaksLength = computed(() => simplifiedPeaks.value[0]?.peaks.length || 0)
 
-const zoomLevel = computed(() => {
-  const factor = (simplifiedPeaks.value[0]?.original_length || 100) / peaksLength.value
+const canvasWidthPx = computed(() => {
+  const width = peaksLength.value * 2
+  return width > 0 ? width : 1
+})
 
-  return 100 / factor
+const canvasWidth = computed(() => `${canvasWidthPx.value}px`)
+
+const zoomLevel = computed(() => {
+  if (peaksLength.value === 0) return 1
+  const originalLength = simplifiedPeaks.value[0]?.original_length || peaksLength.value
+  const factor = originalLength / peaksLength.value
+  return factor === 0 ? 1 : 100 / factor
 })
 
 const annotate = (index: number): boolean => {
@@ -110,158 +75,154 @@ const annotate = (index: number): boolean => {
 
 const getAnnotation = (index: number): string => {
   const seconds = index / zoomLevel.value
-
-  // Return seconds converted to mm:ss
-  return new Date(seconds * 1000).toISOString().substr(14, 5)
+  return new Date(seconds * 1000).toISOString().slice(14, 19)
 }
 
 const playheadPosition = computed(() => {
   const factor = audio.clock * zoomLevel.value * 2
-  // console.log(audio.clock, factor, zoomLevel.value)
   return `${factor}px`
 })
 
+const getSimplifiedPeaks = async () => {
+  return invoke<SimplifiedPeaks[]>('get_simplified_peaks', {
+    fileId: props.track.id,
+    zoom: audio.zoom.x,
+  })
+}
+
+const drawWaveform = () => {
+  const canvas = canvasRef.value
+  const container = overviewContainerRef.value
+
+  if (!canvas || !container || peaksLength.value === 0) return
+
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
+  const width = canvasWidthPx.value
+  const height = Math.max(container.clientHeight, 150)
+  const dpr = window.devicePixelRatio || 1
+
+  canvas.width = Math.floor(width * dpr)
+  canvas.height = Math.floor(height * dpr)
+  canvas.style.width = `${width}px`
+  canvas.style.height = `${height}px`
+
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  ctx.clearRect(0, 0, width, height)
+
+  ctx.fillStyle = 'white'
+  ctx.fillRect(0, 0, width, height)
+
+  const channels = simplifiedPeaks.value
+  const channelCount = Math.max(channels.length, 1)
+  const channelHeight = height / channelCount
+
+  ctx.strokeStyle = 'rgba(116, 116, 116, 0.6)'
+  ctx.lineWidth = 1
+
+  channels.forEach((channel, channelIndex) => {
+    const yTop = channelIndex * channelHeight
+    const yMid = yTop + channelHeight / 2
+    const maxAmplitude = channelHeight / 2 - 2
+
+    ctx.beginPath()
+
+    channel.peaks.forEach((peak, index) => {
+      const x = index * 2 + 1
+      const amplitude = Math.min(Math.max(peak, 0), 1) * maxAmplitude
+      ctx.moveTo(x, yMid - amplitude)
+      ctx.lineTo(x, yMid + amplitude)
+    })
+
+    ctx.stroke()
+  })
+
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)'
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.4)'
+  ctx.font = '11px Silkscreen, Segoe UI, Tahoma, Geneva, Verdana, sans-serif'
+  ctx.textAlign = 'center'
+
+  for (let i = 1; i <= peaksLength.value; i++) {
+    if (!annotate(i)) continue
+
+    const x = (i - 1) * 2
+    ctx.beginPath()
+    ctx.moveTo(x, 0)
+    ctx.lineTo(x, 10)
+    ctx.moveTo(x, height)
+    ctx.lineTo(x, height - 10)
+    ctx.stroke()
+
+    ctx.fillText(getAnnotation(i), x, height - 15)
+  }
+}
+
+const updateSimplifiedPeaks = async () => {
+  simplifiedPeaks.value = await getSimplifiedPeaks()
+  await nextTick()
+  drawWaveform()
+}
+
 const seek = (event: MouseEvent) => {
-  const seconds = event.offsetX / zoomLevel.value / 2
+  const canvas = canvasRef.value
+  if (!canvas) return
+
+  const rect = canvas.getBoundingClientRect()
+  const x = event.clientX - rect.left
+  const seconds = x / zoomLevel.value / 2
   void audio.seek(seconds)
 }
 
+watch(
+  () => audio.zoom.x,
+  () => {
+    void updateSimplifiedPeaks()
+  },
+)
+
+watch(
+  () => props.track.id,
+  () => {
+    void updateSimplifiedPeaks()
+  },
+)
+
 onMounted(() => {
   void updateSimplifiedPeaks()
+  window.addEventListener('resize', drawWaveform)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', drawWaveform)
 })
 </script>
 
 <style lang="scss" scoped>
 .track {
-  // max-width: calc(100% - 44px);
   background-color: rgba(0, 0, 0, 0.1);
-  // border-radius: 0.5em;
-  // padding: 0 0.5em;
-
-  .folder-button {
-    margin-top: auto;
-  }
 
   .overview-container {
+    position: relative;
     min-height: 150px;
     width: 100%;
-  }
-}
-
-.channels {
-  position: absolute;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100%;
-  overflow-x: hidden;
-  overflow-y: hidden;
-  .channel {
-    position: relative;
-    height: 100%;
-    width: 100%;
-    width: calc(2px * v-bind(peaksLength));
-    // width: calc((2px + 0.1em) * v-bind(peaksLength));
-    display: flex;
-    flex-wrap: wrap;
-    // gap: 0.1em;
-    flex-direction: row;
-    // flex-direction: column;
-    align-items: center;
-    // align-items: flex-start;
-    // justify-content: flex-end;
-    background-color: white;
     overflow: hidden;
+    background: white;
+  }
 
-    .playhead {
-      position: absolute;
-      pointer-events: none;
-      top: 0;
-      left: v-bind(playheadPosition);
-      height: 100%;
-      width: 1px;
-      background-color: #7474746e;
-    }
+  .waveform-canvas {
+    display: block;
+    cursor: pointer;
+  }
 
-    .control {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-    }
-
-    .peak {
-      position: relative;
-      display: block;
-      width: 2px;
-      background-color: #747474;
-      opacity: 0.5;
-      // height: calc(10% * attr(top));
-      border-radius: 0.1em;
-      pointer-events: none;
-
-      // &:nth-of-type(5n) {
-      //   &::after {
-      //     content: '';
-      //     display: block;
-      //     width: 1px;
-      //     height: 1000px;
-      //     background-color: rgba(0, 0, 0, 0.1);
-      //     position: absolute;
-      //     left: 0;
-      //     top: -500px;
-      //   }
-      // }
-
-      // &:nth-of-type(10n) {
-      //   &::after {
-      //     content: '';
-      //     display: block;
-      //     width: 2px;
-      //     height: 1000px;
-      //     background-color: rgba(0, 0, 0, 0.2);
-      //     position: absolute;
-      //     left: 0;
-      //     top: -500px;
-      //   }
-      // }
-    }
-
-    .annotation {
-      position: absolute;
-      height: 100%;
-      pointer-events: none;
-      // width: 1px;
-      // background: grey;
-
-      .timestamp {
-        position: absolute;
-        font-size: 0.7em;
-        bottom: 15px;
-        left: 0;
-        transform: translateX(-50%);
-        color: rgba(0, 0, 0, 0.4);
-        background: white;
-        z-index: 10;
-      }
-
-      &::after,
-      &::before {
-        content: '';
-        display: block;
-        width: 2px;
-        position: absolute;
-        top: 0;
-        height: 10px;
-        background-color: rgba(0, 0, 0, 0.1);
-      }
-
-      &::before {
-        bottom: 0;
-        top: auto;
-      }
-    }
+  .playhead {
+    position: absolute;
+    pointer-events: none;
+    top: 0;
+    left: v-bind(playheadPosition);
+    height: 100%;
+    width: 1px;
+    background-color: #7474746e;
   }
 }
 </style>
