@@ -31,6 +31,7 @@
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::prelude::*;
+use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use tauri::State;
@@ -45,6 +46,65 @@ pub struct SimplifiedPeaks {
     peaks: Vec<f32>,
     zoom: usize,
     original_length: usize,
+}
+
+fn to_legacy_peaks(peaks_data: proteus_lib::peaks::PeaksData) -> Vec<Vec<(f32, f32)>> {
+    peaks_data
+        .channels
+        .into_iter()
+        .map(|channel| {
+            channel
+                .into_iter()
+                .map(|window| (window.max, window.min))
+                .collect()
+        })
+        .collect()
+}
+
+fn peaks_duration_seconds(peaks_data: &proteus_lib::peaks::PeaksData) -> f64 {
+    if peaks_data.channels.is_empty() || peaks_data.sample_rate == 0 || peaks_data.window_size == 0 {
+        return 0.0;
+    }
+
+    let peak_count = peaks_data.channels[0].len() as f64;
+    let samples = peak_count * peaks_data.window_size as f64;
+    samples / peaks_data.sample_rate as f64
+}
+
+fn get_peaks_file_path(window: &Window, file_id: &str) -> String {
+    let app_cache = get_cache_dir(window).unwrap();
+    format!("{}/{}.peaks", app_cache, file_id)
+}
+
+fn ensure_peaks_file(window: &Window, file_id: &str) -> String {
+    let peaks_file_path = get_peaks_file_path(window, file_id);
+
+    if Path::new(&peaks_file_path).exists() {
+        return peaks_file_path;
+    }
+
+    let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
+    let project = project_state.lock().unwrap();
+    let file_path = project
+        .files
+        .iter()
+        .find(|f| f.id == file_id)
+        .unwrap()
+        .path
+        .clone();
+    drop(project);
+
+    proteus_lib::peaks::write_peaks(&file_path, &peaks_file_path)
+        .expect("failed to write .peaks file");
+
+    let peaks_data = proteus_lib::peaks::get_peaks(&peaks_file_path)
+        .expect("failed to read .peaks file after writing");
+    let peaks = to_legacy_peaks(peaks_data);
+
+    let app_cache = get_cache_dir(window).unwrap();
+    save_svgs_in_new_thread_for_each_zoom_level(peaks, format!("{}/{}.svg", app_cache, file_id));
+
+    peaks_file_path
 }
 
 pub fn simplify_peaks(peaks: Vec<Vec<(f32, f32)>>, zoom: usize) -> Vec<SimplifiedPeaks> {
@@ -96,67 +156,34 @@ pub fn simplify_peaks(peaks: Vec<Vec<(f32, f32)>>, zoom: usize) -> Vec<Simplifie
     simplified_peaks
 }
 
-#[tauri::command]
-pub fn get_json_peaks(
+pub fn get_cached_peaks(window: &Window, file_id: &str) -> Vec<Vec<(f32, f32)>> {
+    let peaks_file_path = ensure_peaks_file(window, file_id);
+    let peaks_data = proteus_lib::peaks::get_peaks(&peaks_file_path).expect("failed to read .peaks");
+    to_legacy_peaks(peaks_data)
+}
+
+pub fn get_cached_peaks_in_range(
     window: &Window,
-    file_id: &String,
-    peaks_option: Option<Vec<Vec<(f32, f32)>>>,
+    file_id: &str,
+    start_seconds: f64,
+    end_seconds: f64,
 ) -> Vec<Vec<(f32, f32)>> {
-    // let timer = std::time::Instant::now();
-    let app_cache = get_cache_dir(window).unwrap();
+    let peaks_file_path = ensure_peaks_file(window, file_id);
+    let peaks_data = proteus_lib::peaks::get_peaks_in_range(&peaks_file_path, start_seconds, end_seconds)
+        .expect("failed to read .peaks range");
+    to_legacy_peaks(peaks_data)
+}
 
-    println!("App Cache Dir: {}", app_cache);
+pub fn get_cached_peaks_for_full_duration(window: &Window, file_id: &str) -> Vec<Vec<(f32, f32)>> {
+    let peaks_file_path = ensure_peaks_file(window, file_id);
+    let full_peaks = proteus_lib::peaks::get_peaks(&peaks_file_path).expect("failed to read .peaks");
+    let end_seconds = peaks_duration_seconds(&full_peaks);
 
-    if peaks_option.is_some() {
-        // let timer = std::time::Instant::now();
-        let peaks = peaks_option.unwrap();
-        let mut peaks_file = File::create(format!("{}/{}.json", app_cache, file_id)).unwrap();
-
-        // let timer = std::time::Instant::now();
-        let peaks_json = serde_json::to_string(&peaks).unwrap();
-        peaks_file.write(peaks_json.as_bytes()).unwrap();
-
-        return peaks;
+    if end_seconds <= 0.0 {
+        return to_legacy_peaks(full_peaks);
     }
 
-    let peaks_file = File::open(format!("{}/{}.json", app_cache, file_id));
-
-    match peaks_file {
-        Ok(mut peaks_file) => {
-            // let timer = std::time::Instant::now();
-            let mut peaks_json = String::new();
-            // let timer = std::time::Instant::now();
-            peaks_file.read_to_string(&mut peaks_json).unwrap();
-            // let timer = std::time::Instant::now();
-            let peaks: Vec<Vec<(f32, f32)>> = serde_json::from_str(&peaks_json).unwrap();
-            return peaks;
-        }
-        Err(_) => {
-            let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
-
-            let project = project_state.lock().unwrap();
-            let file_path = project
-                .files
-                .iter()
-                .find(|f| f.id == *file_id)
-                .unwrap()
-                .path
-                .clone();
-
-            let peaks = proteus_lib::peaks::get_peaks(&file_path, true);
-
-            let peaks_json = serde_json::to_string(&peaks).unwrap();
-            let mut peaks_file = File::create(format!("{}/{}.json", app_cache, file_id)).unwrap();
-            peaks_file.write(peaks_json.as_bytes()).unwrap();
-
-            save_svgs_in_new_thread_for_each_zoom_level(
-                peaks.clone(),
-                format!("{}/{}.svg", app_cache, file_id),
-            );
-
-            return peaks;
-        }
-    }
+    get_cached_peaks_in_range(window, file_id, 0.0, end_seconds)
 }
 
 pub fn make_svg_from_peaks(peaks: Vec<Vec<(f32, f32)>>, height: u32) -> String {

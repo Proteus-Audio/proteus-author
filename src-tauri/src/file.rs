@@ -160,7 +160,7 @@ pub async fn register_file(
         push_file_id(track_id, file.id.clone(), project_state.clone());
 
         let peaks_start = std::time::Instant::now();
-        let _peaks = get_json_peaks(&window, &file.id, None);
+        let _peaks = get_cached_peaks(&window, &file.id);
         println!("Peaks took {}ms", peaks_start.elapsed().as_millis());
 
         Ok(FileInfoSkeleton {
@@ -179,7 +179,7 @@ pub async fn get_simplified_peaks(
     window: Window,
 ) -> Vec<SimplifiedPeaks> {
     let timer = std::time::Instant::now();
-    let peaks = get_json_peaks(&window, &file_id, None);
+    let peaks = get_cached_peaks_for_full_duration(&window, &file_id);
     let simplified_peaks = simplify_peaks(peaks, zoom);
     println!("Simplifying peaks took {}ms", timer.elapsed().as_millis());
 
@@ -188,9 +188,20 @@ pub async fn get_simplified_peaks(
 
 #[tauri::command]
 pub fn get_peaks(file_path: &str) -> Vec<Vec<(f32, f32)>> {
-    // let project = PROJECT.lock().unwrap();
+    let peaks_file_path = format!("{}.peaks", file_path);
+    if !Path::new(&peaks_file_path).exists() {
+        proteus_lib::peaks::write_peaks(file_path, &peaks_file_path)
+            .expect("failed to write .peaks file");
+    }
 
-    return proteus_lib::peaks::get_peaks(file_path, true);
+    let peaks_data =
+        proteus_lib::peaks::get_peaks(&peaks_file_path).expect("failed to read .peaks file");
+
+    peaks_data
+        .channels
+        .into_iter()
+        .map(|channel| channel.into_iter().map(|peak| (peak.max, peak.min)).collect())
+        .collect()
 }
 
 #[tauri::command]
