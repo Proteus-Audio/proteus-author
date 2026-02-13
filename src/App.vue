@@ -23,7 +23,10 @@
       </div>
 
       <aside class="app-meter">
-        <BaseLevelMeter vertical />
+        <div class="app-meter-inner">
+          <DigitalFader />
+          <BaseLevelMeter vertical />
+        </div>
       </aside>
     </div>
   </div>
@@ -38,6 +41,7 @@ import BaseContainer from './components/base/BaseContainer.vue'
 import BaseLevelMeter from './components/base/BaseLevelMeter.vue'
 import BaseTitle from './components/base/BaseTitle.vue'
 import BaseTransport from './components/base/BaseTransport.vue'
+import { DigitalFader } from './components/digital'
 import EffectRack from './components/effects/EffectRack.vue'
 import TrackBin from './components/track/TrackBin.vue'
 import UtilBase from './components/util/UtilBase.vue'
@@ -219,6 +223,13 @@ watch(
 )
 
 watch(
+  () => audio.followMode,
+  (enabled) => {
+    void invoke('set_follow_mode_menu', { enabled })
+  },
+)
+
+watch(
   () => audio.clock,
   (time) => {
     if (!audio.followMode) return
@@ -271,7 +282,7 @@ body {
 }
 
 #proteus-author {
-  --meter-width: 100px;
+  --meter-width: 154px;
   --effect-rack-height: v-bind(effectRackHeight);
 }
 
@@ -293,6 +304,12 @@ body {
   background: #f6f6f6;
   border-left: 1px solid #d8d8d8;
   transition: bottom 0.3s;
+}
+
+.app-meter-inner {
+  display: grid;
+  grid-template-columns: 54px 1fr;
+  height: 100%;
 }
 
 #effect-rack {

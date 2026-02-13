@@ -14,6 +14,7 @@ mod windows;
 use std::sync::{Arc, Mutex};
 
 use file::*;
+use menu::set_follow_mode_menu;
 use player::*;
 use project::*;
 use proteus_lib::playback::player::Player;
@@ -68,7 +69,8 @@ fn main() {
             get_levels_db,
             set_selections,
             set_volume,
-            set_effects_chain
+            set_effects_chain,
+            set_follow_mode_menu
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");

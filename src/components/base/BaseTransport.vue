@@ -8,9 +8,6 @@
     <el-button :icon="ZoomOut" @click="zoomOut" text :disabled="zoomOutDisabled"></el-button>
     <el-button :icon="Back" @click="panLeft" text>left</el-button>
     <el-button :icon="Right" @click="panRight" text>right</el-button>
-    <div class="volume-bin">
-      <el-slider v-model="volume" :show-tooltip="false" size="small" />
-    </div>
   </div>
 </template>
 
@@ -27,22 +24,10 @@ import {
   Back,
   Right,
 } from '@element-plus/icons-vue'
-import { toneMaster } from '../../assets/toneMaster'
-import { computed, ref } from 'vue'
-import { invoke } from '@tauri-apps/api/core'
+import { computed } from 'vue'
 
 const audio = useAudioStore()
 const track = useTrackStore()
-const volumeRef = ref(toneMaster.volume)
-
-const volume = computed({
-  get: () => volumeRef.value * 75,
-  set: (value: number) => {
-    volumeRef.value = value / 75
-    void invoke('set_volume', { volume: (value / 100) * 3 })
-    // toneMaster.setGain(value / 75)
-  },
-})
 
 const zoomInDisabled = computed(() => {
   return audio.getViewDuration <= 0.51
@@ -86,11 +71,7 @@ const panRight = () => audio.panViewRight(0.2)
   padding: 1em 0;
   text-align: right;
   display: grid;
-  grid-template-columns: 100px 100px 100px 50px 50px 70px 70px 1fr;
+  grid-template-columns: 100px 100px 100px 50px 50px 70px 70px;
   gap: 1em;
-  .volume-bin {
-    // width: calc(100% - 500px);
-    // display: inline-block;
-  }
 }
 </style>

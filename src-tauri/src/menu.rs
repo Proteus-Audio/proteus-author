@@ -1,7 +1,7 @@
 use serde::Serialize;
 use std::sync::{Arc, Mutex};
 use tauri::menu::{CheckMenuItem, Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
-use tauri::{AppHandle, Emitter, Manager, Runtime};
+use tauri::{AppHandle, Emitter, Manager, Runtime, State};
 
 const ID_ABOUT: &str = "about";
 const ID_NEW_WINDOW: &str = "new_window";
@@ -30,6 +30,31 @@ fn emit_to_main<R: Runtime, S: serde::Serialize>(app: &AppHandle<R>, event: &str
     for window in app.webview_windows().values() {
         let _ = window.emit(event, &payload);
     }
+}
+
+fn find_follow_menu_item<R: Runtime>(menu: &Menu<R>) -> Option<CheckMenuItem<R>> {
+    fn find_in_items<R: Runtime>(
+        items: Vec<tauri::menu::MenuItemKind<R>>,
+    ) -> Option<CheckMenuItem<R>> {
+        for item in items {
+            if item.id().as_ref() == ID_FOLLOW_MODE {
+                if let Some(check_item) = item.as_check_menuitem() {
+                    return Some(check_item.clone());
+                }
+            }
+
+            if let Some(submenu) = item.as_submenu() {
+                if let Ok(sub_items) = submenu.items() {
+                    if let Some(found) = find_in_items(sub_items) {
+                        return Some(found);
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    menu.items().ok().and_then(find_in_items)
 }
 
 pub fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
@@ -218,5 +243,23 @@ pub fn handle_menu_event<R: Runtime>(
                 enabled: *follow_mode,
             },
         );
+    }
+}
+
+#[tauri::command]
+pub fn set_follow_mode_menu(
+    enabled: bool,
+    app: AppHandle,
+    follow_mode_state: State<Arc<Mutex<bool>>>,
+) {
+    {
+        let mut follow_mode = follow_mode_state.lock().unwrap();
+        *follow_mode = enabled;
+    }
+
+    if let Some(menu) = app.menu() {
+        if let Some(check_item) = find_follow_menu_item(&menu) {
+            let _ = check_item.set_checked(enabled);
+        }
     }
 }
