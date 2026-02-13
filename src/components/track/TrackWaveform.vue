@@ -104,7 +104,7 @@ const drawWaveform = () => {
     ctx.beginPath()
     channel.forEach((peak, index) => {
       const x = index * stepX + stepX / 2
-      const amplitude = Math.min(Math.max(peak, 0), 1) * maxAmplitude
+      const amplitude = Math.min(Math.max(peak, 0.008), 1) * maxAmplitude
       ctx.moveTo(x, yMid - amplitude)
       ctx.lineTo(x, yMid + amplitude)
     })

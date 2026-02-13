@@ -4,6 +4,14 @@
     <el-button v-else :icon="VideoPause" @click="pause" text>pause</el-button>
     <el-button id="BaseTransportStop" :icon="Close" @click="stop" text>stop</el-button>
     <el-button id="BaseTransportShuffle" :icon="Refresh" @click="shuffle" text>shuffle</el-button>
+    <el-button
+      id="BaseTransportFollowMode"
+      @click="toggleFollowMode"
+      :type="audio.followMode ? 'primary' : 'default'"
+      plain
+    >
+      follow {{ audio.followMode ? 'on' : 'off' }}
+    </el-button>
     <el-button :icon="ZoomIn" @click="zoomIn" text :disabled="zoomInDisabled"></el-button>
     <el-button :icon="ZoomOut" @click="zoomOut" text :disabled="zoomOutDisabled"></el-button>
     <el-button :icon="Back" @click="panLeft" text>left</el-button>
@@ -58,6 +66,7 @@ const shuffle = () => {
   void track.shuffle()
 }
 
+const toggleFollowMode = () => audio.toggleFollowMode()
 const zoomIn = () => audio.zoomIn()
 const zoomOut = () => audio.zoomOut()
 const panLeft = () => audio.panViewLeft(0.2)
@@ -71,7 +80,7 @@ const panRight = () => audio.panViewRight(0.2)
   padding: 1em 0;
   text-align: right;
   display: grid;
-  grid-template-columns: 100px 100px 100px 50px 50px 70px 70px;
+  grid-template-columns: 100px 100px 100px 110px 50px 50px 70px 70px;
   gap: 1em;
 }
 </style>
