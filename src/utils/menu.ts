@@ -1,6 +1,6 @@
 import { app } from '@tauri-apps/api'
 import { invoke } from '@tauri-apps/api/core'
-import { Menu, MenuItem, PredefinedMenuItem, Submenu } from '@tauri-apps/api/menu'
+import { Menu, MenuItem, PredefinedMenuItem, Submenu, CheckMenuItem } from '@tauri-apps/api/menu'
 import { message } from '@tauri-apps/plugin-dialog'
 
 export const defaultMenu = async () => {
@@ -108,18 +108,60 @@ export const defaultMenu = async () => {
     text: 'Zoom In',
     id: 'zoom',
     accelerator: 'CmdOrCtrl+=',
+    action: () => {
+      window.dispatchEvent(new Event('MENU_ZOOM_IN'))
+    },
   })
 
   const zoomOut = await MenuItem.new({
     text: 'Zoom Out',
     id: 'zoom_out',
     accelerator: 'CmdOrCtrl+-',
+    action: () => {
+      window.dispatchEvent(new Event('MENU_ZOOM_OUT'))
+    },
+  })
+
+  const panLeft = await MenuItem.new({
+    text: 'Scroll Left',
+    id: 'scroll_left',
+    accelerator: 'Alt+Left',
+    action: () => {
+      window.dispatchEvent(new Event('MENU_PAN_LEFT'))
+    },
+  })
+
+  const panRight = await MenuItem.new({
+    text: 'Scroll Right',
+    id: 'scroll_right',
+    accelerator: 'Alt+Right',
+    action: () => {
+      window.dispatchEvent(new Event('MENU_PAN_RIGHT'))
+    },
+  })
+
+  const followMode = await CheckMenuItem.new({
+    text: 'Follow Mode',
+    id: 'follow_mode',
+    checked: false,
+    accelerator: 'Alt+F',
+    action: () => {
+      void (async () => {
+        const next = !(await followMode.isChecked())
+        await followMode.setChecked(next)
+        window.dispatchEvent(
+          new CustomEvent('MENU_FOLLOW_MODE', {
+            detail: { enabled: next },
+          }),
+        )
+      })()
+    },
   })
 
   const viewMenu = await Submenu.new({
     text: 'View',
     id: 'view',
-    items: [zoomIn, zoomOut],
+    items: [zoomIn, zoomOut, separator, panLeft, panRight, separator, followMode],
   })
 
   const minimize = await PredefinedMenuItem.new({ item: 'Minimize' })

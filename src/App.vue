@@ -60,6 +60,25 @@ const windowTitle = computed(() => {
 })
 
 const unlisteners = ref<UnlistenFn[]>([])
+const domUnlisteners: Array<() => void> = []
+
+const onMenuZoomIn = () => audio.zoomIn('x')
+const onMenuZoomOut = () => audio.zoomOut('x')
+const onMenuPanLeft = () => audio.panViewLeft(0.2)
+const onMenuPanRight = () => audio.panViewRight(0.2)
+const onMenuFollowMode = (event: Event) => {
+  const customEvent = event as CustomEvent<{ enabled?: boolean }>
+  const enabled = !!customEvent.detail?.enabled
+  audio.setFollowMode(enabled)
+}
+
+const registerDomListener = (
+  name: string,
+  handler: EventListenerOrEventListenerObject,
+) => {
+  window.addEventListener(name, handler)
+  domUnlisteners.push(() => window.removeEventListener(name, handler))
+}
 
 watch(
   [trackStore.tracks, audio.effects],
@@ -169,12 +188,19 @@ onMounted(async () => {
   console.log(await invoke('get_play_state'))
 
   await trackStore.sync()
+
+  registerDomListener('MENU_ZOOM_IN', onMenuZoomIn)
+  registerDomListener('MENU_ZOOM_OUT', onMenuZoomOut)
+  registerDomListener('MENU_PAN_LEFT', onMenuPanLeft)
+  registerDomListener('MENU_PAN_RIGHT', onMenuPanRight)
+  registerDomListener('MENU_FOLLOW_MODE', onMenuFollowMode)
 })
 
 onUnmounted(() => {
   unlisteners.value.forEach((unlistener) => {
     unlistener()
   })
+  domUnlisteners.forEach((unlisten) => unlisten())
 })
 
 watch(
@@ -189,6 +215,29 @@ watch(
   window.dispatchEvent(new Event('resize'))
   },
   { deep: true },
+)
+
+watch(
+  () => audio.clock,
+  (time) => {
+    if (!audio.followMode) return
+    if (!audio.isPlaying) return
+
+    const viewStart = audio.getViewStart
+    const viewEnd = audio.getViewEnd
+    const viewDuration = audio.getViewDuration
+
+    if (viewDuration <= 0) return
+    if (time < viewStart || time > viewEnd) return
+
+    const ratio = (time - viewStart) / viewDuration
+    if (ratio < 0.8) return
+
+    const targetPlayheadRatio = 0.35
+    const nextStart = time - viewDuration * targetPlayheadRatio
+    const nextEnd = nextStart + viewDuration
+    audio.setViewRange(nextStart, nextEnd)
+  },
 )
 </script>
 

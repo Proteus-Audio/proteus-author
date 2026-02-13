@@ -28,6 +28,7 @@ export const useAudioStore = defineStore('prot', () => {
   const duration = ref(0)
   const zoom = ref({ y: 1 })
   const view = ref({ start: 0, end: 10 })
+  const followMode = ref(true)
   const effects = ref([] as EffectChainItem[])
   const clock: Ref<number> = ref(0.0)
   const levelsDb = ref([-60, -60] as number[])
@@ -42,6 +43,7 @@ export const useAudioStore = defineStore('prot', () => {
   const watch = computed(() => ({
     playing: playing.value,
     view: view.value,
+    followMode: followMode.value,
     scale: scale.value,
   }))
   const getCurrentTime = computed((): number => currentTime.value)
@@ -148,12 +150,28 @@ export const useAudioStore = defineStore('prot', () => {
     clampViewRange(start, end)
   }
 
+  const setFollowMode = (enabled: boolean) => {
+    followMode.value = enabled
+  }
+
+  const toggleFollowMode = () => {
+    followMode.value = !followMode.value
+  }
+
   const panViewByFraction = (fraction: number) => {
     if (!Number.isFinite(fraction) || fraction === 0) return
     const span = getViewDuration.value
     if (span <= 0) return
     const shiftSeconds = span * fraction
     setViewRange(view.value.start + shiftSeconds, view.value.end + shiftSeconds)
+  }
+
+  const panViewLeft = (fraction = 0.2) => {
+    panViewByFraction(-Math.abs(fraction))
+  }
+
+  const panViewRight = (fraction = 0.2) => {
+    panViewByFraction(Math.abs(fraction))
   }
 
   const zoomView = (multiplier: number) => {
@@ -329,6 +347,7 @@ export const useAudioStore = defineStore('prot', () => {
     scale,
     zoom,
     view,
+    followMode,
     effects,
     effectsChain,
     effectsChainForBackend,
@@ -348,7 +367,11 @@ export const useAudioStore = defineStore('prot', () => {
     stop,
     setYScale,
     setViewRange,
+    setFollowMode,
+    toggleFollowMode,
     panViewByFraction,
+    panViewLeft,
+    panViewRight,
     zoomIn,
     zoomOut,
     setPlaying,

@@ -6,6 +6,8 @@
     <el-button id="BaseTransportShuffle" :icon="Refresh" @click="shuffle" text>shuffle</el-button>
     <el-button :icon="ZoomIn" @click="zoomIn" text :disabled="zoomInDisabled"></el-button>
     <el-button :icon="ZoomOut" @click="zoomOut" text :disabled="zoomOutDisabled"></el-button>
+    <el-button :icon="Back" @click="panLeft" text>left</el-button>
+    <el-button :icon="Right" @click="panRight" text>right</el-button>
     <div class="volume-bin">
       <el-slider v-model="volume" :show-tooltip="false" size="small" />
     </div>
@@ -15,7 +17,16 @@
 <script setup lang="ts">
 import { useAudioStore } from '../../stores/audio'
 import { useTrackStore } from '../../stores/track'
-import { VideoPlay, VideoPause, Close, Refresh, ZoomOut, ZoomIn } from '@element-plus/icons-vue'
+import {
+  VideoPlay,
+  VideoPause,
+  Close,
+  Refresh,
+  ZoomOut,
+  ZoomIn,
+  Back,
+  Right,
+} from '@element-plus/icons-vue'
 import { toneMaster } from '../../assets/toneMaster'
 import { computed, ref } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
@@ -64,6 +75,8 @@ const shuffle = () => {
 
 const zoomIn = () => audio.zoomIn()
 const zoomOut = () => audio.zoomOut()
+const panLeft = () => audio.panViewLeft(0.2)
+const panRight = () => audio.panViewRight(0.2)
 </script>
 
 <style lang="scss" scoped>
@@ -73,7 +86,7 @@ const zoomOut = () => audio.zoomOut()
   padding: 1em 0;
   text-align: right;
   display: grid;
-  grid-template-columns: 100px 100px 100px 50px 50px 1fr;
+  grid-template-columns: 100px 100px 100px 50px 50px 70px 70px 1fr;
   gap: 1em;
   .volume-bin {
     // width: calc(100% - 500px);
