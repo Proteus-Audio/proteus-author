@@ -58,11 +58,12 @@ export const useHeadStore = defineStore('head', () => {
     if (project) {
       setFileLocation(project.location || '')
       await track.sync()
-      track.setSelections()
       setPath(project.location || '')
       setName(project.name || '')
       audio.replaceEffects(project.effects || [])
       await invoke('init_player')
+      await invoke('set_selections')
+      await track.sync()
       await audio.setDuration()
     }
   }
@@ -71,6 +72,7 @@ export const useHeadStore = defineStore('head', () => {
     const tracks = track.tracks.map((t) => ({
       id: t.id,
       name: t.name,
+      selection: t.selection || undefined,
       file_ids: t.file_ids,
     })) as TrackSkeleton[]
 

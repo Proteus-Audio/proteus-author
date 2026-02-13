@@ -36,6 +36,7 @@ export interface ProjectHead {
 export interface TrackSkeleton {
   id: number
   name: string
+  selection?: string
   file_ids: string[]
 }
 
