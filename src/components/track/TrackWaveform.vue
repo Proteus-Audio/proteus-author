@@ -27,6 +27,7 @@ const canvasRef = ref<HTMLCanvasElement | null>(null)
 const overviewContainerRef = ref<HTMLDivElement | null>(null)
 const waveformChannels = ref<number[][]>([])
 const canvasWidthPx = ref(1)
+const FETCH_INTERVAL_MS = 33
 
 const viewDuration = computed(() => Math.max(audio.getViewDuration, 0.001))
 const verticalScale = computed(() => Math.max(audio.getYScale, 0.1))
@@ -50,18 +51,6 @@ const getTickStep = (secondsPerFrame: number): number => {
   const raw = secondsPerFrame / targetTicks
   const options = [0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600]
   return options.find((v) => v >= raw) || 600
-}
-
-const fetchWaveform = async () => {
-  const width = Math.max(overviewContainerRef.value?.clientWidth || 0, 1)
-  const targetPeaks = Math.max(Math.floor(width / 2), 64)
-
-  waveformChannels.value = await invoke<number[][]>('get_waveform_peaks', {
-    fileId: props.track.id,
-    startSeconds: audio.getViewStart,
-    endSeconds: audio.getViewEnd,
-    targetPeaks,
-  })
 }
 
 const drawWaveform = () => {
@@ -140,10 +129,66 @@ const drawWaveform = () => {
   }
 }
 
-const updateWaveform = async () => {
-  await fetchWaveform()
-  await nextTick()
-  drawWaveform()
+let updateTimer: number | null = null
+let updateQueued = false
+let updateInFlight = false
+let lastUpdateAt = 0
+let activeRequestId = 0
+
+const runWaveformUpdate = async () => {
+  if (updateInFlight) {
+    updateQueued = true
+    return
+  }
+
+  updateInFlight = true
+  const requestId = ++activeRequestId
+  lastUpdateAt = performance.now()
+
+  try {
+    const width = Math.max(overviewContainerRef.value?.clientWidth || 0, 1)
+    const targetPeaks = Math.max(Math.floor(width / 2), 64)
+
+    const channels = await invoke<number[][]>('get_waveform_peaks', {
+      fileId: props.track.id,
+      startSeconds: audio.getViewStart,
+      endSeconds: audio.getViewEnd,
+      targetPeaks,
+    })
+
+    // Drop stale responses if a newer request has already started.
+    if (requestId !== activeRequestId) return
+
+    waveformChannels.value = channels
+    await nextTick()
+    drawWaveform()
+  } finally {
+    updateInFlight = false
+    if (updateQueued) {
+      updateQueued = false
+      queueWaveformUpdate(false)
+    }
+  }
+}
+
+const queueWaveformUpdate = (immediate = false) => {
+  if (updateTimer !== null) {
+    if (!immediate) return
+    window.clearTimeout(updateTimer)
+    updateTimer = null
+  }
+
+  if (immediate) {
+    void runWaveformUpdate()
+    return
+  }
+
+  const elapsed = performance.now() - lastUpdateAt
+  const delay = elapsed >= FETCH_INTERVAL_MS ? 0 : FETCH_INTERVAL_MS - elapsed
+  updateTimer = window.setTimeout(() => {
+    updateTimer = null
+    void runWaveformUpdate()
+  }, delay)
 }
 
 const seek = (event: MouseEvent) => {
@@ -175,7 +220,7 @@ const onWheel = (event: WheelEvent) => {
 watch(
   () => [audio.getViewStart, audio.getViewEnd, props.track.id],
   () => {
-    void updateWaveform()
+    queueWaveformUpdate(false)
   },
 )
 
@@ -187,15 +232,19 @@ watch(
 )
 
 onMounted(() => {
-  void updateWaveform()
+  queueWaveformUpdate(true)
   window.addEventListener('resize', onResize)
 })
 
 const onResize = () => {
-  void updateWaveform()
+  queueWaveformUpdate(true)
 }
 
 onBeforeUnmount(() => {
+  if (updateTimer !== null) {
+    window.clearTimeout(updateTimer)
+    updateTimer = null
+  }
   window.removeEventListener('resize', onResize)
 })
 </script>
