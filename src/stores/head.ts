@@ -62,7 +62,8 @@ export const useHeadStore = defineStore('head', () => {
       setPath(project.location || '')
       setName(project.name || '')
       audio.replaceEffects(project.effects || [])
-      void invoke('init_player')
+      await invoke('init_player')
+      await audio.setDuration()
     }
   }
 

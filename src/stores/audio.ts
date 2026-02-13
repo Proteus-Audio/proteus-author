@@ -119,21 +119,26 @@ export const useAudioStore = defineStore('prot', () => {
       return
     }
 
-    let nextStart = Math.max(0, start)
-    let nextEnd = Math.min(timelineDuration, end)
-    let span = nextEnd - nextStart
+    const requestedSpan = Math.max(end - start, minSpan)
+    const span = Math.min(requestedSpan, timelineDuration)
+    const center = (start + end) / 2
 
-    if (span < minSpan) {
-      const mid = (nextStart + nextEnd) / 2
-      nextStart = Math.max(0, mid - minSpan / 2)
-      nextEnd = Math.min(timelineDuration, nextStart + minSpan)
-      nextStart = Math.max(0, nextEnd - minSpan)
-      span = nextEnd - nextStart
+    let nextStart = center - span / 2
+    let nextEnd = center + span / 2
+
+    if (nextStart < 0) {
+      nextEnd -= nextStart
+      nextStart = 0
     }
 
-    if (span > timelineDuration) {
-      nextStart = 0
+    if (nextEnd > timelineDuration) {
+      const overflow = nextEnd - timelineDuration
+      nextStart -= overflow
       nextEnd = timelineDuration
+    }
+
+    if (nextStart < 0) {
+      nextStart = 0
     }
 
     view.value = { start: nextStart, end: nextEnd }
@@ -155,7 +160,8 @@ export const useAudioStore = defineStore('prot', () => {
     const currentSpan = getViewDuration.value
     if (currentSpan <= 0) return
 
-    const anchor = Math.max(clock.value, 0)
+    const fallbackCenter = (view.value.start + view.value.end) / 2
+    const anchor = Number.isFinite(clock.value) ? Math.max(clock.value, 0) : fallbackCenter
     const nextSpan = currentSpan * multiplier
     const half = nextSpan / 2
     setViewRange(anchor - half, anchor + half)
@@ -174,13 +180,32 @@ export const useAudioStore = defineStore('prot', () => {
   }
 
   const setDuration = async () => {
+    let nextDuration = 0
     try {
-      duration.value = await invoke<number>('get_duration')
+      nextDuration = await invoke<number>('get_duration')
     } catch {
       await Tone.loaded()
-      duration.value = toneMaster.duration
+      nextDuration = toneMaster.duration
     }
-    setViewRange(0, duration.value)
+
+    duration.value = nextDuration
+
+    if (duration.value > 0) {
+      const currentSpan = getViewDuration.value
+      if (
+        currentSpan <= 0 ||
+        view.value.start < 0 ||
+        view.value.end > duration.value ||
+        currentSpan > duration.value
+      ) {
+        setViewRange(0, duration.value)
+      }
+      return
+    }
+
+    if (getViewDuration.value <= 0) {
+      setViewRange(0, 10)
+    }
   }
 
   const syncEffects = async () => {
