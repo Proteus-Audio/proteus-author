@@ -76,7 +76,6 @@ import { type DragDropEvent, Window } from '@tauri-apps/api/window'
 import { open } from '@tauri-apps/plugin-dialog'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useAlertStore } from '../../stores/alerts'
-import { useAudioStore } from '../../stores/audio'
 import { useTrackStore } from '../../stores/track'
 import type { DropFileSkeleton } from '../../typings/tracks'
 import BaseLoadingSpinner from '../base/BaseLoadingSpinner.vue'
@@ -94,7 +93,6 @@ const unlisten: UnlistenFn[] = []
 const props = defineProps<Props>()
 
 const trackStore = useTrackStore()
-const audio = useAudioStore()
 const alerts = useAlertStore()
 const bin = ref<HTMLElement | null>(null)
 

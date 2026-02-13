@@ -2,10 +2,8 @@ import { invoke } from '@tauri-apps/api/core'
 import { assignIn, sample } from 'lodash'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { toneMaster } from '../assets/toneMaster'
-import type { ProjectSkeleton, TrackSkeleton } from '../typings/proteus'
-import type { SelectionMap } from '../typings/tone'
-import type { DropFile, DropFileSkeleton, Track, TrackFile } from '../typings/tracks'
+import type { ProjectSkeleton } from '../typings/proteus'
+import type { DropFileSkeleton, Track, TrackFile } from '../typings/tracks'
 import { useAudioStore } from './audio'
 import { useHeadStore } from './head'
 
@@ -19,7 +17,6 @@ export const useTrackStore = defineStore('track', () => {
 
   const tracks = ref([] as Track[])
   const files = ref([] as DropFileSkeleton[])
-  const initialised = ref(true)
 
   /////////////
   // GETTERS //
@@ -86,58 +83,11 @@ export const useTrackStore = defineStore('track', () => {
     return files.value.find((file) => file.id === fileId)
   }
 
-  function replaceTracksFromLoad(trackSkeletons: TrackSkeleton[]) {
-    const buildTracks: Track[] = []
-    toneMaster.clear()
-
-    for (let i = 0; i < trackSkeletons.length; i++) {
-      const skeleton = trackSkeletons[i]
-      const track: Track = {
-        id: skeleton.id,
-        name: skeleton.name,
-        file_ids: [],
-      }
-
-      // const players: ToneTrackPlayer[] = []
-      // for (let j = 0; j < skeleton.files.length; j++) {
-      //   const f = skeleton.files[j]
-      //   track.files.push({ ...f, parentId: track.id })
-
-      //   const fileSrc = convertFileSrc(f.path)
-
-      //   const buffer = await getAudioBuffer(fileSrc)
-
-      //   players.push({
-      //     id: f.id,
-      //     name: f.name,
-      //     selected: f.id === track.selection,
-      //     tone: new Player(buffer),
-      //   })
-      // }
-
-      // toneMaster.addTrack({ id: track.id, name: track.name, players })
-      buildTracks.push(track)
-    }
-
-    void audio.setDuration()
-    tracks.value = buildTracks
-  }
-
-  // function nextFileId(track: number | Track): number {
-  //   const files = typeof track === 'number' ? getTrackFromId(track)?.files : track.files
-  //   let highest = 0
-  //   ;(files || []).forEach((file) => {
-  //     if (file.id > highest) highest = file.id
-  //   })
-  //   return highest + 1
-  // }
-
   function addTrack(track: Track): Track {
     if (tracks.value.some((t) => t.id === track.id)) {
       track.id = nextTrackId.value
     }
 
-    toneMaster.addToneTrackFromTrack(track)
     tracks.value.push(track)
 
     void audio.setDuration()
@@ -160,23 +110,8 @@ export const useTrackStore = defineStore('track', () => {
   const shuffleTrackBin = async (trackId: number, index?: number) => {
     const playing = audio.isPlaying
     if (playing) await audio.pause()
-    const selection = setTrackSelection(trackId, index) || ''
-    toneMaster.setTrackSelection(trackId, selection)
+    setTrackSelection(trackId, index)
     if (playing) await audio.play()
-  }
-
-  const setSelections = () => {
-    const selectionMap: SelectionMap = []
-    tracks.value.forEach((track, i) => {
-      selectionMap.push([track.id, setTrackSelection(track.id, i)])
-    })
-    toneMaster.setSelections(selectionMap)
-  }
-
-  const getTrackSelection = (trackId: number): string | undefined => {
-    const index = tracks.value.findIndex((v) => v.id === trackId)
-    const selectionId = tracks.value[index].selection
-    return tracks.value[index].file_ids.find((id) => id === selectionId)
   }
 
   const setTrackSelection = (trackId: number, index?: number): string | undefined => {
@@ -185,26 +120,6 @@ export const useTrackStore = defineStore('track', () => {
     const selection = sample(options)
     tracks.value[index].selection = selection
     return selection
-  }
-
-  const addFileToTrack = (files: DropFile | DropFile[], trackId: number) => {
-    void files
-    void trackId
-    // const index = tracks.value.findIndex((v) => v.id === trackId)
-    // if (!Array.isArray(files)) files = [files]
-    // files.forEach((file) => {
-    //   const trackFile: TrackFile = assignIn(file, {
-    //     id: nextFileId(tracks.value[index]),
-    //     parentId: trackId,
-    //   })
-    //   tracks.value[index].files.push(trackFile)
-    //   toneMaster.addPlayer(trackId, {
-    //     id: trackFile.id,
-    //     selected: false,
-    //     name: trackFile.name,
-    //     tone: new Player(`file://${trackFile.path}`),
-    //   })
-    // })
   }
 
   const addFileToTrackBinary = (files: DropFileSkeleton | DropFileSkeleton[], trackId: number) => {
@@ -216,14 +131,6 @@ export const useTrackStore = defineStore('track', () => {
       const trackFile: TrackFile = assignIn(file, {
         parentId: trackId,
       })
-      // const audioBuffer = await context.decodeAudioData(file.data.buffer)
-      // console.log(audioBuffer, trackFile.id)
-      // toneMaster.addPlayer(trackId, {
-      //   id: trackFile.id,
-      //   selected: false,
-      //   name: trackFile.name,
-      //   tone: new Player(audioBuffer),
-      // })
       tracks.value[index].file_ids.push(trackFile.id)
     }
 
@@ -257,7 +164,6 @@ export const useTrackStore = defineStore('track', () => {
   return {
     tracks,
     files,
-    initialised,
     allTracks,
     nextTrackId,
     emptyTrackExists,
@@ -269,15 +175,11 @@ export const useTrackStore = defineStore('track', () => {
     getOrCreateTrackFromId,
     setTrackName,
     clearTracks,
-    replaceTracksFromLoad,
     addTrack,
     addEmptyTrackIfNone,
-    addFileToTrack,
     addFileToTrackBinary,
     shuffle,
     shuffleTrackBin,
-    setSelections,
-    getTrackSelection,
     setTrackSelection,
     removeFileFromTrack,
     sync,

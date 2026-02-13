@@ -1,7 +1,16 @@
 <template>
   <div class="track">
-    <div ref="overviewContainerRef" :id="`overview-container-${identifier}`" class="overview-container">
-      <canvas ref="canvasRef" class="waveform-canvas" @click="seek" @wheel.prevent="onWheel"></canvas>
+    <div
+      ref="overviewContainerRef"
+      :id="`overview-container-${identifier}`"
+      class="overview-container"
+    >
+      <canvas
+        ref="canvasRef"
+        class="waveform-canvas"
+        @click="seek"
+        @wheel.prevent="onWheel"
+      ></canvas>
       <div class="playhead"></div>
     </div>
   </div>

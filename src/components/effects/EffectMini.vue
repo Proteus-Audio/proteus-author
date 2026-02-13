@@ -1,6 +1,8 @@
 <template>
   <div class="fx-icon" @click.stop="toggleEdit">
-    <button class="effect-drag-handle" type="button" aria-label="Drag effect" @click.stop>|||</button>
+    <button class="effect-drag-handle" type="button" aria-label="Drag effect" @click.stop>
+      |||
+    </button>
     <div class="fx-indicator">
       <AnalogIndicator size="small" :state="true" :color="enabled ? 'green' : 'red'" />
     </div>

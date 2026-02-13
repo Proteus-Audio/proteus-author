@@ -50,10 +50,6 @@ export const useAppShortcuts = () => {
 
     if (e.key === ' ') {
       e.preventDefault()
-      if (!audio.isPlaying && !track.initialised) {
-        window.dispatchEvent(new Event('resize'))
-        track.initialised = true
-      }
       void audio.playPause()
     }
 

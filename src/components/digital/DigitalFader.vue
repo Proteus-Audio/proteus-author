@@ -97,8 +97,8 @@ const onCapPointerDown = (event: PointerEvent) => {
 
 onMounted(async () => {
   await refreshFromBackend()
-  removePlayerChangedListener = await listen('PLAYER_CHANGED', async () => {
-    await refreshFromBackend()
+  removePlayerChangedListener = await listen('PLAYER_CHANGED', () => {
+    void refreshFromBackend()
   })
 })
 

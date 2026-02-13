@@ -3,7 +3,6 @@
     <Teleport to="head">
       <title>Proteus Author - {{ windowTitle }}</title>
     </Teleport>
-    <UtilBase />
     <div class="app-layout">
       <div class="app-main">
         <BaseContainer>
@@ -44,7 +43,7 @@ import BaseTransport from './components/base/BaseTransport.vue'
 import { DigitalFader } from './components/digital'
 import EffectRack from './components/effects/EffectRack.vue'
 import TrackBin from './components/track/TrackBin.vue'
-import UtilBase from './components/util/UtilBase.vue'
+import { useAppShortcuts } from './composables/useAppShortcuts'
 import { useAlertStore } from './stores/alerts'
 import { useAudioStore } from './stores/audio'
 import { useHeadStore } from './stores/head'
@@ -56,6 +55,7 @@ const head = useHeadStore()
 const trackStore = useTrackStore()
 const audio = useAudioStore()
 const alerts = useAlertStore()
+const { registerShortcuts, unregisterShortcuts } = useAppShortcuts()
 
 const windowTitle = computed(() => {
   return head.name.replace('.protproject', '')
@@ -118,6 +118,7 @@ const effectRackHover = useElementHover(effectRackRef)
 const effectRackHeight = computed(() => (effectRackHover.value ? `7rem` : `5rem`))
 
 onMounted(async () => {
+  registerShortcuts()
   // listen to the `click` event and get a function to remove the event listener
   // there's also a `once` function that subscribes to an event and automatically unsubscribes the listener on the first event
   const fileLoaded = await listen('FILE_LOADED', (event) => {
@@ -213,6 +214,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  unregisterShortcuts()
   unlisteners.value.forEach((unlistener) => {
     unlistener()
   })
@@ -227,7 +229,7 @@ watch(
 watch(
   () => audio.zoom,
   () => {
-  window.dispatchEvent(new Event('resize'))
+    window.dispatchEvent(new Event('resize'))
   },
   { deep: true },
 )

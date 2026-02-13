@@ -1,6 +1,5 @@
 import { invoke } from '@tauri-apps/api/core'
 import { defineStore } from 'pinia'
-import * as Tone from 'tone'
 import { computed, type Ref, ref, watch as vueWatch } from 'vue'
 import {
   createEffect,
@@ -9,7 +8,6 @@ import {
   getEffectLabel,
   serializeEffectChainForBackend,
 } from '../assets/effects'
-import { toneMaster } from '../assets/toneMaster'
 import type { AudioEffectPayload, AudioEffectType } from '../typings/effects'
 import { useAlertStore } from './alerts'
 import { useTrackStore } from './track'
@@ -112,7 +110,7 @@ export const useAudioStore = defineStore('prot', () => {
     const minSpan = timelineDuration > 0 ? Math.min(0.5, timelineDuration) : 0.5
 
     if (timelineDuration <= 0) {
-      let nextStart = Math.max(0, start)
+      const nextStart = Math.max(0, start)
       let nextEnd = Math.max(end, nextStart + minSpan)
       if (nextEnd - nextStart < minSpan) {
         nextEnd = nextStart + minSpan
@@ -202,8 +200,7 @@ export const useAudioStore = defineStore('prot', () => {
     try {
       nextDuration = await invoke<number>('get_duration')
     } catch {
-      await Tone.loaded()
-      nextDuration = toneMaster.duration
+      nextDuration = 0
     }
 
     duration.value = nextDuration

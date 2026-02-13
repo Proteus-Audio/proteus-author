@@ -48,10 +48,6 @@ const zoomOutDisabled = computed(() => {
 
 const play = () => {
   void audio.play()
-  // if (!track.initialised) {
-  //   window.dispatchEvent(new Event('resize'))
-  //   track.initialised = true
-  // }
 }
 
 const pause = () => {
