@@ -27,7 +27,9 @@ const canvasRef = ref<HTMLCanvasElement | null>(null)
 const overviewContainerRef = ref<HTMLDivElement | null>(null)
 const waveformChannels = ref<number[][]>([])
 const canvasWidthPx = ref(1)
-const FETCH_INTERVAL_MS = 33
+const MIN_FETCH_INTERVAL_MS = 16
+const MAX_FETCH_INTERVAL_MS = 72
+const ADAPTIVE_INTERVAL_SMOOTHING = 0.25
 
 const viewDuration = computed(() => Math.max(audio.getViewDuration, 0.001))
 const verticalScale = computed(() => Math.max(audio.getYScale, 0.1))
@@ -134,6 +136,11 @@ let updateQueued = false
 let updateInFlight = false
 let lastUpdateAt = 0
 let activeRequestId = 0
+let adaptiveFetchIntervalMs = 33
+
+const clamp = (value: number, min: number, max: number) => {
+  return Math.min(Math.max(value, min), max)
+}
 
 const runWaveformUpdate = async () => {
   if (updateInFlight) {
@@ -141,9 +148,10 @@ const runWaveformUpdate = async () => {
     return
   }
 
+  const updateStartedAt = performance.now()
   updateInFlight = true
   const requestId = ++activeRequestId
-  lastUpdateAt = performance.now()
+  lastUpdateAt = updateStartedAt
 
   try {
     const width = Math.max(overviewContainerRef.value?.clientWidth || 0, 1)
@@ -163,6 +171,12 @@ const runWaveformUpdate = async () => {
     await nextTick()
     drawWaveform()
   } finally {
+    const elapsed = performance.now() - updateStartedAt
+    const targetInterval = clamp(elapsed * 0.9, MIN_FETCH_INTERVAL_MS, MAX_FETCH_INTERVAL_MS)
+    adaptiveFetchIntervalMs =
+      adaptiveFetchIntervalMs * (1 - ADAPTIVE_INTERVAL_SMOOTHING) +
+      targetInterval * ADAPTIVE_INTERVAL_SMOOTHING
+
     updateInFlight = false
     if (updateQueued) {
       updateQueued = false
@@ -184,7 +198,7 @@ const queueWaveformUpdate = (immediate = false) => {
   }
 
   const elapsed = performance.now() - lastUpdateAt
-  const delay = elapsed >= FETCH_INTERVAL_MS ? 0 : FETCH_INTERVAL_MS - elapsed
+  const delay = elapsed >= adaptiveFetchIntervalMs ? 0 : adaptiveFetchIntervalMs - elapsed
   updateTimer = window.setTimeout(() => {
     updateTimer = null
     void runWaveformUpdate()
