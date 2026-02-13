@@ -2,7 +2,6 @@
   <div class="track">
     <div
       ref="overviewContainerRef"
-      :style="`width:${canvasWidth};`"
       :id="`overview-container-${identifier}`"
       class="overview-container"
     >
@@ -39,13 +38,6 @@ const overviewContainerRef = ref<HTMLDivElement | null>(null)
 const simplifiedPeaks = ref([] as SimplifiedPeaks[])
 
 const peaksLength = computed(() => simplifiedPeaks.value[0]?.peaks.length || 0)
-
-const canvasWidthPx = computed(() => {
-  const width = peaksLength.value * 2
-  return width > 0 ? width : 1
-})
-
-const canvasWidth = computed(() => `${canvasWidthPx.value}px`)
 
 const zoomLevel = computed(() => {
   if (peaksLength.value === 0) return 1
@@ -99,7 +91,7 @@ const drawWaveform = () => {
   const ctx = canvas.getContext('2d')
   if (!ctx) return
 
-  const width = canvasWidthPx.value
+  const width = Math.max(container.clientWidth, 1)
   const height = Math.max(container.clientHeight, 150)
   const dpr = window.devicePixelRatio || 1
 
@@ -130,6 +122,7 @@ const drawWaveform = () => {
 
     channel.peaks.forEach((peak, index) => {
       const x = index * 2 + 1
+      if (x > width) return
       const amplitude = Math.min(Math.max(peak, 0), 1) * maxAmplitude
       ctx.moveTo(x, yMid - amplitude)
       ctx.lineTo(x, yMid + amplitude)
@@ -147,6 +140,7 @@ const drawWaveform = () => {
     if (!annotate(i)) continue
 
     const x = (i - 1) * 2
+    if (x > width) break
     ctx.beginPath()
     ctx.moveTo(x, 0)
     ctx.lineTo(x, 10)

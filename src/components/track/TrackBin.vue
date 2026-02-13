@@ -2,7 +2,7 @@
   <div
     class="track-bin"
     :class="{ drag: hovering, loading, clickable: fresh }"
-    :style="`min-width: ${width}; ${padding}`"
+    :style="padding"
     @click="
       () => {
         if (fresh) openFiles()
@@ -99,10 +99,6 @@ const alerts = useAlertStore()
 const bin = ref<HTMLElement | null>(null)
 
 const track = computed(() => trackStore.getOrCreateTrackFromId(props.trackId))
-
-const width = computed((): string => {
-  return audio.duration === 0 ? '100%' : `${audio.zoom.x * audio.duration + 30}px`
-})
 
 const padding = computed((): string => {
   return track.value.file_ids.length > 0 ? '' : 'margin: 0;'
@@ -244,6 +240,9 @@ onUnmounted(() => {
 }
 
 .track-bin {
+  box-sizing: border-box;
+  width: 100%;
+  overflow: hidden;
   background: rgba(0, 0, 0, 0.1);
   padding: 1em;
   margin-bottom: 0.5em;

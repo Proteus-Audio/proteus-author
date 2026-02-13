@@ -14,7 +14,9 @@
           </el-affix>
 
           <div class="bin-container">
-            <TrackBin v-for="track in trackStore.tracks" :track-id="track.id" :key="track.id" />
+            <div class="bin-strip" :style="`min-width: ${timelineWidth}`">
+              <TrackBin v-for="track in trackStore.tracks" :track-id="track.id" :key="track.id" />
+            </div>
           </div>
           <div class="padding"></div>
         </BaseContainer>
@@ -58,6 +60,9 @@ const menu = useMenuStore()
 const windowTitle = computed(() => {
   return head.name.replace('.protproject', '')
 })
+const timelineWidth = computed(() =>
+  audio.duration === 0 ? '100%' : `${audio.zoom.x * audio.duration + 30}px`,
+)
 
 const unlisteners = ref<UnlistenFn[]>([])
 
@@ -206,8 +211,13 @@ body {
 
 .bin-container {
   width: 100%;
-  overflow-x: scroll;
+  overflow-x: auto;
+  overflow-y: hidden;
   border-radius: 0.5em;
+}
+
+.bin-strip {
+  width: 100%;
 }
 
 #proteus-author {
