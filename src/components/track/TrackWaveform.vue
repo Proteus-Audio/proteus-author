@@ -91,6 +91,8 @@ const drawWaveform = () => {
   const channels = waveformChannels.value
   const channelCount = Math.max(channels.length, 1)
   const channelHeight = height / channelCount
+  const yScale = Number(verticalScale.value)
+  const minPeak = 0.008
 
   ctx.strokeStyle = 'rgba(116, 116, 116, 0.6)'
   ctx.lineWidth = 1
@@ -105,7 +107,9 @@ const drawWaveform = () => {
     ctx.beginPath()
     channel.forEach((peak, index) => {
       const x = index * stepX + stepX / 2
-      const amplitude = Math.min(Math.max(peak, 0.008), 1) * maxAmplitude * verticalScale.value
+      peak = yScale * peak
+      const normalizedPeak = peak < minPeak ? minPeak : peak > 1 ? 1 : peak
+      const amplitude = normalizedPeak * maxAmplitude
       ctx.moveTo(x, yMid - amplitude)
       ctx.lineTo(x, yMid + amplitude)
     })
