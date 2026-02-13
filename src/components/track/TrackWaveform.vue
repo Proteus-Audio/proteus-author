@@ -1,10 +1,6 @@
 <template>
   <div class="track">
-    <div
-      ref="overviewContainerRef"
-      :id="`overview-container-${identifier}`"
-      class="overview-container"
-    >
+    <div ref="overviewContainerRef" :id="`overview-container-${identifier}`" class="overview-container">
       <canvas ref="canvasRef" class="waveform-canvas" @click="seek"></canvas>
       <div class="playhead"></div>
     </div>
@@ -22,12 +18,6 @@ interface Props {
   selected: boolean
 }
 
-interface SimplifiedPeaks {
-  peaks: number[]
-  zoom: number
-  original_length: number
-}
-
 const audio = useAudioStore()
 const props = defineProps<Props>()
 
@@ -35,58 +25,48 @@ const identifier = computed(() => `${props.track.parentId}-${props.track.id}`)
 
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 const overviewContainerRef = ref<HTMLDivElement | null>(null)
-const simplifiedPeaks = ref([] as SimplifiedPeaks[])
+const waveformChannels = ref<number[][]>([])
+const canvasWidthPx = ref(1)
 
-const peaksLength = computed(() => simplifiedPeaks.value[0]?.peaks.length || 0)
-
-const zoomLevel = computed(() => {
-  if (peaksLength.value === 0) return 1
-  const originalLength = simplifiedPeaks.value[0]?.original_length || peaksLength.value
-  const factor = originalLength / peaksLength.value
-  return factor === 0 ? 1 : 100 / factor
-})
-
-const annotate = (index: number): boolean => {
-  const zoom = zoomLevel.value
-
-  let toAnnotate = false
-
-  const setToAnnotate = (division: number) => {
-    toAnnotate = Math.floor(index % (zoom * division)) === 0
-  }
-
-  if (zoom <= 3) setToAnnotate(30)
-  else if (zoom <= 5) setToAnnotate(10)
-  else if (zoom <= 15) setToAnnotate(5)
-  else if (zoom <= 25) setToAnnotate(3)
-  else if (zoom <= 100) setToAnnotate(2)
-  else setToAnnotate(1)
-
-  return toAnnotate
-}
-
-const getAnnotation = (index: number): string => {
-  const seconds = index / zoomLevel.value
-  return new Date(seconds * 1000).toISOString().slice(14, 19)
-}
+const viewDuration = computed(() => Math.max(audio.getViewDuration, 0.001))
 
 const playheadPosition = computed(() => {
-  const factor = audio.clock * zoomLevel.value * 2
-  return `${factor}px`
+  const width = canvasWidthPx.value
+  const ratio = (audio.clock - audio.getViewStart) / viewDuration.value
+  const x = Math.min(Math.max(ratio * width, 0), width)
+  return `${x}px`
 })
 
-const getSimplifiedPeaks = async () => {
-  return invoke<SimplifiedPeaks[]>('get_simplified_peaks', {
+const formatTimestamp = (seconds: number): string => {
+  const total = Math.max(0, Math.floor(seconds))
+  const mins = Math.floor(total / 60)
+  const secs = total % 60
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+}
+
+const getTickStep = (secondsPerFrame: number): number => {
+  const targetTicks = 8
+  const raw = secondsPerFrame / targetTicks
+  const options = [0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600]
+  return options.find((v) => v >= raw) || 600
+}
+
+const fetchWaveform = async () => {
+  const width = Math.max(overviewContainerRef.value?.clientWidth || 0, 1)
+  const targetPeaks = Math.max(Math.floor(width / 2), 64)
+
+  waveformChannels.value = await invoke<number[][]>('get_waveform_peaks', {
     fileId: props.track.id,
-    zoom: audio.zoom.x,
+    startSeconds: audio.getViewStart,
+    endSeconds: audio.getViewEnd,
+    targetPeaks,
   })
 }
 
 const drawWaveform = () => {
   const canvas = canvasRef.value
   const container = overviewContainerRef.value
-
-  if (!canvas || !container || peaksLength.value === 0) return
+  if (!canvas || !container) return
 
   const ctx = canvas.getContext('2d')
   if (!ctx) return
@@ -95,6 +75,7 @@ const drawWaveform = () => {
   const height = Math.max(container.clientHeight, 150)
   const dpr = window.devicePixelRatio || 1
 
+  canvasWidthPx.value = width
   canvas.width = Math.floor(width * dpr)
   canvas.height = Math.floor(height * dpr)
   canvas.style.width = `${width}px`
@@ -106,7 +87,7 @@ const drawWaveform = () => {
   ctx.fillStyle = 'white'
   ctx.fillRect(0, 0, width, height)
 
-  const channels = simplifiedPeaks.value
+  const channels = waveformChannels.value
   const channelCount = Math.max(channels.length, 1)
   const channelHeight = height / channelCount
 
@@ -114,46 +95,48 @@ const drawWaveform = () => {
   ctx.lineWidth = 1
 
   channels.forEach((channel, channelIndex) => {
+    if (channel.length === 0) return
     const yTop = channelIndex * channelHeight
     const yMid = yTop + channelHeight / 2
     const maxAmplitude = channelHeight / 2 - 2
+    const stepX = width / channel.length
 
     ctx.beginPath()
-
-    channel.peaks.forEach((peak, index) => {
-      const x = index * 2 + 1
-      if (x > width) return
+    channel.forEach((peak, index) => {
+      const x = index * stepX + stepX / 2
       const amplitude = Math.min(Math.max(peak, 0), 1) * maxAmplitude
       ctx.moveTo(x, yMid - amplitude)
       ctx.lineTo(x, yMid + amplitude)
     })
-
     ctx.stroke()
   })
+
+  const start = audio.getViewStart
+  const end = audio.getViewEnd
+  const span = Math.max(end - start, 0.001)
+  const tickStep = getTickStep(span)
+  const firstTick = Math.ceil(start / tickStep) * tickStep
 
   ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)'
   ctx.fillStyle = 'rgba(0, 0, 0, 0.4)'
   ctx.font = '11px Silkscreen, Segoe UI, Tahoma, Geneva, Verdana, sans-serif'
   ctx.textAlign = 'center'
 
-  for (let i = 1; i <= peaksLength.value; i++) {
-    if (!annotate(i)) continue
-
-    const x = (i - 1) * 2
-    if (x > width) break
+  for (let tick = firstTick; tick <= end; tick += tickStep) {
+    const ratio = (tick - start) / span
+    const x = ratio * width
     ctx.beginPath()
     ctx.moveTo(x, 0)
     ctx.lineTo(x, 10)
     ctx.moveTo(x, height)
     ctx.lineTo(x, height - 10)
     ctx.stroke()
-
-    ctx.fillText(getAnnotation(i), x, height - 15)
+    ctx.fillText(formatTimestamp(tick), x, height - 15)
   }
 }
 
-const updateSimplifiedPeaks = async () => {
-  simplifiedPeaks.value = await getSimplifiedPeaks()
+const updateWaveform = async () => {
+  await fetchWaveform()
   await nextTick()
   drawWaveform()
 }
@@ -164,31 +147,29 @@ const seek = (event: MouseEvent) => {
 
   const rect = canvas.getBoundingClientRect()
   const x = event.clientX - rect.left
-  const seconds = x / zoomLevel.value / 2
+  const ratio = x / Math.max(rect.width, 1)
+  const seconds = audio.getViewStart + ratio * viewDuration.value
   void audio.seek(seconds)
 }
 
 watch(
-  () => audio.zoom.x,
+  () => [audio.getViewStart, audio.getViewEnd, props.track.id],
   () => {
-    void updateSimplifiedPeaks()
-  },
-)
-
-watch(
-  () => props.track.id,
-  () => {
-    void updateSimplifiedPeaks()
+    void updateWaveform()
   },
 )
 
 onMounted(() => {
-  void updateSimplifiedPeaks()
-  window.addEventListener('resize', drawWaveform)
+  void updateWaveform()
+  window.addEventListener('resize', onResize)
 })
 
+const onResize = () => {
+  void updateWaveform()
+}
+
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', drawWaveform)
+  window.removeEventListener('resize', onResize)
 })
 </script>
 

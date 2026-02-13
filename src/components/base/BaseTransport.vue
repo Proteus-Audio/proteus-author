@@ -4,8 +4,8 @@
     <el-button v-else :icon="VideoPause" @click="pause" text>pause</el-button>
     <el-button id="BaseTransportStop" :icon="Close" @click="stop" text>stop</el-button>
     <el-button id="BaseTransportShuffle" :icon="Refresh" @click="shuffle" text>shuffle</el-button>
-    <el-button :icon="ZoomIn" @click="zoomIn" text :disabled="audio.zoom.x === 20"></el-button>
-    <el-button :icon="ZoomOut" @click="zoomOut" text :disabled="audio.zoom.x === 1"></el-button>
+    <el-button :icon="ZoomIn" @click="zoomIn" text :disabled="zoomInDisabled"></el-button>
+    <el-button :icon="ZoomOut" @click="zoomOut" text :disabled="zoomOutDisabled"></el-button>
     <div class="volume-bin">
       <el-slider v-model="volume" :show-tooltip="false" size="small" />
     </div>
@@ -31,6 +31,16 @@ const volume = computed({
     void invoke('set_volume', { volume: (value / 100) * 3 })
     // toneMaster.setGain(value / 75)
   },
+})
+
+const zoomInDisabled = computed(() => {
+  if (audio.duration <= 0) return true
+  return audio.getViewDuration <= 0.51
+})
+
+const zoomOutDisabled = computed(() => {
+  if (audio.duration <= 0) return true
+  return audio.getViewDuration >= audio.duration - 0.01
 })
 
 const play = () => {

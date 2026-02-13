@@ -26,7 +26,8 @@ export const useAudioStore = defineStore('prot', () => {
   const currentTime = ref(0)
   const scale = ref(20 as number)
   const duration = ref(0)
-  const zoom = ref({ y: 1, x: 10 })
+  const zoom = ref({ y: 1 })
+  const view = ref({ start: 0, end: 10 })
   const effects = ref([] as EffectChainItem[])
   const clock: Ref<number> = ref(0.0)
   const levelsDb = ref([-60, -60] as number[])
@@ -40,12 +41,14 @@ export const useAudioStore = defineStore('prot', () => {
   const isPlaying = computed((): boolean => playing.value)
   const watch = computed(() => ({
     playing: playing.value,
-    zoom: zoom.value,
+    view: view.value,
     scale: scale.value,
   }))
   const getCurrentTime = computed((): number => currentTime.value)
-  const getXScale = computed((): number => zoom.value.x)
   const getYScale = computed((): number => zoom.value.y)
+  const getViewStart = computed((): number => view.value.start)
+  const getViewEnd = computed((): number => view.value.end)
+  const getViewDuration = computed((): number => view.value.end - view.value.start)
   const effectsChain = computed((): AudioEffectPayload[] => effects.value.map((e) => e.effect))
   const effectsChainForBackend = computed(() => serializeEffectChainForBackend(effectsChain.value))
   const getLevelsDb = computed((): number[] => levelsDb.value)
@@ -98,31 +101,70 @@ export const useAudioStore = defineStore('prot', () => {
     playing.value = !playing.value
   }
 
-  const setXScale = (x: number): void => {
-    zoom.value.x = x
-  }
-
   const setYScale = (y: number): void => {
     zoom.value.y = y
   }
 
-  const zoomIn = (axis?: 'x' | 'y' | 'both', degree?: number) => {
-    axis = axis || 'x'
-    const amount = degree ? degree / 100 : 1
-    if (axis === 'x' || axis === 'both') setXScale(getXScale.value + 1 * amount)
-    if (axis === 'y' || axis === 'both') setYScale(getXScale.value + 1 * amount)
+  const clampViewRange = (start: number, end: number) => {
+    const timelineDuration = Math.max(duration.value, 0)
+    const minSpan = timelineDuration > 0 ? Math.min(0.5, timelineDuration) : 0.5
+
+    if (timelineDuration <= 0) {
+      view.value = { start: 0, end: 10 }
+      return
+    }
+
+    let nextStart = Math.max(0, start)
+    let nextEnd = Math.min(timelineDuration, end)
+    let span = nextEnd - nextStart
+
+    if (span < minSpan) {
+      const mid = (nextStart + nextEnd) / 2
+      nextStart = Math.max(0, mid - minSpan / 2)
+      nextEnd = Math.min(timelineDuration, nextStart + minSpan)
+      nextStart = Math.max(0, nextEnd - minSpan)
+      span = nextEnd - nextStart
+    }
+
+    if (span > timelineDuration) {
+      nextStart = 0
+      nextEnd = timelineDuration
+    }
+
+    view.value = { start: nextStart, end: nextEnd }
   }
 
-  const zoomOut = (axis?: 'x' | 'y' | 'both', degree?: number) => {
+  const setViewRange = (start: number, end: number) => {
+    clampViewRange(start, end)
+  }
+
+  const zoomView = (multiplier: number) => {
+    const currentSpan = getViewDuration.value
+    const timelineDuration = Math.max(duration.value, 0)
+    if (timelineDuration <= 0 || currentSpan <= 0) return
+
+    const anchor = Math.min(Math.max(clock.value, view.value.start), view.value.end)
+    const nextSpan = currentSpan * multiplier
+    const half = nextSpan / 2
+    setViewRange(anchor - half, anchor + half)
+  }
+
+  const zoomIn = (axis?: 'x' | 'y' | 'both') => {
     axis = axis || 'x'
-    const amount = degree ? degree / 100 : 1
-    if (axis === 'x' || axis === 'both') setXScale(getXScale.value - 1 * amount)
-    if (axis === 'y' || axis === 'both') setYScale(getXScale.value - 1 * amount)
+    if (axis === 'x' || axis === 'both') zoomView(0.8)
+    if (axis === 'y' || axis === 'both') setYScale(getYScale.value + 1)
+  }
+
+  const zoomOut = (axis?: 'x' | 'y' | 'both') => {
+    axis = axis || 'x'
+    if (axis === 'x' || axis === 'both') zoomView(1.25)
+    if (axis === 'y' || axis === 'both') setYScale(getYScale.value - 1)
   }
 
   const setDuration = async () => {
     await Tone.loaded()
     duration.value = toneMaster.duration
+    setViewRange(0, duration.value)
   }
 
   const syncEffects = async () => {
@@ -175,11 +217,8 @@ export const useAudioStore = defineStore('prot', () => {
   type zoomType = 'increment' | 'decrement'
 
   const zoomX = (direction: zoomType) => {
-    if (direction === 'increment' && zoom.value.x < 20) {
-      zoom.value.x++
-    } else if (direction === 'decrement' && zoom.value.x > 1) {
-      zoom.value.x--
-    }
+    if (direction === 'increment') zoomIn('x')
+    else zoomOut('x')
   }
 
   const zoomY = (direction: zoomType) => {
@@ -248,6 +287,7 @@ export const useAudioStore = defineStore('prot', () => {
   return {
     scale,
     zoom,
+    view,
     effects,
     effectsChain,
     effectsChainForBackend,
@@ -255,16 +295,18 @@ export const useAudioStore = defineStore('prot', () => {
     watch,
     isPlaying,
     getCurrentTime,
-    getXScale,
     getYScale,
+    getViewStart,
+    getViewEnd,
+    getViewDuration,
     getLevelsDb,
     clock,
     play,
     pause,
     playPause,
     stop,
-    setXScale,
     setYScale,
+    setViewRange,
     zoomIn,
     zoomOut,
     setPlaying,

@@ -97,7 +97,7 @@ fn ensure_peaks_file(window: &Window, file_id: &str) -> String {
     proteus_lib::peaks::write_peaks(&file_path, &peaks_file_path)
         .expect("failed to write .peaks file");
 
-    let peaks_data = proteus_lib::peaks::get_peaks(&peaks_file_path)
+    let peaks_data = proteus_lib::peaks::get_peaks(&peaks_file_path, Default::default())
         .expect("failed to read .peaks file after writing");
     let peaks = to_legacy_peaks(peaks_data);
 
@@ -158,7 +158,9 @@ pub fn simplify_peaks(peaks: Vec<Vec<(f32, f32)>>, zoom: usize) -> Vec<Simplifie
 
 pub fn get_cached_peaks(window: &Window, file_id: &str) -> Vec<Vec<(f32, f32)>> {
     let peaks_file_path = ensure_peaks_file(window, file_id);
-    let peaks_data = proteus_lib::peaks::get_peaks(&peaks_file_path).expect("failed to read .peaks");
+    let peaks_data =
+        proteus_lib::peaks::get_peaks(&peaks_file_path, Default::default())
+            .expect("failed to read .peaks");
     to_legacy_peaks(peaks_data)
 }
 
@@ -169,14 +171,16 @@ pub fn get_cached_peaks_in_range(
     end_seconds: f64,
 ) -> Vec<Vec<(f32, f32)>> {
     let peaks_file_path = ensure_peaks_file(window, file_id);
-    let peaks_data = proteus_lib::peaks::get_peaks_in_range(&peaks_file_path, start_seconds, end_seconds)
-        .expect("failed to read .peaks range");
+    let peaks_data =
+        proteus_lib::peaks::get_peaks_in_range(&peaks_file_path, start_seconds, end_seconds)
+            .expect("failed to read .peaks range");
     to_legacy_peaks(peaks_data)
 }
 
 pub fn get_cached_peaks_for_full_duration(window: &Window, file_id: &str) -> Vec<Vec<(f32, f32)>> {
     let peaks_file_path = ensure_peaks_file(window, file_id);
-    let full_peaks = proteus_lib::peaks::get_peaks(&peaks_file_path).expect("failed to read .peaks");
+    let full_peaks = proteus_lib::peaks::get_peaks(&peaks_file_path, Default::default())
+        .expect("failed to read .peaks");
     let end_seconds = peaks_duration_seconds(&full_peaks);
 
     if end_seconds <= 0.0 {
@@ -184,6 +188,38 @@ pub fn get_cached_peaks_for_full_duration(window: &Window, file_id: &str) -> Vec
     }
 
     get_cached_peaks_in_range(window, file_id, 0.0, end_seconds)
+}
+
+pub fn get_cached_peak_amplitudes_in_range(
+    window: &Window,
+    file_id: &str,
+    start_seconds: f64,
+    end_seconds: f64,
+    target_peaks: usize,
+) -> Vec<Vec<f32>> {
+    let peaks_file_path = ensure_peaks_file(window, file_id);
+    let clamped_start = start_seconds.max(0.0);
+    let clamped_end = end_seconds.max(clamped_start + 0.001);
+    let options = proteus_lib::peaks::GetPeaksOptions {
+        start_seconds: Some(clamped_start),
+        end_seconds: Some(clamped_end),
+        target_peaks: Some(target_peaks.max(1)),
+        channels: None,
+    };
+
+    let peaks_data =
+        proteus_lib::peaks::get_peaks(&peaks_file_path, options).expect("failed to read .peaks");
+
+    peaks_data
+        .channels
+        .into_iter()
+        .map(|channel| {
+            channel
+                .into_iter()
+                .map(|window| ((window.min.abs() + window.max.abs()) / 2.0).clamp(0.0, 1.0))
+                .collect()
+        })
+        .collect()
 }
 
 pub fn make_svg_from_peaks(peaks: Vec<Vec<(f32, f32)>>, height: u32) -> String {

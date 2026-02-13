@@ -14,9 +14,7 @@
           </el-affix>
 
           <div class="bin-container">
-            <div class="bin-strip" :style="`min-width: ${timelineWidth}`">
-              <TrackBin v-for="track in trackStore.tracks" :track-id="track.id" :key="track.id" />
-            </div>
+            <TrackBin v-for="track in trackStore.tracks" :track-id="track.id" :key="track.id" />
           </div>
           <div class="padding"></div>
         </BaseContainer>
@@ -60,45 +58,8 @@ const menu = useMenuStore()
 const windowTitle = computed(() => {
   return head.name.replace('.protproject', '')
 })
-const timelineWidthPx = ref(0)
-const timelineWidth = computed(() =>
-  timelineWidthPx.value > 0 ? `${timelineWidthPx.value + 30}px` : '100%',
-)
 
 const unlisteners = ref<UnlistenFn[]>([])
-
-interface SimplifiedPeaks {
-  peaks: number[]
-  zoom: number
-  original_length: number
-}
-
-const refreshTimelineWidth = async () => {
-  const selectedFileIds = trackStore.tracks
-    .map((track) => track.selection)
-    .filter((id): id is string => !!id)
-
-  if (selectedFileIds.length === 0) {
-    timelineWidthPx.value = 0
-    return
-  }
-
-  const peakGroups = await Promise.all(
-    selectedFileIds.map((fileId) =>
-      invoke<SimplifiedPeaks[]>('get_simplified_peaks', {
-        fileId,
-        zoom: audio.zoom.x,
-      }),
-    ),
-  )
-
-  const maxPeaksLength = peakGroups.reduce((max, peaks) => {
-    const channelLength = peaks[0]?.peaks.length || 0
-    return Math.max(max, channelLength)
-  }, 0)
-
-  timelineWidthPx.value = maxPeaksLength * 2
-}
 
 watch(
   [trackStore.tracks, audio.effects],
@@ -208,7 +169,6 @@ onMounted(async () => {
   console.log(await invoke('get_play_state'))
 
   await trackStore.sync()
-  await refreshTimelineWidth()
 })
 
 onUnmounted(() => {
@@ -217,15 +177,16 @@ onUnmounted(() => {
   })
 })
 
-watch(audio.zoom, () => {
-  window.dispatchEvent(new Event('resize'))
-  void refreshTimelineWidth()
-})
-
 watch(
-  () => trackStore.tracks,
+  () => [audio.getViewStart, audio.getViewEnd],
   () => {
-    void refreshTimelineWidth()
+    window.dispatchEvent(new Event('resize'))
+  },
+)
+watch(
+  () => audio.zoom,
+  () => {
+  window.dispatchEvent(new Event('resize'))
   },
   { deep: true },
 )
@@ -255,13 +216,8 @@ body {
 
 .bin-container {
   width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: hidden;
   border-radius: 0.5em;
-}
-
-.bin-strip {
-  width: 100%;
 }
 
 #proteus-author {

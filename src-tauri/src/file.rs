@@ -187,6 +187,23 @@ pub async fn get_simplified_peaks(
 }
 
 #[tauri::command]
+pub async fn get_waveform_peaks(
+    file_id: String,
+    start_seconds: f64,
+    end_seconds: f64,
+    target_peaks: usize,
+    window: Window,
+) -> Vec<Vec<f32>> {
+    get_cached_peak_amplitudes_in_range(
+        &window,
+        &file_id,
+        start_seconds,
+        end_seconds,
+        target_peaks,
+    )
+}
+
+#[tauri::command]
 pub fn get_peaks(file_path: &str) -> Vec<Vec<(f32, f32)>> {
     let peaks_file_path = format!("{}.peaks", file_path);
     if !Path::new(&peaks_file_path).exists() {
@@ -194,8 +211,8 @@ pub fn get_peaks(file_path: &str) -> Vec<Vec<(f32, f32)>> {
             .expect("failed to write .peaks file");
     }
 
-    let peaks_data =
-        proteus_lib::peaks::get_peaks(&peaks_file_path).expect("failed to read .peaks file");
+    let peaks_data = proteus_lib::peaks::get_peaks(&peaks_file_path, Default::default())
+        .expect("failed to read .peaks file");
 
     peaks_data
         .channels
