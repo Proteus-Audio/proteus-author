@@ -29,6 +29,7 @@ const waveformChannels = ref<number[][]>([])
 const canvasWidthPx = ref(1)
 
 const viewDuration = computed(() => Math.max(audio.getViewDuration, 0.001))
+const verticalScale = computed(() => Math.max(audio.getYScale, 0.1))
 
 const playheadPosition = computed(() => {
   const width = canvasWidthPx.value
@@ -104,7 +105,7 @@ const drawWaveform = () => {
     ctx.beginPath()
     channel.forEach((peak, index) => {
       const x = index * stepX + stepX / 2
-      const amplitude = Math.min(Math.max(peak, 0.008), 1) * maxAmplitude
+      const amplitude = Math.min(Math.max(peak, 0.008), 1) * maxAmplitude * verticalScale.value
       ctx.moveTo(x, yMid - amplitude)
       ctx.lineTo(x, yMid + amplitude)
     })
@@ -171,6 +172,13 @@ watch(
   () => [audio.getViewStart, audio.getViewEnd, props.track.id],
   () => {
     void updateWaveform()
+  },
+)
+
+watch(
+  () => audio.getYScale,
+  () => {
+    drawWaveform()
   },
 )
 

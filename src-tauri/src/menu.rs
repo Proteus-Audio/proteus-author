@@ -11,6 +11,8 @@ const ID_OPEN: &str = "open";
 const ID_EXPORT_PROT: &str = "export_prot";
 const ID_ZOOM_IN: &str = "zoom";
 const ID_ZOOM_OUT: &str = "zoom_out";
+const ID_ZOOM_IN_VERTICAL: &str = "zoom_vertical_in";
+const ID_ZOOM_OUT_VERTICAL: &str = "zoom_vertical_out";
 const ID_SCROLL_LEFT: &str = "scroll_left";
 const ID_SCROLL_RIGHT: &str = "scroll_right";
 const ID_FOLLOW_MODE: &str = "follow_mode";
@@ -137,6 +139,20 @@ pub fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
 
     let zoom_in = MenuItem::with_id(app, ID_ZOOM_IN, "Zoom In", true, Some("CmdOrCtrl+="))?;
     let zoom_out = MenuItem::with_id(app, ID_ZOOM_OUT, "Zoom Out", true, Some("CmdOrCtrl+-"))?;
+    let zoom_vertical_in = MenuItem::with_id(
+        app,
+        ID_ZOOM_IN_VERTICAL,
+        "Zoom In Vertical",
+        true,
+        Some("CmdOrCtrl+Shift+="),
+    )?;
+    let zoom_vertical_out = MenuItem::with_id(
+        app,
+        ID_ZOOM_OUT_VERTICAL,
+        "Zoom Out Vertical",
+        true,
+        Some("CmdOrCtrl+Shift+-"),
+    )?;
     let pan_left =
         MenuItem::with_id(app, ID_SCROLL_LEFT, "Scroll Left", true, Some("Alt+Left"))?;
     let pan_right =
@@ -158,6 +174,8 @@ pub fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         &[
             &zoom_in,
             &zoom_out,
+            &zoom_vertical_in,
+            &zoom_vertical_out,
             &separator,
             &pan_left,
             &pan_right,
@@ -229,6 +247,10 @@ pub fn handle_menu_event<R: Runtime>(
         emit_to_main(app, "MENU_ZOOM_IN", ())
     } else if id == ID_ZOOM_OUT {
         emit_to_main(app, "MENU_ZOOM_OUT", ())
+    } else if id == ID_ZOOM_IN_VERTICAL {
+        emit_to_main(app, "MENU_ZOOM_IN_VERTICAL", ())
+    } else if id == ID_ZOOM_OUT_VERTICAL {
+        emit_to_main(app, "MENU_ZOOM_OUT_VERTICAL", ())
     } else if id == ID_SCROLL_LEFT {
         emit_to_main(app, "MENU_PAN_LEFT", ())
     } else if id == ID_SCROLL_RIGHT {

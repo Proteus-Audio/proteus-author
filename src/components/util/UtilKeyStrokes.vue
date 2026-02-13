@@ -12,14 +12,18 @@ const track = useTrackStore()
 
 const keyListener = (e: KeyboardEvent) => {
   if ((e.target as HTMLElement).localName !== 'input') {
-    if (e.metaKey) {
-      if (e.key === '=') {
+    const hasCommandModifier = e.metaKey || e.ctrlKey
+    if (hasCommandModifier) {
+      // Use KeyboardEvent.code for layout-independent shortcuts on macOS.
+      if (e.code === 'Equal') {
         e.preventDefault()
-        audio.zoomIn()
+        if (e.shiftKey) audio.zoomIn('y')
+        else audio.zoomIn('x')
       }
-      if (e.key === '-') {
+      if (e.code === 'Minus') {
         e.preventDefault()
-        audio.zoomOut()
+        if (e.shiftKey) audio.zoomOut('y')
+        else audio.zoomOut('x')
       }
     }
 

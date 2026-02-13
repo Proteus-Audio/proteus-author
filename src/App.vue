@@ -24,8 +24,8 @@
 
       <aside class="app-meter">
         <div class="app-meter-inner">
-          <DigitalFader />
           <BaseLevelMeter vertical />
+          <DigitalFader />
         </div>
       </aside>
     </div>
@@ -179,6 +179,16 @@ onMounted(async () => {
   })
   unlisteners.value.push(menuZoomOut)
 
+  const menuZoomInVertical = await listen('MENU_ZOOM_IN_VERTICAL', () => {
+    audio.zoomIn('y')
+  })
+  unlisteners.value.push(menuZoomInVertical)
+
+  const menuZoomOutVertical = await listen('MENU_ZOOM_OUT_VERTICAL', () => {
+    audio.zoomOut('y')
+  })
+  unlisteners.value.push(menuZoomOutVertical)
+
   const menuPanLeft = await listen('MENU_PAN_LEFT', () => {
     audio.panViewLeft(0.2)
   })
@@ -308,7 +318,7 @@ body {
 
 .app-meter-inner {
   display: grid;
-  grid-template-columns: 54px 1fr;
+  grid-template-columns: 1fr 54px;
   height: 100%;
 }
 
