@@ -236,7 +236,7 @@ pub fn set_selections(window: Window) -> Vec<String> {
 
 #[tauri::command]
 pub fn set_volume(volume: f32, window: Window) {
-    println!("setting volume");
+    println!("setting volume: {}", volume);
     let player_state: State<Arc<Mutex<Option<Player>>>> = window.state();
     let mut player = player_state.lock().unwrap();
 

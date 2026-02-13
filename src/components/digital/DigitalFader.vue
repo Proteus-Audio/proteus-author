@@ -1,22 +1,25 @@
 <template>
   <div class="digital-fader">
-    <div class="fader-label">VOL</div>
+    <div class="fader-label">GAIN</div>
 
-    <div ref="trackRef" class="fader-track" @pointerdown="onTrackPointerDown">
-      <div class="fader-grid"></div>
-      <div class="fader-fill" :style="{ height: `${fillPercent}%` }"></div>
-      <button
-        type="button"
-        class="fader-cap"
-        :style="{ bottom: capBottom }"
-        aria-label="Volume fader"
-        @pointerdown.stop="onCapPointerDown"
-      >
-        <span class="cap-grip"></span>
-      </button>
+    <div class="fader-container">
+        <div ref="trackRef" class="fader-track" @pointerdown="onTrackPointerDown">
+        <div class="fader-grid"></div>
+        <div class="fader-fill" :style="{ height: `${fillPercent}%` }"></div>
+        <button
+            type="button"
+            class="fader-cap"
+            :style="{ bottom: capBottom }"
+            aria-label="Volume fader"
+            @pointerdown.stop="onCapPointerDown"
+        >
+            <span class="cap-grip"></span>
+        </button>
+        </div>
     </div>
 
-    <div class="fader-readout">{{ `${Math.round(fillPercent)}%` }}</div>
+    <div class="fader-readout">{{ `${Math.ceil((value / 100) * 30) / 10}` }}</div>
+    <!-- <div class="fader-readout">{{ `${Math.round(fillPercent)}%` }}</div> -->
   </div>
 </template>
 
@@ -89,6 +92,14 @@ onBeforeUnmount(() => {
   border-left: 2px solid #b9b9b9;
 }
 
+.fader-container {
+    position: relative;
+    border: 2px solid #8f8f8f;
+    border-radius: 2px;
+    background: #d2d2d2;
+    overflow: hidden;
+}
+
 .fader-label,
 .fader-readout {
   font-size: 10px;
@@ -98,23 +109,26 @@ onBeforeUnmount(() => {
 }
 
 .fader-track {
-  position: relative;
-  border: 2px solid #8f8f8f;
-  border-radius: 2px;
-  background: #d2d2d2;
+  position: absolute;
+  top: 2rem;
+  left: 0;
+  right: 0;
+  bottom: 0.8rem;
   cursor: ns-resize;
-  overflow: hidden;
 }
 
 .fader-grid {
   position: absolute;
   inset: 0;
+  top: -1.2rem;
   background-image: repeating-linear-gradient(
-    to top,
-    rgba(80, 80, 80, 0.18) 0,
-    rgba(80, 80, 80, 0.18) 2px,
-    transparent 2px,
-    transparent 10px
+    to right,
+    transparent 0,
+    transparent 17px,
+    rgba(80, 80, 80, 0.18) 17px,
+    rgba(80, 80, 80, 0.18) 19px,
+    transparent 19px,
+    transparent 36px
   );
   pointer-events: none;
 }
@@ -124,7 +138,6 @@ onBeforeUnmount(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(to top, #4d79a9, #9ec7f3);
   pointer-events: none;
 }
 
@@ -132,11 +145,30 @@ onBeforeUnmount(() => {
   position: absolute;
   left: 3px;
   right: 3px;
-  height: 22px;
+  height: 42px;
   border: 2px solid #616161;
   background: #f0f0f0;
   padding: 0;
   cursor: ns-resize;
+
+  &:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    background: repeating-linear-gradient(
+      to bottom,
+      white 0,
+      white 3px,
+      #969696 3px,
+      transparent 20px,
+      white 34px,
+      #969696 34px,
+      #969696 42px
+    );
+  }
 }
 
 .cap-grip {
@@ -144,7 +176,7 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   background-image: repeating-linear-gradient(
-    to right,
+    to bottom,
     transparent 0,
     transparent 3px,
     #969696 3px,
