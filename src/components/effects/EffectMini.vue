@@ -1,5 +1,6 @@
 <template>
   <div class="fx-icon" @click.stop="toggleEdit">
+    <button class="effect-drag-handle" type="button" aria-label="Drag effect" @click.stop>|||</button>
     <div class="fx-indicator">
       <AnalogIndicator size="small" :state="true" :color="enabled ? 'green' : 'red'" />
     </div>
@@ -48,7 +49,6 @@ const toggleEdit = () => {
 }
 
 const effect = computed((): EffectSettings | undefined => {
-  return undefined
   return Object.values(props.item.effect)[0]
 })
 
@@ -99,6 +99,24 @@ const removeEffect = () => {
     position: absolute;
     top: 0.75rem;
     left: 0.75rem;
+  }
+
+  .effect-drag-handle {
+    position: absolute;
+    top: 0.65rem;
+    right: 0.65rem;
+    border: 0;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+    line-height: 1;
+    cursor: grab;
+    padding: 0.2rem 0.25rem;
+
+    &:active {
+      cursor: grabbing;
+    }
   }
 }
 

@@ -78,6 +78,7 @@ pub async fn init_player(window: Window) {
     new_player.set_start_sink_chunks(1);
     new_player.set_start_buffer_ms(10.0);
     new_player.set_startup_fade_ms(5.0);
+    new_player.set_max_sink_chunks(15);
 
     player_state.lock().unwrap().replace(new_player);
 

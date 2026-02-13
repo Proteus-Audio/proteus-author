@@ -7,10 +7,14 @@
         class="effects-list"
         :list="effects"
         item-key="id"
+        handle=".effect-drag-handle"
         ghost-class="effect-ghost"
         chosen-class="effect-chosen"
         drag-class="effect-drag"
+        :force-fallback="true"
+        :fallback-on-body="true"
         :animation="160"
+        @end="onDragEnd"
       >
         <template #item="{ element, index }">
           <div class="effect-wrapper">
@@ -45,6 +49,10 @@ const rackClass = computed(() => (noEffects.value ? 'empty' : 'full'))
 
 const addEffect = (toAdd: AudioEffectType) => {
   audio.addEffect(toAdd)
+}
+
+const onDragEnd = () => {
+  audio.scheduleSyncEffects()
 }
 </script>
 
