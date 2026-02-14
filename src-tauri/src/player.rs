@@ -13,16 +13,68 @@
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use proteus_audio::player::Player;
-use proteus_audio::reporter::Report;
+use proteus_lib::container::prot::PathsTrack;
+use proteus_lib::container::prot::Prot;
+use proteus_lib::container::play_settings::EffectSettings;
+use proteus_lib::diagnostics::reporter::Report;
+use proteus_lib::playback::player::Player;
 use serde::Deserialize;
 use serde::Serialize;
 // }
+use tauri::Emitter;
+use tauri::Manager;
 use tauri::State;
 use tauri::Window;
-use tauri::Manager;
 
 use crate::project::ProjectSkeleton;
+
+fn build_paths_tracks(project: &ProjectSkeleton) -> Vec<PathsTrack> {
+    project
+        .tracks
+        .iter()
+        .filter_map(|track| {
+            let mut file_paths: Vec<String> = track
+                .file_ids
+                .iter()
+                .filter_map(|id| {
+                    project
+                        .files
+                        .iter()
+                        .find(|f| f.id == *id)
+                        .map(|f| f.path.clone())
+                })
+                .collect();
+
+            if file_paths.is_empty() {
+                return None;
+            }
+
+            // Keep the selected file first so the active take remains stable at init time.
+            if let Some(selection_id) = &track.selection {
+                if let Some(selected_path) = project
+                    .files
+                    .iter()
+                    .find(|f| f.id == *selection_id)
+                    .map(|f| f.path.clone())
+                {
+                    if let Some(index) = file_paths.iter().position(|path| path == &selected_path) {
+                        if index > 0 {
+                            file_paths.swap(0, index);
+                        }
+                    }
+                }
+            }
+
+            Some(PathsTrack {
+                file_paths,
+                level: 1.0,
+                pan: 0.0,
+                selections_count: 1,
+                shuffle_points: track.shuffle_points.clone(),
+            })
+        })
+        .collect()
+}
 
 #[tauri::command]
 pub async fn init_player(window: Window) {
@@ -31,48 +83,32 @@ pub async fn init_player(window: Window) {
     let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
     let project = project_state.lock().unwrap();
 
-    let file_list: Vec<Vec<String>> = project
-        .tracks
-        .iter()
-        .map(|t| {
-            t.file_ids
-                .iter()
-                .map(|id| {
-                    project
-                        .files
-                        .iter()
-                        .find(|f| f.id == *id)
-                        .unwrap()
-                        .path
-                        .clone()
-                })
-                .collect()
-        })
-        .collect();
+    let tracks_for_player = build_paths_tracks(&project);
 
-    // Remove any empty tracks
-    let file_list: Vec<Vec<String>> = file_list
-        .iter()
-        .filter(|t| t.len() > 0)
-        .map(|t| t.clone())
-        .collect();
-
-    if file_list.len() == 0 {
+    if tracks_for_player.is_empty() {
         player_state.lock().unwrap().take();
+        window.emit("PLAYER_CHANGED", ()).unwrap_or(());
         return;
     }
 
-    let mut new_player = Player::new_from_file_paths(&file_list);
-    let handle = window.app_handle();
+    let mut new_player = Player::new_from_file_paths(tracks_for_player);
+    new_player.set_effects(project.effects.clone());
+    let handle = window.app_handle().clone();
     let label = String::from(window.label());
-    let reporter = move |Report {time, ..} | {
-        let window_clone = handle.get_window(&label).unwrap();
+    let reporter = move |Report { time, .. }| {
+        let window_clone = handle.get_webview_window(&label).unwrap();
         window_clone.emit("UPDATE_PLAYHEAD", time).unwrap_or(());
     };
     new_player.set_reporting(Arc::new(Mutex::new(reporter)), Duration::from_millis(100));
     // new_player.set_reporting(reporting, reporting_interval)
+    new_player.pause();
+    new_player.set_start_sink_chunks(1);
+    new_player.set_start_buffer_ms(10.0);
+    new_player.set_startup_fade_ms(5.0);
+    new_player.set_max_sink_chunks(15);
 
     player_state.lock().unwrap().replace(new_player);
+    window.emit("PLAYER_CHANGED", ()).unwrap_or(());
 
     println!(
         "init_player took {}ms",
@@ -81,15 +117,179 @@ pub async fn init_player(window: Window) {
 }
 
 #[tauri::command]
+pub fn get_possible_combinations(window: Window) -> Option<String> {
+    let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
+    let project = project_state.lock().unwrap();
+    let tracks_for_player = build_paths_tracks(&project);
+
+    if tracks_for_player.is_empty() {
+        return Some(String::from("0"));
+    }
+
+    let prot = Prot::new_from_file_paths(tracks_for_player);
+    prot.count_possible_combinations().map(|count| count.to_string())
+}
+
+#[tauri::command]
+pub async fn add_shuffle_point(track_id: u32, seconds: f64, window: Window) -> Vec<String> {
+    let timestamp = format_shuffle_point_timestamp(seconds);
+
+    {
+        let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
+        let mut project = project_state.lock().unwrap();
+        let Some(track) = project.tracks.iter_mut().find(|track| track.id == track_id) else {
+            return Vec::new();
+        };
+
+        if !track.shuffle_points.contains(&timestamp) {
+            track.shuffle_points.push(timestamp.clone());
+            track.shuffle_points
+                .sort_by(|a, b| parse_shuffle_point_seconds(a).total_cmp(&parse_shuffle_point_seconds(b)));
+            track.shuffle_points.dedup();
+        }
+    }
+
+    let (resume_playback, current_time) = {
+        let player_state: State<Arc<Mutex<Option<Player>>>> = window.state();
+        let player = player_state.lock().unwrap();
+        if let Some(player) = player.as_ref() {
+            (player.is_playing(), player.get_time())
+        } else {
+            (false, 0.0)
+        }
+    };
+
+    init_player(window.clone()).await;
+
+    if current_time > 0.0 {
+        seek(current_time, window.clone()).await;
+    }
+    if resume_playback {
+        play(window.clone()).await;
+    }
+
+    let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
+    let project = project_state.lock().unwrap();
+    project
+        .tracks
+        .iter()
+        .find(|track| track.id == track_id)
+        .map(|track| track.shuffle_points.clone())
+        .unwrap_or_default()
+}
+
+#[tauri::command]
+pub async fn remove_shuffle_point(
+    track_id: u32,
+    seconds: f64,
+    tolerance_seconds: f64,
+    window: Window,
+) -> Vec<String> {
+    let target = seconds.max(0.0);
+    let tolerance = tolerance_seconds.max(0.0);
+
+    {
+        let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
+        let mut project = project_state.lock().unwrap();
+        let Some(track) = project.tracks.iter_mut().find(|track| track.id == track_id) else {
+            return Vec::new();
+        };
+
+        let mut best_index: Option<usize> = None;
+        let mut best_distance = f64::INFINITY;
+
+        for (index, point) in track.shuffle_points.iter().enumerate() {
+            let distance = (parse_shuffle_point_seconds(point) - target).abs();
+            if distance <= tolerance && distance < best_distance {
+                best_distance = distance;
+                best_index = Some(index);
+            }
+        }
+
+        if let Some(index) = best_index {
+            track.shuffle_points.remove(index);
+        }
+    }
+
+    let (resume_playback, current_time) = {
+        let player_state: State<Arc<Mutex<Option<Player>>>> = window.state();
+        let player = player_state.lock().unwrap();
+        if let Some(player) = player.as_ref() {
+            (player.is_playing(), player.get_time())
+        } else {
+            (false, 0.0)
+        }
+    };
+
+    init_player(window.clone()).await;
+
+    if current_time > 0.0 {
+        seek(current_time, window.clone()).await;
+    }
+    if resume_playback {
+        play(window.clone()).await;
+    }
+
+    let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
+    let project = project_state.lock().unwrap();
+    project
+        .tracks
+        .iter()
+        .find(|track| track.id == track_id)
+        .map(|track| track.shuffle_points.clone())
+        .unwrap_or_default()
+}
+
+fn format_shuffle_point_timestamp(seconds: f64) -> String {
+    let normalized = if seconds.is_finite() {
+        seconds.max(0.0)
+    } else {
+        0.0
+    };
+    format!("{normalized:.3}")
+}
+
+fn parse_shuffle_point_seconds(value: &str) -> f64 {
+    let parts: Vec<&str> = value.trim().split(':').collect();
+    if parts.is_empty() || parts.len() > 3 {
+        return f64::INFINITY;
+    }
+
+    let seconds_component = parts
+        .last()
+        .and_then(|part| part.parse::<f64>().ok())
+        .unwrap_or(f64::INFINITY);
+    let minutes = if parts.len() >= 2 {
+        parts[parts.len() - 2].parse::<f64>().unwrap_or(0.0)
+    } else {
+        0.0
+    };
+    let hours = if parts.len() == 3 {
+        parts[0].parse::<f64>().unwrap_or(0.0)
+    } else {
+        0.0
+    };
+
+    (hours * 3600.0) + (minutes * 60.0) + seconds_component
+}
+
+#[tauri::command]
 pub async fn play(window: Window) {
     let player_state: State<Arc<Mutex<Option<Player>>>> = window.state();
     let mut player = player_state.lock().unwrap();
-    println!("playing ({})", if player.is_none() { "nope" } else { "yep" });
-    
+    println!(
+        "playing ({})",
+        if player.is_none() { "nope" } else { "yep" }
+    );
+
     if player.is_none() {
         return;
     }
 
+    let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
+    let effects = project_state.lock().unwrap().effects.clone();
+    println!("Setting Effects: {:?}", effects);
+    player.as_mut().unwrap().set_effects(effects);
     player.as_mut().unwrap().play();
 }
 
@@ -148,12 +348,10 @@ pub async fn shuffle(window: Window) {
     set_selections(window);
 }
 
-
 #[tauri::command]
 pub async fn get_position(window: Window) -> f64 {
     let player_state: State<Arc<Mutex<Option<Player>>>> = window.state();
     let player = player_state.lock().unwrap();
-
 
     if player.is_none() {
         return 0.0;
@@ -207,16 +405,14 @@ pub fn set_selections(window: Window) -> Vec<String> {
 
     println!("ids: {:?}", ids);
 
-    // Apply the selections to the project
+    // Apply the selections to the project, keeping selection per track.
     for track in project.tracks.iter_mut() {
         track.selection = None;
     }
 
-    for id in ids.iter() {
-        for track in project.tracks.iter_mut() {
-            if track.file_ids.contains(id) {
-                track.selection = Some(id.clone());
-            }
+    for (track, id) in project.tracks.iter_mut().zip(ids.iter()) {
+        if track.file_ids.contains(id) {
+            track.selection = Some(id.clone());
         }
     }
 
@@ -225,7 +421,7 @@ pub fn set_selections(window: Window) -> Vec<String> {
 
 #[tauri::command]
 pub fn set_volume(volume: f32, window: Window) {
-    println!("setting volume");
+    println!("setting volume: {}", volume);
     let player_state: State<Arc<Mutex<Option<Player>>>> = window.state();
     let mut player = player_state.lock().unwrap();
 
@@ -234,6 +430,39 @@ pub fn set_volume(volume: f32, window: Window) {
     }
 
     player.as_mut().unwrap().set_volume(volume);
+}
+
+#[tauri::command]
+pub fn get_volume(window: Window) -> f32 {
+    let player_state: State<Arc<Mutex<Option<Player>>>> = window.state();
+    let player = player_state.lock().unwrap();
+
+    if player.is_none() {
+        return 1.0;
+    }
+
+    player.as_ref().unwrap().get_volume()
+}
+
+#[tauri::command]
+pub fn set_effects_chain(
+    effects: Vec<EffectSettings>,
+    window: Window,
+    project_state: State<Arc<Mutex<ProjectSkeleton>>>,
+) {
+    {
+        let mut project = project_state.lock().unwrap();
+        project.effects = effects.clone();
+    }
+
+    let player_state: State<Arc<Mutex<Option<Player>>>> = window.state();
+    let mut player = player_state.lock().unwrap();
+    if let Some(player) = player.as_mut() {
+        println!("Setting Effects: {:?}", effects);
+        player.set_effects(effects);
+    } else {
+        println!("No player found");
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -251,7 +480,7 @@ pub fn get_play_state(window: Window) -> PlayerState {
     if player.is_none() {
         return PlayerState::Stopped;
     }
-    
+
     let player = player.as_ref().unwrap();
 
     if player.is_playing() {
@@ -263,4 +492,28 @@ pub fn get_play_state(window: Window) -> PlayerState {
     }
 
     PlayerState::Stopped
+}
+
+#[tauri::command]
+pub fn get_levels(window: Window) -> Vec<f32> {
+    let player_state: State<Arc<Mutex<Option<Player>>>> = window.state();
+    let player = player_state.lock().unwrap();
+
+    if player.is_none() {
+        return vec![0.0, 0.0];
+    }
+
+    player.as_ref().unwrap().get_levels()
+}
+
+#[tauri::command]
+pub fn get_levels_db(window: Window) -> Vec<f32> {
+    let player_state: State<Arc<Mutex<Option<Player>>>> = window.state();
+    let player = player_state.lock().unwrap();
+
+    if player.is_none() {
+        return vec![f32::NEG_INFINITY, f32::NEG_INFINITY];
+    }
+
+    player.as_ref().unwrap().get_levels_db()
 }

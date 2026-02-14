@@ -1,33 +1,110 @@
-type Effect = 'Compressor' | 'Reverb'
+export type AudioEffectKey =
+  | 'BasicReverbSettings'
+  | 'DiffusionReverbSettings'
+  | 'ConvolutionReverbSettings'
+  | 'LowPassFilterSettings'
+  | 'HighPassFilterSettings'
+  | 'DistortionSettings'
+  | 'GainSettings'
+  | 'CompressorSettings'
+  | 'LimiterSettings'
 
-interface ReverbSettingsInterface {
-  decay: number
-  preDelay: number
+export type AudioEffectType =
+  | 'BasicReverb'
+  | 'DiffusionReverb'
+  | 'ConvolutionReverb'
+  | 'LowPassFilter'
+  | 'HighPassFilter'
+  | 'Distortion'
+  | 'Gain'
+  | 'Compressor'
+  | 'Limiter'
+
+export interface BasicReverbSettings {
+  enabled: boolean
   mix: number
-  active: boolean
+  duration_ms: number
+  amplitude: number
 }
 
-interface CompressorSettingsInterface {
-  attack: number
-  knee: number
-  ratio: number
-  release: number
+export interface DiffusionReverbSettings {
+  enabled: boolean
+  mix: number
+  pre_delay_ms: number
+  room_size_ms: number
+  decay: number
+  damping: number
+  diffusion: number
+}
+
+export interface ConvolutionReverbSettings {
+  enabled: boolean
+  dry_wet: number
+  impulse_response?: string | null
+  impulse_response_attachment?: string | null
+  impulse_response_path?: string | null
+  impulse_response_tail_db?: number | null
+  impulse_response_tail?: number | null
+}
+
+export interface LowPassFilterSettings {
+  enabled: boolean
+  freq_hz: number
+  q: number
+}
+
+export interface HighPassFilterSettings {
+  enabled: boolean
+  freq_hz: number
+  q: number
+}
+
+export interface DistortionSettings {
+  enabled: boolean
+  gain: number
   threshold: number
-  active: boolean
 }
 
-type EffectSettings = ReverbSettingsInterface | CompressorSettingsInterface
-
-interface EffectSkeleton {
-  id: number
-  type: Effect
-  effect: ReverbSettingsInterface | CompressorSettingsInterface | undefined
+export interface GainSettings {
+  enabled: boolean
+  gain: number
 }
 
-export {
-  Effect,
-  ReverbSettingsInterface,
-  CompressorSettingsInterface,
-  EffectSettings,
-  EffectSkeleton,
+export interface CompressorSettings {
+  enabled: boolean
+  threshold_db: number
+  ratio: number
+  attack_ms: number
+  release_ms: number
+  makeup_gain_db: number
 }
+
+export interface LimiterSettings {
+  enabled: boolean
+  threshold_db: number
+  knee_width_db: number
+  attack_ms: number
+  release_ms: number
+}
+
+export type EffectSettings =
+  | BasicReverbSettings
+  | DiffusionReverbSettings
+  | ConvolutionReverbSettings
+  | LowPassFilterSettings
+  | HighPassFilterSettings
+  | DistortionSettings
+  | GainSettings
+  | CompressorSettings
+  | LimiterSettings
+
+export type AudioEffectPayload =
+  | { BasicReverbSettings: BasicReverbSettings }
+  | { DiffusionReverbSettings: DiffusionReverbSettings }
+  | { ConvolutionReverbSettings: ConvolutionReverbSettings }
+  | { LowPassFilterSettings: LowPassFilterSettings }
+  | { HighPassFilterSettings: HighPassFilterSettings }
+  | { DistortionSettings: DistortionSettings }
+  | { GainSettings: GainSettings }
+  | { CompressorSettings: CompressorSettings }
+  | { LimiterSettings: LimiterSettings }

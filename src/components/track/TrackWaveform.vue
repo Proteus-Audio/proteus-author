@@ -1,274 +1,535 @@
 <template>
   <div class="track">
     <div
-      :style="`width:${width};`"
+      ref="overviewContainerRef"
       :id="`overview-container-${identifier}`"
       class="overview-container"
     >
-      <div class="channels">
-        <div class="channel" v-for="(peaks, channel) in simplifiedPeaks" :key="channel">
-          <div @click="seek" class="control"></div>
-          <div class="playhead"></div>
-          <template v-for="annotation in peaksLength" :key="`annotation-${channel}-${annotation}`">
-            <div
-              v-if="annotate(annotation)"
-              :style="{ left: `${(annotation - 1) * 2}px` }"
-              class="annotation"
-            >
-              <div class="timestamp">{{ getAnnotation(annotation) }}</div>
-            </div>
-          </template>
-          <template v-for="(peak, index) in peaks.peaks" :key="`${channel}-${index}`">
-            <div :style="{ height: `${calcHeight(peak)}%` }" class="peak"></div>
-          </template>
-        </div>
-      </div>
+      <canvas
+        ref="canvasRef"
+        class="waveform-canvas"
+        :class="{
+          'shuffle-point-tool-mode': audio.shufflePointToolMode,
+          'shuffle-point-remove-hover': audio.shufflePointToolMode && hoveringShufflePoint,
+        }"
+        @click="seek"
+        @mousemove="onMouseMove"
+        @mouseleave="onMouseLeave"
+        @wheel.prevent="onWheel"
+      ></canvas>
+      <div class="playhead"></div>
     </div>
-    <!-- <audio v-if="track" :class="`player ${selected ? 'playable' : 'non-playable'}`" :id="`audio-${identifier}`" controls>
-      <source :src="`file://${track.path}`" type="audio/mp3" />
-    </audio> -->
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed, ref, watch } from 'vue'
-
+import { invoke } from '@tauri-apps/api/core'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useAudioStore } from '../../stores/audio'
-import { TrackFile } from '../../typings/tracks'
-import { invoke } from '@tauri-apps/api'
+import { useTrackStore } from '../../stores/track'
+import type { TrackFile } from '../../typings/tracks'
 
 interface Props {
   track: TrackFile
   selected: boolean
 }
 
-interface SimplifiedPeaks {
-  peaks: number[]
-  zoom: number
-  original_length: number
+interface WaveformSegment {
+  start_seconds: number
+  end_seconds: number
+  file_name: string
+  file_end_seconds: number
+  left_boundary_is_shuffle_point: boolean
+  right_boundary_is_shuffle_point: boolean
+}
+
+interface TrackWaveformView {
+  channels: number[][]
+  segments: WaveformSegment[]
 }
 
 const audio = useAudioStore()
+const trackStore = useTrackStore()
 const props = defineProps<Props>()
 
-const duration = ref(0)
 const identifier = computed(() => `${props.track.parentId}-${props.track.id}`)
-const widthVal = computed((): number => duration.value * audio.getXScale)
-const width = computed((): string => (widthVal.value > 0 ? `${widthVal.value}px` : '100%'))
 
-const calcHeight = (peak: number) => {
-  return peak * 200 + 1
-}
+const canvasRef = ref<HTMLCanvasElement | null>(null)
+const overviewContainerRef = ref<HTMLDivElement | null>(null)
+const waveformChannels = ref<number[][]>([])
+const waveformSegments = ref<WaveformSegment[]>([])
+const canvasWidthPx = ref(1)
+const hoveringShufflePoint = ref(false)
+const MIN_FETCH_INTERVAL_MS = 16
+const MAX_FETCH_INTERVAL_MS = 72
+const ADAPTIVE_INTERVAL_SMOOTHING = 0.25
 
-const simplifiedPeaks = ref([] as SimplifiedPeaks[])
-
-watch(audio.zoom, () => {
-  // console.log('zoom changed')
-  getSimplifiedPeaks().then((peaks) => {
-    simplifiedPeaks.value = peaks
-  })
-})
-
-const getSimplifiedPeaks = async () => {
-  const simplifiedPeaks = (await invoke('get_simplified_peaks', {
-    fileId: props.track.id,
-    zoom: audio.zoom.x,
-  })) as SimplifiedPeaks[]
-
-  console.log('simplifiedPeaks', simplifiedPeaks)
-
-  return simplifiedPeaks
-}
-
-const peaksLength = computed(() => simplifiedPeaks.value[0]?.peaks.length || 0)
-
-const zoomLevel = computed(() => {
-  const factor = (simplifiedPeaks.value[0]?.original_length || 100) / peaksLength.value
-
-  console.log('factor', factor)
-
-  return 100 / factor
-})
-
-const annotate = (index: number): boolean => {
-  const zoom = zoomLevel.value
-
-  let toAnnotate = false
-
-  const setToAnnotate = (division: number) => {
-    toAnnotate = Math.floor(index % (zoom * division)) === 0
-  }
-
-  if (zoom <= 3) setToAnnotate(30)
-  else if (zoom <= 5) setToAnnotate(10)
-  else if (zoom <= 15) setToAnnotate(5)
-  else if (zoom <= 25) setToAnnotate(3)
-  else if (zoom <= 100) setToAnnotate(2)
-  else setToAnnotate(1)
-
-  return toAnnotate
-}
-
-const getAnnotation = (index: number): string => {
-  const seconds = index / zoomLevel.value
-
-  // Return seconds converted to mm:ss
-  return new Date(seconds * 1000).toISOString().substr(14, 5)
-}
+const viewDuration = computed(() => Math.max(audio.getViewDuration, 0.001))
+const verticalScale = computed(() => Math.max(audio.getYScale, 0.1))
 
 const playheadPosition = computed(() => {
-  const factor = audio.clock * zoomLevel.value * 2
-  console.log(audio.clock, factor, zoomLevel.value)
-  return `${factor}px`
+  const width = canvasWidthPx.value
+  const ratio = (audio.clock - audio.getViewStart) / viewDuration.value
+  const x = Math.min(Math.max(ratio * width, 0), width)
+  return `${x}px`
 })
 
-const seek = (event: MouseEvent) => {
-  const seconds = event.offsetX / zoomLevel.value / 2
-  audio.seek(seconds)
+const trackShufflePoints = computed(() => {
+  const track = trackStore.getTrackFromId(props.track.parentId)
+  return track?.shuffle_points || []
+})
+
+const formatTimestamp = (seconds: number): string => {
+  const total = Math.max(0, Math.floor(seconds))
+  const mins = Math.floor(total / 60)
+  const secs = total % 60
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
 }
 
-onMounted(() => {
-  console.log('starting file')
+const getTickStep = (secondsPerFrame: number): number => {
+  const targetTicks = 8
+  const raw = secondsPerFrame / targetTicks
+  const options = [0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600]
+  return options.find((v) => v >= raw) || 600
+}
 
-  getSimplifiedPeaks().then((peaks) => {
-    simplifiedPeaks.value = peaks
+const parseShufflePointSeconds = (value: string): number | null => {
+  const trimmed = value.trim()
+  if (!trimmed) return null
+
+  const parts = trimmed.split(':')
+  if (parts.length > 3) return null
+
+  if (parts.length === 1) {
+    const seconds = Number(parts[0])
+    return Number.isFinite(seconds) && seconds >= 0 ? seconds : null
+  }
+
+  const seconds = Number(parts[parts.length - 1])
+  const minutes = Number(parts[parts.length - 2])
+  const hours = parts.length === 3 ? Number(parts[0]) : 0
+
+  if (![seconds, minutes, hours].every((value) => Number.isFinite(value) && value >= 0)) {
+    return null
+  }
+
+  return hours * 3600 + minutes * 60 + seconds
+}
+
+const shufflePointSeconds = computed(() =>
+  trackShufflePoints.value
+    .map(parseShufflePointSeconds)
+    .filter((time): time is number => time !== null && Number.isFinite(time) && time >= 0),
+)
+
+const findNearestShufflePointSeconds = (seconds: number, toleranceSeconds: number): number | null => {
+  let nearest: number | null = null
+  let nearestDistance = Number.POSITIVE_INFINITY
+
+  for (const point of shufflePointSeconds.value) {
+    const distance = Math.abs(point - seconds)
+    if (distance <= toleranceSeconds && distance < nearestDistance) {
+      nearest = point
+      nearestDistance = distance
+    }
+  }
+
+  return nearest
+}
+
+const drawWaveform = () => {
+  const canvas = canvasRef.value
+  const container = overviewContainerRef.value
+  if (!canvas || !container) return
+
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
+  const width = Math.max(container.clientWidth, 1)
+  const height = Math.max(container.clientHeight, 150)
+  const dpr = window.devicePixelRatio || 1
+
+  canvasWidthPx.value = width
+  canvas.width = Math.floor(width * dpr)
+  canvas.height = Math.floor(height * dpr)
+  canvas.style.width = `${width}px`
+  canvas.style.height = `${height}px`
+
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  ctx.clearRect(0, 0, width, height)
+
+  ctx.fillStyle = 'white'
+  ctx.fillRect(0, 0, width, height)
+
+  // Shade timeline regions where the currently displayed file has ended.
+  const start = audio.getViewStart
+  const end = audio.getViewEnd
+  const span = Math.max(end - start, 0.001)
+  for (const segment of waveformSegments.value) {
+    const sectionStart = Math.max(segment.start_seconds, start)
+    const sectionEnd = Math.min(segment.end_seconds, end)
+    if (sectionEnd <= sectionStart) continue
+
+    const pastFileStart = Math.max(sectionStart, segment.file_end_seconds)
+    if (pastFileStart >= sectionEnd) continue
+
+    const xStart = ((pastFileStart - start) / span) * width
+    const xEnd = ((sectionEnd - start) / span) * width
+    const shadeWidth = xEnd - xStart
+    if (shadeWidth <= 0) continue
+
+    ctx.fillStyle = 'rgba(120, 120, 120, 0.16)'
+    ctx.fillRect(xStart, 0, shadeWidth, height)
+  }
+
+  const channels = waveformChannels.value
+  const channelCount = Math.max(channels.length, 1)
+  const channelHeight = height / channelCount
+  const yScale = Number(verticalScale.value)
+  const minPeak = 0.008
+
+  const validRanges = waveformSegments.value
+    .map((segment) => {
+      const rangeStart = Math.max(segment.start_seconds, start)
+      const rangeEnd = Math.min(segment.end_seconds, segment.file_end_seconds, end)
+      return rangeEnd > rangeStart ? ([rangeStart, rangeEnd] as const) : null
+    })
+    .filter((range): range is readonly [number, number] => range !== null)
+
+  const isInValidRange = (time: number): boolean => {
+    for (const [rangeStart, rangeEnd] of validRanges) {
+      if (time >= rangeStart && time <= rangeEnd) return true
+    }
+    return false
+  }
+
+  ctx.strokeStyle = 'rgba(116, 116, 116, 0.6)'
+  ctx.lineWidth = 1
+
+  channels.forEach((channel, channelIndex) => {
+    if (channel.length === 0) return
+    const yTop = channelIndex * channelHeight
+    const yMid = yTop + channelHeight / 2
+    const maxAmplitude = channelHeight / 2 - 2
+    const stepX = width / channel.length
+
+    ctx.beginPath()
+    channel.forEach((peak, index) => {
+      const time = start + ((index + 0.5) / channel.length) * span
+      if (!isInValidRange(time)) return
+
+      const x = index * stepX + stepX / 2
+      const scaledPeak = peak * yScale
+      const normalizedPeak = scaledPeak < minPeak ? minPeak : scaledPeak > 1 ? 1 : scaledPeak
+      if (normalizedPeak <= 0) return
+      const amplitude = normalizedPeak * maxAmplitude
+      ctx.moveTo(x, yMid - amplitude)
+      ctx.lineTo(x, yMid + amplitude)
+    })
+    ctx.stroke()
   })
 
-  console.log(props.track)
+  const tickStep = getTickStep(span)
+  const firstTick = Math.ceil(start / tickStep) * tickStep
+
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)'
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.4)'
+  ctx.font = '11px Silkscreen, Segoe UI, Tahoma, Geneva, Verdana, sans-serif'
+  ctx.textAlign = 'center'
+
+  for (let tick = firstTick; tick <= end; tick += tickStep) {
+    const ratio = (tick - start) / span
+    const x = ratio * width
+    ctx.beginPath()
+    ctx.moveTo(x, 0)
+    ctx.lineTo(x, 10)
+    ctx.moveTo(x, height)
+    ctx.lineTo(x, height - 10)
+    ctx.stroke()
+    ctx.fillText(formatTimestamp(tick), x, height - 15)
+  }
+
+  // Draw shuffle point indicators on top of waveform and time ticks.
+  const shufflePointTimes = shufflePointSeconds.value.filter((time) => time >= start && time <= end)
+
+  ctx.strokeStyle = 'rgba(196, 50, 50, 0.9)'
+  ctx.fillStyle = 'rgba(196, 50, 50, 0.95)'
+  ctx.lineWidth = 1
+
+  for (const time of shufflePointTimes) {
+    const x = ((time - start) / span) * width
+    ctx.beginPath()
+    ctx.moveTo(x, 0)
+    ctx.lineTo(x, height)
+    ctx.stroke()
+
+    ctx.beginPath()
+    ctx.moveTo(x - 4, 0)
+    ctx.lineTo(x + 4, 0)
+    ctx.lineTo(x, 7)
+    ctx.closePath()
+    ctx.fill()
+  }
+
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.78)'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.font = '10px Silkscreen, Segoe UI, Tahoma, Geneva, Verdana, sans-serif'
+
+  for (const segment of waveformSegments.value) {
+    const sectionStart = Math.max(segment.start_seconds, start)
+    const sectionEnd = Math.min(segment.end_seconds, end)
+    if (sectionEnd <= sectionStart) continue
+
+    const xStart = ((sectionStart - start) / span) * width
+    const xEnd = ((sectionEnd - start) / span) * width
+    const sectionWidth = xEnd - xStart
+    if (sectionWidth < 28) continue
+
+    const textY = 14
+    const text = segment.file_name
+    const horizontalPadding = 6
+    const leftIsPoint = segment.left_boundary_is_shuffle_point
+    const rightIsPoint = segment.right_boundary_is_shuffle_point
+
+    let textAlign: CanvasTextAlign
+    let textX: number
+    if (leftIsPoint && rightIsPoint) {
+      textAlign = 'center'
+      textX = xStart + sectionWidth / 2
+    } else if (rightIsPoint) {
+      textAlign = 'right'
+      textX = xEnd - horizontalPadding
+    } else if (leftIsPoint) {
+      textAlign = 'left'
+      textX = xStart + horizontalPadding
+    } else {
+      // No visible shuffle points in-region: center in the canvas.
+      textAlign = 'center'
+      textX = width / 2
+    }
+
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.78)'
+    ctx.textAlign = textAlign
+    ctx.fillText(text, textX, textY)
+  }
+
+}
+
+let updateTimer: number | null = null
+let updateQueued = false
+let updateInFlight = false
+let lastUpdateAt = 0
+let activeRequestId = 0
+let adaptiveFetchIntervalMs = 33
+
+const clamp = (value: number, min: number, max: number) => {
+  return Math.min(Math.max(value, min), max)
+}
+
+const runWaveformUpdate = async () => {
+  if (updateInFlight) {
+    updateQueued = true
+    return
+  }
+
+  const updateStartedAt = performance.now()
+  updateInFlight = true
+  const requestId = ++activeRequestId
+  lastUpdateAt = updateStartedAt
+
+  try {
+    const width = Math.max(overviewContainerRef.value?.clientWidth || 0, 1)
+    const targetPeaks = Math.max(Math.floor(width / 2), 64)
+
+    const view = await invoke<TrackWaveformView>('get_track_waveform_peaks', {
+      trackId: props.track.parentId,
+      startSeconds: audio.getViewStart,
+      endSeconds: audio.getViewEnd,
+      targetPeaks,
+    })
+
+    // Drop stale responses if a newer request has already started.
+    if (requestId !== activeRequestId) return
+
+    waveformChannels.value = view.channels
+    waveformSegments.value = view.segments || []
+    await nextTick()
+    drawWaveform()
+  } finally {
+    const elapsed = performance.now() - updateStartedAt
+    const targetInterval = clamp(elapsed * 0.9, MIN_FETCH_INTERVAL_MS, MAX_FETCH_INTERVAL_MS)
+    adaptiveFetchIntervalMs =
+      adaptiveFetchIntervalMs * (1 - ADAPTIVE_INTERVAL_SMOOTHING) +
+      targetInterval * ADAPTIVE_INTERVAL_SMOOTHING
+
+    updateInFlight = false
+    if (updateQueued) {
+      updateQueued = false
+      queueWaveformUpdate(false)
+    }
+  }
+}
+
+const queueWaveformUpdate = (immediate = false) => {
+  if (updateTimer !== null) {
+    if (!immediate) return
+    window.clearTimeout(updateTimer)
+    updateTimer = null
+  }
+
+  if (immediate) {
+    void runWaveformUpdate()
+    return
+  }
+
+  const elapsed = performance.now() - lastUpdateAt
+  const delay = elapsed >= adaptiveFetchIntervalMs ? 0 : adaptiveFetchIntervalMs - elapsed
+  updateTimer = window.setTimeout(() => {
+    updateTimer = null
+    void runWaveformUpdate()
+  }, delay)
+}
+
+const seek = (event: MouseEvent) => {
+  const canvas = canvasRef.value
+  if (!canvas) return
+
+  const rect = canvas.getBoundingClientRect()
+  const x = event.clientX - rect.left
+  const ratio = x / Math.max(rect.width, 1)
+  const seconds = audio.getViewStart + ratio * viewDuration.value
+  if (audio.shufflePointToolMode) {
+    const pixelTolerance = 8
+    const toleranceSeconds = (pixelTolerance / Math.max(rect.width, 1)) * viewDuration.value
+    const nearest = findNearestShufflePointSeconds(seconds, toleranceSeconds)
+    if (nearest !== null) {
+      void trackStore.removeShufflePoint(props.track.parentId, nearest, toleranceSeconds)
+      return
+    }
+    void trackStore.addShufflePoint(props.track.parentId, seconds)
+    return
+  }
+  void audio.seek(seconds)
+}
+
+const onMouseMove = (event: MouseEvent) => {
+  if (!audio.shufflePointToolMode) {
+    hoveringShufflePoint.value = false
+    return
+  }
+
+  const canvas = canvasRef.value
+  if (!canvas) return
+
+  const rect = canvas.getBoundingClientRect()
+  const x = event.clientX - rect.left
+  const ratio = x / Math.max(rect.width, 1)
+  const seconds = audio.getViewStart + ratio * viewDuration.value
+  const pixelTolerance = 8
+  const toleranceSeconds = (pixelTolerance / Math.max(rect.width, 1)) * viewDuration.value
+  hoveringShufflePoint.value = findNearestShufflePointSeconds(seconds, toleranceSeconds) !== null
+}
+
+const onMouseLeave = () => {
+  hoveringShufflePoint.value = false
+}
+
+const onWheel = (event: WheelEvent) => {
+  const canvas = canvasRef.value
+  if (!canvas) return
+
+  let delta = event.deltaX
+  if (Math.abs(delta) < 0.01 && event.shiftKey) {
+    delta = event.deltaY
+  }
+  if (Math.abs(delta) < 0.01) return
+
+  const width = Math.max(canvas.clientWidth, 1)
+  const fraction = delta / width
+  audio.panViewByFraction(fraction)
+}
+
+watch(
+  () => [audio.getViewStart, audio.getViewEnd, props.track.id],
+  () => {
+    queueWaveformUpdate(false)
+  },
+)
+
+watch(
+  () => audio.getYScale,
+  () => {
+    drawWaveform()
+  },
+)
+
+watch(
+  () => trackShufflePoints.value,
+  () => {
+    drawWaveform()
+  },
+  { deep: true },
+)
+
+watch(
+  () => audio.shufflePointToolMode,
+  (enabled) => {
+    if (!enabled) hoveringShufflePoint.value = false
+  },
+)
+
+onMounted(() => {
+  queueWaveformUpdate(true)
+  window.addEventListener('resize', onResize)
+})
+
+const onResize = () => {
+  queueWaveformUpdate(true)
+}
+
+onBeforeUnmount(() => {
+  if (updateTimer !== null) {
+    window.clearTimeout(updateTimer)
+    updateTimer = null
+  }
+  window.removeEventListener('resize', onResize)
 })
 </script>
 
 <style lang="scss" scoped>
 .track {
-  // max-width: calc(100% - 44px);
   background-color: rgba(0, 0, 0, 0.1);
-  // border-radius: 0.5em;
-  // padding: 0 0.5em;
-
-  .folder-button {
-    margin-top: auto;
-  }
 
   .overview-container {
+    position: relative;
     min-height: 150px;
     width: 100%;
-  }
-}
-
-.channels {
-  position: absolute;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100%;
-  overflow-x: hidden;
-  overflow-y: hidden;
-  .channel {
-    position: relative;
-    height: 100%;
-    width: 100%;
-    width: calc(2px * v-bind(peaksLength));
-    // width: calc((2px + 0.1em) * v-bind(peaksLength));
-    display: flex;
-    flex-wrap: wrap;
-    // gap: 0.1em;
-    flex-direction: row;
-    // flex-direction: column;
-    align-items: center;
-    // align-items: flex-start;
-    // justify-content: flex-end;
-    background-color: white;
     overflow: hidden;
+    background: white;
+  }
 
-    .playhead {
-      position: absolute;
-      pointer-events: none;
-      top: 0;
-      left: v-bind(playheadPosition);
-      height: 100%;
-      width: 1px;
-      background-color: #7474746e;
-    }
+  .waveform-canvas {
+    display: block;
+    cursor: pointer;
+  }
 
-    .control {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-    }
+  .waveform-canvas.shuffle-point-tool-mode {
+    cursor: copy;
+  }
 
-    .peak {
-      position: relative;
-      display: block;
-      width: 2px;
-      background-color: #747474;
-      opacity: 0.5;
-      // height: calc(10% * attr(top));
-      border-radius: 0.1em;
-      pointer-events: none;
+  .waveform-canvas.shuffle-point-remove-hover {
+    cursor: not-allowed;
+  }
 
-      // &:nth-of-type(5n) {
-      //   &::after {
-      //     content: '';
-      //     display: block;
-      //     width: 1px;
-      //     height: 1000px;
-      //     background-color: rgba(0, 0, 0, 0.1);
-      //     position: absolute;
-      //     left: 0;
-      //     top: -500px;
-      //   }
-      // }
-
-      // &:nth-of-type(10n) {
-      //   &::after {
-      //     content: '';
-      //     display: block;
-      //     width: 2px;
-      //     height: 1000px;
-      //     background-color: rgba(0, 0, 0, 0.2);
-      //     position: absolute;
-      //     left: 0;
-      //     top: -500px;
-      //   }
-      // }
-    }
-
-    .annotation {
-      position: absolute;
-      height: 100%;
-      pointer-events: none;
-      // width: 1px;
-      // background: grey;
-
-      .timestamp {
-        position: absolute;
-        font-size: 0.7em;
-        bottom: 15px;
-        left: 0;
-        transform: translateX(-50%);
-        color: rgba(0, 0, 0, 0.4);
-        background: white;
-        z-index: 10;
-      }
-
-      &::after,
-      &::before {
-        content: '';
-        display: block;
-        width: 2px;
-        position: absolute;
-        top: 0;
-        height: 10px;
-        background-color: rgba(0, 0, 0, 0.1);
-      }
-
-      &::before {
-        bottom: 0;
-        top: auto;
-      }
-    }
+  .playhead {
+    position: absolute;
+    pointer-events: none;
+    top: 0;
+    left: v-bind(playheadPosition);
+    height: 100%;
+    width: 1px;
+    background-color: #7474746e;
   }
 }
 </style>

@@ -1,46 +1,11 @@
-use std::sync::{Arc, Mutex, atomic::AtomicBool};
 use once_cell::sync::Lazy;
+use proteus_lib::container::play_settings::EffectSettings;
+use std::sync::{atomic::AtomicBool, Arc, Mutex};
 
 use serde::{Deserialize, Serialize};
-use tauri::Window;
-use tauri::State;
 use tauri::Manager;
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ReverbSettings {
-    pub decay: f32,
-    pub pre_delay: f32,
-    pub mix: f32,
-    pub active: bool,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct CompressorSettings {
-    pub attack: f32,
-    pub knee: f32,
-    pub ratio: f32,
-    pub release: f32,
-    pub threshold: f32,
-    pub active: bool,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub enum EffectSettings {
-    ReverbSettings(ReverbSettings),
-    CompressorSettings(CompressorSettings),
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub enum Effect {
-    Compressor(CompressorSettings),
-    Reverb(ReverbSettings),
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct EffectSkeleton {
-    pub id: u32,
-    pub effect: Effect,
-}
+use tauri::State;
+use tauri::Window;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TrackSkeleton {
@@ -48,6 +13,8 @@ pub struct TrackSkeleton {
     pub name: String,
     pub selection: Option<String>,
     pub file_ids: Vec<String>,
+    #[serde(default)]
+    pub shuffle_points: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -84,27 +51,6 @@ pub struct ProjectSkeleton {
     pub files: Vec<FileInfo>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct SettingsTrack {
-    pub level: f32,
-    pub pan: f32,
-    pub ids: Vec<u32>,
-    pub name: String,
-    pub safe_name: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct SettingsEncoder {
-    pub play_settings: PlaySettings,
-    pub encoder_version: f32,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct PlaySettings {
-    pub effects: Vec<EffectSettings>,
-    pub tracks: Vec<SettingsTrack>,
-}
-
 pub fn empty_project() -> ProjectSkeleton {
     ProjectSkeleton {
         name: Some("untitled".to_string()),
@@ -114,6 +60,7 @@ pub fn empty_project() -> ProjectSkeleton {
             name: "".to_string(),
             selection: None,
             file_ids: Vec::new(),
+            shuffle_points: Vec::new(),
         }],
         effects: Vec::new(),
         files: Vec::new(),
@@ -124,14 +71,9 @@ pub fn create_project() -> Arc<Mutex<ProjectSkeleton>> {
     Arc::new(Mutex::new(empty_project()))
 }
 
-pub static PROJECT: Lazy<Arc<Mutex<ProjectSkeleton>>> = Lazy::new(|| {
-    create_project()
-});
+pub static PROJECT: Lazy<Arc<Mutex<ProjectSkeleton>>> = Lazy::new(|| create_project());
 
-pub static UNSAVED_CHANGES: Lazy<AtomicBool> = Lazy::new(|| {
-    AtomicBool::new(false)
-});
-
+pub static UNSAVED_CHANGES: Lazy<AtomicBool> = Lazy::new(|| AtomicBool::new(false));
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ProjectStatus {

@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { Alert, AlertType } from '../typings/proteus'
+import type { Alert, AlertType } from '../typings/proteus'
 
 export const useAlertStore = defineStore('alert', () => {
   /////////////

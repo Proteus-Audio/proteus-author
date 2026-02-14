@@ -1,94 +1,61 @@
-use crate::{
-    file::*,
-    project::{self, PROJECT},
-};
 use tauri::{
-    App, LogicalPosition, LogicalSize, Manager, Position, Size, Window, WindowBuilder, WindowUrl,
+    AppHandle, LogicalPosition, TitleBarStyle, WebviewWindow, WebviewWindowBuilder,
 };
 
-pub fn create_main_window(app: &App) -> Window {
-    create_window(app, 1)
+pub fn create_main_window(app_handle: &AppHandle) -> WebviewWindow {
+    create_window(app_handle, 1)
 }
 
-pub fn create_window(app: &App, count: i32) -> Window {
-    let handle = app.handle();
-    let window = WindowBuilder::new(
-        &handle,
+pub fn create_window(app_handle: &AppHandle, count: i32) -> WebviewWindow {
+    let (width, height, position) = compute_main_window_geometry(app_handle);
+
+    let win_builder = WebviewWindowBuilder::new(
+        app_handle,
         format!("{}-{}", "main-window", count),
-        WindowUrl::App("index.html".into()),
+        tauri::WebviewUrl::App("index.html".into()),
     )
     .title("Proteus Author")
     .min_inner_size(600.0, 600.0)
-    .build()
-    .unwrap();
+    .inner_size(width, height)
+    .position(position.x, position.y);
 
-    let current_monitor = Window::current_monitor(&window)
-        .unwrap()
-        .expect("error getting current monitor");
-    let scale_size = current_monitor.scale_factor().clone();
-    let monitor_size = current_monitor.size().clone().to_logical(scale_size) as LogicalSize<f64>;
-    let width = vec![monitor_size.width - 150.0, 1240.0]
-        .iter()
-        .min_by(|a, b| a.total_cmp(b))
-        .expect("Couldn't get width")
-        .clone();
-    let height = vec![monitor_size.height - 150.0, 775.0]
-        .iter()
-        .min_by(|a, b| a.total_cmp(b))
-        .expect("Couldn't get height")
-        .clone();
-    let new_window_size = Size::from(LogicalSize::new(width, height));
+    // set transparent title bar only when building for macOS
+    #[cfg(target_os = "macos")]
+    let win_builder = win_builder.title_bar_style(TitleBarStyle::Transparent);
 
-    window.set_size(new_window_size).unwrap();
-    let window_position = Position::new(LogicalPosition::new(
-        (monitor_size.width - width) / 2.0,
-        (monitor_size.height - height) / 2.0,
-    ));
-
-    window.set_position(window_position).unwrap();
+    let window = win_builder.build().unwrap();
 
     if count < 1 {
-        create_window(app, count + 1);
+        create_window(app_handle, count + 1);
     }
 
-    println!(
-        "M Height: {} M Width: {}",
-        monitor_size.height, monitor_size.width
-    );
-    println!("Height: {} Width: {}", height, width);
-
-    let label = String::from(window.label());
-
-    window.on_menu_event(move |event| match event.menu_item_id() {
-        "save" => {
-            let window = handle.get_window(&label).unwrap();
-            window.emit("SAVE_FILE", "").expect("failed to emit event");
-            // let new_handle = app.handle();
-            // save_file();
-        }
-        "save_as" => {
-            let window = handle.get_window(&label).unwrap();
-            window
-                .emit("SAVE_FILE_AS", "")
-                .expect("failed to emit event");
-            // save_file_as();
-        }
-        "load" => {
-            load_file(&handle, &label);
-        }
-        "export_prot" => {
-            let window = handle.get_window(&label).unwrap();
-            window
-                .emit("START_EXPORT", "")
-                .expect("failed to emit event");
-        }
-        "new_window" => {
-            load_empty_project(&handle);
-        }
-        _ => {}
-    });
-
     window
+}
+
+fn compute_main_window_geometry(app_handle: &AppHandle) -> (f64, f64, LogicalPosition<f64>) {
+    let fallback_width = 1240.0;
+    let fallback_height = 775.0;
+
+    let monitor = app_handle
+        .primary_monitor()
+        .ok()
+        .flatten()
+        .or_else(|| app_handle.available_monitors().ok().and_then(|mut m| m.pop()));
+
+    if let Some(monitor) = monitor {
+        let monitor_size = monitor.size().to_logical::<f64>(monitor.scale_factor());
+        let width = (monitor_size.width - 150.0).min(fallback_width).max(600.0);
+        let height = (monitor_size.height - 150.0).min(fallback_height).max(600.0);
+        let position =
+            LogicalPosition::new((monitor_size.width - width) / 2.0, (monitor_size.height - height) / 2.0);
+        return (width, height, position);
+    }
+
+    (
+        fallback_width,
+        fallback_height,
+        LogicalPosition::new(100.0, 100.0),
+    )
 }
 
 // pub fn create_docs_window(app: &AppHandle) {

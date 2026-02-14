@@ -28,15 +28,16 @@
 //     simplified_peaks
 // }
 
+use serde::{Deserialize, Serialize};
+use std::fs::File;
+use std::io::prelude::*;
+use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::{collections::HashMap, fs::File};
-use std::io::prelude::*;
-
-use proteus_audio::peaks;
-use serde::{Serialize, Deserialize};
-use tauri::{Window, Manager};
 use tauri::State;
+use tauri::{Manager, Window};
+
+use crate::helpers::get_cache_dir;
 
 use crate::project::ProjectSkeleton;
 
@@ -45,6 +46,72 @@ pub struct SimplifiedPeaks {
     peaks: Vec<f32>,
     zoom: usize,
     original_length: usize,
+}
+
+fn to_legacy_peaks(peaks_data: proteus_lib::peaks::PeaksData) -> Vec<Vec<(f32, f32)>> {
+    peaks_data
+        .channels
+        .into_iter()
+        .map(|channel| {
+            channel
+                .into_iter()
+                .map(|window| (window.max, window.min))
+                .collect()
+        })
+        .collect()
+}
+
+fn peaks_duration_seconds(peaks_data: &proteus_lib::peaks::PeaksData) -> f64 {
+    if peaks_data.channels.is_empty() || peaks_data.sample_rate == 0 || peaks_data.window_size == 0 {
+        return 0.0;
+    }
+
+    let peak_count = peaks_data.channels[0].len() as f64;
+    let samples = peak_count * peaks_data.window_size as f64;
+    samples / peaks_data.sample_rate as f64
+}
+
+pub fn get_cached_peak_duration_seconds(window: &Window, file_id: &str) -> f64 {
+    let peaks_file_path = ensure_peaks_file(window, file_id);
+    let peaks_data = proteus_lib::peaks::get_peaks(&peaks_file_path, Default::default())
+        .expect("failed to read .peaks");
+    peaks_duration_seconds(&peaks_data).max(0.0)
+}
+
+fn get_peaks_file_path(window: &Window, file_id: &str) -> String {
+    let app_cache = get_cache_dir(window).unwrap();
+    format!("{}/{}.peaks", app_cache, file_id)
+}
+
+fn ensure_peaks_file(window: &Window, file_id: &str) -> String {
+    let peaks_file_path = get_peaks_file_path(window, file_id);
+
+    if Path::new(&peaks_file_path).exists() {
+        return peaks_file_path;
+    }
+
+    let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
+    let project = project_state.lock().unwrap();
+    let file_path = project
+        .files
+        .iter()
+        .find(|f| f.id == file_id)
+        .unwrap()
+        .path
+        .clone();
+    drop(project);
+
+    proteus_lib::peaks::write_peaks(&file_path, &peaks_file_path)
+        .expect("failed to write .peaks file");
+
+    let peaks_data = proteus_lib::peaks::get_peaks(&peaks_file_path, Default::default())
+        .expect("failed to read .peaks file after writing");
+    let peaks = to_legacy_peaks(peaks_data);
+
+    let app_cache = get_cache_dir(window).unwrap();
+    save_svgs_in_new_thread_for_each_zoom_level(peaks, format!("{}/{}.svg", app_cache, file_id));
+
+    peaks_file_path
 }
 
 pub fn simplify_peaks(peaks: Vec<Vec<(f32, f32)>>, zoom: usize) -> Vec<SimplifiedPeaks> {
@@ -57,7 +124,9 @@ pub fn simplify_peaks(peaks: Vec<Vec<(f32, f32)>>, zoom: usize) -> Vec<Simplifie
     // Twenty different zoom levels from 1 to 20
     // which coorespond to 5% to 100% of the original peaks
     // with no repeating values
-    let zoom_levels: Arc<[u32]> = Arc::new([100, 70, 50, 33, 25, 20, 16, 14, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]);
+    let zoom_levels: Arc<[u32]> = Arc::new([
+        100, 70, 50, 33, 25, 20, 16, 14, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1,
+    ]);
     let group_size: usize = zoom_levels[zoom + 1] as usize;
 
     for channel_peaks in peaks {
@@ -84,8 +153,6 @@ pub fn simplify_peaks(peaks: Vec<Vec<(f32, f32)>>, zoom: usize) -> Vec<Simplifie
             }
         }
 
-
-
         simplified_peaks.push(SimplifiedPeaks {
             peaks: channel_simplified,
             zoom,
@@ -96,64 +163,81 @@ pub fn simplify_peaks(peaks: Vec<Vec<(f32, f32)>>, zoom: usize) -> Vec<Simplifie
     simplified_peaks
 }
 
-#[tauri::command]
-pub fn get_json_peaks(window: &Window, file_id: &String, peaks_option: Option<Vec<Vec<(f32, f32)>>>) -> Vec<Vec<(f32, f32)>> {
-    // let timer = std::time::Instant::now();
-    let app_cache = window.app_handle().path_resolver().app_cache_dir().unwrap();
-    let app_cache_dir = app_cache.to_str().unwrap();
-    
-    if peaks_option.is_some() {
-        let timer = std::time::Instant::now();
-        let peaks = peaks_option.unwrap();
-        let mut peaks_file = File::create(format!("{}/{}.json", app_cache_dir, file_id)).unwrap();
-
-        let timer = std::time::Instant::now();
-        let peaks_json = serde_json::to_string(&peaks).unwrap();
-        peaks_file.write(peaks_json.as_bytes()).unwrap();
-        
-        return peaks;
-    }
-    
-    let peaks_file = File::open(format!("{}/{}.json", app_cache_dir, file_id));
-
-    match peaks_file {
-        Ok(mut peaks_file) => {
-            let timer = std::time::Instant::now();
-            let mut peaks_json = String::new();
-            let timer = std::time::Instant::now();
-            peaks_file.read_to_string(&mut peaks_json).unwrap();
-            let timer = std::time::Instant::now();
-            let peaks: Vec<Vec<(f32, f32)>> = serde_json::from_str(&peaks_json).unwrap();
-            return peaks;
-        },
-        Err(_) => {
-            let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
-
-            let project = project_state.lock().unwrap();
-            let file_path = project.files.iter().find(|f| f.id == *file_id).unwrap().path.clone();
-
-            let peaks = proteus_audio::peaks::get_peaks(&file_path, true);
-
-            let peaks_json = serde_json::to_string(&peaks).unwrap();
-            let mut peaks_file = File::create(format!("{}/{}.json", app_cache_dir, file_id)).unwrap();
-            peaks_file.write(peaks_json.as_bytes()).unwrap();
-
-            save_svgs_in_new_thread_for_each_zoom_level(peaks.clone(), format!("{}/{}.svg", app_cache_dir, file_id));
-
-            return peaks
-        }
-    }
-
+pub fn get_cached_peaks(window: &Window, file_id: &str) -> Vec<Vec<(f32, f32)>> {
+    let peaks_file_path = ensure_peaks_file(window, file_id);
+    let peaks_data =
+        proteus_lib::peaks::get_peaks(&peaks_file_path, Default::default())
+            .expect("failed to read .peaks");
+    to_legacy_peaks(peaks_data)
 }
 
+pub fn get_cached_peaks_in_range(
+    window: &Window,
+    file_id: &str,
+    start_seconds: f64,
+    end_seconds: f64,
+) -> Vec<Vec<(f32, f32)>> {
+    let peaks_file_path = ensure_peaks_file(window, file_id);
+    let peaks_data =
+        proteus_lib::peaks::get_peaks_in_range(&peaks_file_path, start_seconds, end_seconds)
+            .expect("failed to read .peaks range");
+    to_legacy_peaks(peaks_data)
+}
 
+pub fn get_cached_peaks_for_full_duration(window: &Window, file_id: &str) -> Vec<Vec<(f32, f32)>> {
+    let peaks_file_path = ensure_peaks_file(window, file_id);
+    let full_peaks = proteus_lib::peaks::get_peaks(&peaks_file_path, Default::default())
+        .expect("failed to read .peaks");
+    let end_seconds = peaks_duration_seconds(&full_peaks);
+
+    if end_seconds <= 0.0 {
+        return to_legacy_peaks(full_peaks);
+    }
+
+    get_cached_peaks_in_range(window, file_id, 0.0, end_seconds)
+}
+
+pub fn get_cached_peak_amplitudes_in_range(
+    window: &Window,
+    file_id: &str,
+    start_seconds: f64,
+    end_seconds: f64,
+    target_peaks: usize,
+) -> Vec<Vec<f32>> {
+    let peaks_file_path = ensure_peaks_file(window, file_id);
+    let clamped_start = start_seconds.max(0.0);
+    let clamped_end = end_seconds.max(clamped_start + 0.001);
+    let options = proteus_lib::peaks::GetPeaksOptions {
+        start_seconds: Some(clamped_start),
+        end_seconds: Some(clamped_end),
+        target_peaks: Some(target_peaks.max(1)),
+        channels: None,
+    };
+
+    let peaks_data =
+        proteus_lib::peaks::get_peaks(&peaks_file_path, options).expect("failed to read .peaks");
+
+    peaks_data
+        .channels
+        .into_iter()
+        .map(|channel| {
+            channel
+                .into_iter()
+                .map(|window| ((window.min.abs() + window.max.abs()) / 2.0).clamp(0.0, 1.0))
+                .collect()
+        })
+        .collect()
+}
 
 pub fn make_svg_from_peaks(peaks: Vec<Vec<(f32, f32)>>, height: u32) -> String {
     let mut svg = String::new();
 
     let width = peaks[0].len() as u32;
 
-    svg.push_str(&format!("<svg width=\"{}\" height=\"{}\" xmlns=\"http://www.w3.org/2000/svg\">", width, height));
+    svg.push_str(&format!(
+        "<svg width=\"{}\" height=\"{}\" xmlns=\"http://www.w3.org/2000/svg\">",
+        width, height
+    ));
 
     let mut x = 0;
     let y = (height / 2) as i32;
@@ -182,7 +266,10 @@ pub fn make_svg_from_simplified_peaks(peaks: Vec<SimplifiedPeaks>, height: u32) 
 
     let width = peaks[0].peaks.len() as u32;
 
-    svg.push_str(&format!("<svg width=\"{}\" height=\"{}\" xmlns=\"http://www.w3.org/2000/svg\">", width, height));
+    svg.push_str(&format!(
+        "<svg width=\"{}\" height=\"{}\" xmlns=\"http://www.w3.org/2000/svg\">",
+        width, height
+    ));
 
     let mut x = 0;
     let y = (height / 2) as i32;

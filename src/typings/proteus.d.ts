@@ -1,22 +1,22 @@
-import { EffectSettings } from '../public/effects'
-import { DropFileSkeleton } from './tracks'
+import type { AudioEffectPayload } from './effects'
+import type { DropFileSkeleton, Track } from './tracks'
 
-type AlertType = 'success' | 'warning' | 'info' | 'error'
+export type AlertType = 'success' | 'warning' | 'info' | 'error'
 
-interface Alert {
+export interface Alert {
   contents: string
   type: AlertType
   autoClose: boolean
 }
 
-type AlertClass = 'fresh' | 'stale'
+export type AlertClass = 'fresh' | 'stale'
 
-interface AlertView extends Alert {
+export interface AlertView extends Alert {
   class: AlertClass
   added: Date
 }
 
-interface ProjectHead {
+export interface ProjectHead {
   name: string
   path?: string
 }
@@ -33,18 +33,18 @@ interface ProjectHead {
 //   }[]
 // }
 
-interface TrackSkeleton {
+export interface TrackSkeleton {
   id: number
   name: string
+  selection?: string
   file_ids: string[]
+  shuffle_points?: string[]
 }
 
-interface ProjectSkeleton {
+export interface ProjectSkeleton {
   location?: string
   name?: string
   tracks: Track[]
-  effects: EffectSettings[]
+  effects: AudioEffectPayload[]
   files: DropFileSkeleton[]
 }
-
-export { Alert, AlertType, AlertClass, AlertView, ProjectSkeleton, TrackSkeleton, ProjectHead }

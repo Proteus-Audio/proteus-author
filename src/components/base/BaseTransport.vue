@@ -1,50 +1,72 @@
 <template>
   <div class="transport">
     <el-button v-if="!audio.isPlaying" :icon="VideoPlay" @click="play" text>play</el-button>
-    <el-button v-else :icon="VideoPause" @click="audio.pause" text>pause</el-button>
-    <el-button id="BaseTransportStop" :icon="Close" @click="audio.stop" text>stop</el-button>
-    <el-button id="BaseTransportShuffle" :icon="Refresh" @click="track.shuffle" text
-      >shuffle</el-button
+    <el-button v-else :icon="VideoPause" @click="pause" text>pause</el-button>
+    <el-button id="BaseTransportStop" :icon="Close" @click="stop" text>stop</el-button>
+    <el-button id="BaseTransportShuffle" :icon="Refresh" @click="shuffle" text>shuffle</el-button>
+    <el-button
+      id="BaseTransportFollowMode"
+      @click="toggleFollowMode"
+      :type="audio.followMode ? 'primary' : 'default'"
+      plain
     >
-    <el-button :icon="ZoomIn" @click="zoomIn" text :disabled="audio.zoom.x === 20"></el-button>
-    <el-button :icon="ZoomOut" @click="zoomOut" text :disabled="audio.zoom.x === 1"></el-button>
-    <div class="volume-bin">
-      <el-slider v-model="volume" :show-tooltip="false" size="small" />
-    </div>
+      follow {{ audio.followMode ? 'on' : 'off' }}
+    </el-button>
+    <el-button :icon="ZoomIn" @click="zoomIn" text :disabled="zoomInDisabled"></el-button>
+    <el-button :icon="ZoomOut" @click="zoomOut" text :disabled="zoomOutDisabled"></el-button>
+    <el-button :icon="Back" @click="panLeft" text>left</el-button>
+    <el-button :icon="Right" @click="panRight" text>right</el-button>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useAudioStore } from '../../stores/audio'
 import { useTrackStore } from '../../stores/track'
-import { VideoPlay, VideoPause, Close, Refresh, ZoomOut, ZoomIn } from '@element-plus/icons-vue'
-import { toneMaster } from '../../assets/toneMaster'
-import { computed, ref } from 'vue'
-import { invoke } from '@tauri-apps/api'
+import {
+  VideoPlay,
+  VideoPause,
+  Close,
+  Refresh,
+  ZoomOut,
+  ZoomIn,
+  Back,
+  Right,
+} from '@element-plus/icons-vue'
+import { computed } from 'vue'
 
 const audio = useAudioStore()
 const track = useTrackStore()
-const volumeRef = ref(toneMaster.volume)
 
-const volume = computed({
-  get: () => volumeRef.value * 75,
-  set: async (value: number) => {
-    volumeRef.value = value / 75
-    await invoke('set_volume', { volume: (value / 100) * 3 })
-    // toneMaster.setGain(value / 75)
-  },
+const zoomInDisabled = computed(() => {
+  return audio.getViewDuration <= 0.51
+})
+
+const zoomOutDisabled = computed(() => {
+  if (audio.duration <= 0) return false
+  return audio.getViewDuration >= audio.duration - 0.01
 })
 
 const play = () => {
-  audio.play()
-  // if (!track.initialised) {
-  //   window.dispatchEvent(new Event('resize'))
-  //   track.initialised = true
-  // }
+  void audio.play()
 }
 
+const pause = () => {
+  void audio.pause()
+}
+
+const stop = () => {
+  void audio.stop()
+}
+
+const shuffle = () => {
+  void track.shuffle()
+}
+
+const toggleFollowMode = () => audio.toggleFollowMode()
 const zoomIn = () => audio.zoomIn()
 const zoomOut = () => audio.zoomOut()
+const panLeft = () => audio.panViewLeft(0.2)
+const panRight = () => audio.panViewRight(0.2)
 </script>
 
 <style lang="scss" scoped>
@@ -54,11 +76,7 @@ const zoomOut = () => audio.zoomOut()
   padding: 1em 0;
   text-align: right;
   display: grid;
-  grid-template-columns: 100px 100px 100px 50px 50px 1fr;
+  grid-template-columns: 100px 100px 100px 110px 50px 50px 70px 70px;
   gap: 1em;
-  .volume-bin {
-    // width: calc(100% - 500px);
-    // display: inline-block;
-  }
 }
 </style>
