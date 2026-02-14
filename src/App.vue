@@ -15,6 +15,9 @@
           <div class="bin-container">
             <TrackBin v-for="track in trackStore.tracks" :track-id="track.id" :key="track.id" />
           </div>
+          <div class="combinations-total">
+            Unique playback combinations: {{ formattedPossibleCombinations }}
+          </div>
           <div class="padding"></div>
         </BaseContainer>
 
@@ -59,6 +62,17 @@ const { registerShortcuts, unregisterShortcuts } = useAppShortcuts()
 
 const windowTitle = computed(() => {
   return head.name.replace('.protproject', '')
+})
+
+const formattedPossibleCombinations = computed(() => {
+  const raw = trackStore.possibleCombinations
+  if (!/^\d+$/.test(raw)) return raw
+
+  try {
+    return BigInt(raw).toLocaleString()
+  } catch {
+    return raw
+  }
 })
 
 const unlisteners = ref<UnlistenFn[]>([])
@@ -318,6 +332,12 @@ body {
   width: 100%;
   overflow: hidden;
   border-radius: 0.5em;
+}
+
+.combinations-total {
+  margin: 0.75rem 0 0.25rem;
+  font-size: 0.95rem;
+  opacity: 0.85;
 }
 
 #proteus-author {

@@ -17,6 +17,7 @@ export const useTrackStore = defineStore('track', () => {
 
   const tracks = ref([] as Track[])
   const files = ref([] as DropFileSkeleton[])
+  const possibleCombinations = ref('0')
 
   /////////////
   // GETTERS //
@@ -135,6 +136,7 @@ export const useTrackStore = defineStore('track', () => {
     }
 
     void head.logChanges()
+    void refreshPossibleCombinations()
   }
 
   const removeFileFromTrack = (fileIds: string | string[], trackId: number) => {
@@ -149,6 +151,7 @@ export const useTrackStore = defineStore('track', () => {
     })
 
     void head.logChanges()
+    void refreshPossibleCombinations()
   }
 
   const addShufflePoint = async (trackId: number, seconds: number) => {
@@ -162,6 +165,7 @@ export const useTrackStore = defineStore('track', () => {
 
     tracks.value[index].shuffle_points = shufflePoints
     void head.logChanges()
+    await refreshPossibleCombinations()
   }
 
   const removeShufflePoint = async (trackId: number, seconds: number, toleranceSeconds: number) => {
@@ -176,6 +180,12 @@ export const useTrackStore = defineStore('track', () => {
 
     tracks.value[index].shuffle_points = shufflePoints
     void head.logChanges()
+    await refreshPossibleCombinations()
+  }
+
+  const refreshPossibleCombinations = async () => {
+    const count = await invoke<string | null>('get_possible_combinations')
+    possibleCombinations.value = count || 'overflow'
   }
 
   const sync = async () => {
@@ -186,11 +196,13 @@ export const useTrackStore = defineStore('track', () => {
     tracks.value = projectState.tracks
 
     addEmptyTrackIfNone()
+    await refreshPossibleCombinations()
   }
 
   return {
     tracks,
     files,
+    possibleCombinations,
     allTracks,
     nextTrackId,
     emptyTrackExists,
@@ -211,6 +223,7 @@ export const useTrackStore = defineStore('track', () => {
     addShufflePoint,
     removeShufflePoint,
     removeFileFromTrack,
+    refreshPossibleCombinations,
     sync,
   }
 })

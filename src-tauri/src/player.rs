@@ -14,6 +14,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use proteus_lib::container::prot::PathsTrack;
+use proteus_lib::container::prot::Prot;
 use proteus_lib::container::play_settings::EffectSettings;
 use proteus_lib::diagnostics::reporter::Report;
 use proteus_lib::playback::player::Player;
@@ -27,14 +28,8 @@ use tauri::Window;
 
 use crate::project::ProjectSkeleton;
 
-#[tauri::command]
-pub async fn init_player(window: Window) {
-    let start_of_process = std::time::Instant::now();
-    let player_state: State<Arc<Mutex<Option<Player>>>> = window.state();
-    let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
-    let project = project_state.lock().unwrap();
-
-    let tracks_for_player: Vec<PathsTrack> = project
+fn build_paths_tracks(project: &ProjectSkeleton) -> Vec<PathsTrack> {
+    project
         .tracks
         .iter()
         .filter_map(|track| {
@@ -78,7 +73,17 @@ pub async fn init_player(window: Window) {
                 shuffle_points: track.shuffle_points.clone(),
             })
         })
-        .collect();
+        .collect()
+}
+
+#[tauri::command]
+pub async fn init_player(window: Window) {
+    let start_of_process = std::time::Instant::now();
+    let player_state: State<Arc<Mutex<Option<Player>>>> = window.state();
+    let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
+    let project = project_state.lock().unwrap();
+
+    let tracks_for_player = build_paths_tracks(&project);
 
     if tracks_for_player.is_empty() {
         player_state.lock().unwrap().take();
@@ -109,6 +114,20 @@ pub async fn init_player(window: Window) {
         "init_player took {}ms",
         start_of_process.elapsed().as_millis()
     );
+}
+
+#[tauri::command]
+pub fn get_possible_combinations(window: Window) -> Option<String> {
+    let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
+    let project = project_state.lock().unwrap();
+    let tracks_for_player = build_paths_tracks(&project);
+
+    if tracks_for_player.is_empty() {
+        return Some(String::from("0"));
+    }
+
+    let prot = Prot::new_from_file_paths(tracks_for_player);
+    prot.count_possible_combinations().map(|count| count.to_string())
 }
 
 #[tauri::command]

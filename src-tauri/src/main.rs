@@ -80,6 +80,7 @@ fn main() {
             shuffle,
             get_duration,
             get_position,
+            get_possible_combinations,
             get_play_state,
             get_levels,
             get_levels_db,
