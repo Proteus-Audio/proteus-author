@@ -205,6 +205,182 @@ pub async fn get_waveform_peaks(
 }
 
 #[tauri::command]
+pub async fn get_track_waveform_peaks(
+    track_id: u32,
+    start_seconds: f64,
+    end_seconds: f64,
+    target_peaks: usize,
+    window: Window,
+) -> Vec<Vec<f32>> {
+    let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
+    let project = project_state.lock().unwrap();
+    let Some(track) = project.tracks.iter().find(|track| track.id == track_id) else {
+        return vec![Vec::new()];
+    };
+    let file_ids = track.file_ids.clone();
+    let shuffle_points = track.shuffle_points.clone();
+    let selection = track.selection.clone();
+    drop(project);
+
+    if file_ids.is_empty() {
+        return vec![Vec::new()];
+    }
+
+    if file_ids.len() == 1 || shuffle_points.is_empty() {
+        return get_cached_peak_amplitudes_in_range(
+            &window,
+            &file_ids[0],
+            start_seconds,
+            end_seconds,
+            target_peaks,
+        );
+    }
+
+    let clamped_start = start_seconds.max(0.0);
+    let clamped_end = end_seconds.max(clamped_start + 0.001);
+    let view_duration = (clamped_end - clamped_start).max(0.001);
+    let points_target = target_peaks.max(1);
+
+    let mut points_in_range: Vec<f64> = shuffle_points
+        .iter()
+        .filter_map(|point| parse_timestamp_seconds(point))
+        .filter(|point| *point > clamped_start && *point < clamped_end)
+        .collect();
+    points_in_range.sort_by(|a, b| a.total_cmp(b));
+    points_in_range.dedup_by(|a, b| (*a - *b).abs() < f64::EPSILON);
+
+    let mut segment_bounds = Vec::with_capacity(points_in_range.len() + 2);
+    segment_bounds.push(clamped_start);
+    segment_bounds.extend(points_in_range.iter().copied());
+    segment_bounds.push(clamped_end);
+
+    let selected_index = selection
+        .as_ref()
+        .and_then(|selection_id| file_ids.iter().position(|id| id == selection_id))
+        .unwrap_or(0);
+
+    let mut channels_out: Vec<Vec<f32>> = Vec::new();
+    let mut allocated = 0usize;
+
+    for segment_index in 0..(segment_bounds.len().saturating_sub(1)) {
+        let seg_start = segment_bounds[segment_index];
+        let seg_end = segment_bounds[segment_index + 1];
+        let seg_duration = (seg_end - seg_start).max(0.0001);
+        let seg_ratio = seg_duration / view_duration;
+
+        let remaining_segments = (segment_bounds.len() - 1) - segment_index;
+        let remaining_budget = points_target.saturating_sub(allocated);
+        let proportional = ((points_target as f64) * seg_ratio).round() as usize;
+        let mut segment_target = proportional.max(8);
+        if remaining_segments == 1 {
+            segment_target = remaining_budget.max(1);
+        } else {
+            let max_for_segment = remaining_budget.saturating_sub(remaining_segments - 1).max(1);
+            segment_target = segment_target.min(max_for_segment);
+        }
+        allocated += segment_target;
+
+        // Keep segment choice stable and deterministic relative to selected file.
+        let file_index = (selected_index + segment_index) % file_ids.len();
+        let file_id = &file_ids[file_index];
+
+        let segment_channels = get_cached_peak_amplitudes_in_range(
+            &window,
+            file_id,
+            seg_start,
+            seg_end,
+            segment_target,
+        );
+
+        if channels_out.is_empty() {
+            channels_out = segment_channels;
+            continue;
+        }
+
+        if channels_out.len() < segment_channels.len() {
+            channels_out.resize_with(segment_channels.len(), Vec::new);
+        }
+
+        for channel_index in 0..channels_out.len() {
+            if let Some(channel) = segment_channels.get(channel_index) {
+                channels_out[channel_index].extend_from_slice(channel);
+            } else {
+                let pad = vec![0.0_f32; segment_target];
+                channels_out[channel_index].extend_from_slice(&pad);
+            }
+        }
+    }
+
+    if channels_out.is_empty() {
+        return vec![Vec::new()];
+    }
+
+    channels_out
+        .into_iter()
+        .map(|channel| resample_to_target_peaks(channel, points_target))
+        .collect()
+}
+
+fn parse_timestamp_seconds(value: &str) -> Option<f64> {
+    let parts: Vec<&str> = value.trim().split(':').collect();
+    if parts.is_empty() || parts.len() > 3 {
+        return None;
+    }
+
+    let seconds_component = parts.last()?.parse::<f64>().ok()?;
+    if !seconds_component.is_finite() || seconds_component.is_sign_negative() {
+        return None;
+    }
+
+    let minutes = if parts.len() >= 2 {
+        parts[parts.len() - 2].parse::<f64>().ok()?
+    } else {
+        0.0
+    };
+    let hours = if parts.len() == 3 {
+        parts[0].parse::<f64>().ok()?
+    } else {
+        0.0
+    };
+
+    let seconds = (hours * 3600.0) + (minutes * 60.0) + seconds_component;
+    if seconds.is_finite() && seconds >= 0.0 {
+        Some(seconds)
+    } else {
+        None
+    }
+}
+
+fn resample_to_target_peaks(values: Vec<f32>, target: usize) -> Vec<f32> {
+    if target <= 1 {
+        return vec![values.first().copied().unwrap_or(0.0)];
+    }
+    if values.is_empty() {
+        return vec![0.0; target];
+    }
+    if values.len() == target {
+        return values;
+    }
+
+    let mut out = Vec::with_capacity(target);
+    let scale = (values.len() - 1) as f64 / (target - 1) as f64;
+    for index in 0..target {
+        let src = (index as f64) * scale;
+        let left = src.floor() as usize;
+        let right = src.ceil() as usize;
+        if left == right {
+            out.push(values[left]);
+        } else {
+            let t = (src - left as f64) as f32;
+            let value = values[left] * (1.0 - t) + values[right] * t;
+            out.push(value);
+        }
+    }
+
+    out
+}
+
+#[tauri::command]
 pub fn get_peaks(file_path: &str) -> Vec<Vec<(f32, f32)>> {
     let peaks_file_path = format!("{}.peaks", file_path);
     if !Path::new(&peaks_file_path).exists() {

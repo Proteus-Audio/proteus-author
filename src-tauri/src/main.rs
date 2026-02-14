@@ -66,6 +66,7 @@ fn main() {
             register_file,
             get_simplified_peaks,
             get_waveform_peaks,
+            get_track_waveform_peaks,
             init_player,
             get_project_state,
             play,

@@ -222,8 +222,8 @@ const runWaveformUpdate = async () => {
     const width = Math.max(overviewContainerRef.value?.clientWidth || 0, 1)
     const targetPeaks = Math.max(Math.floor(width / 2), 64)
 
-    const channels = await invoke<number[][]>('get_waveform_peaks', {
-      fileId: props.track.id,
+    const channels = await invoke<number[][]>('get_track_waveform_peaks', {
+      trackId: props.track.parentId,
       startSeconds: audio.getViewStart,
       endSeconds: audio.getViewEnd,
       targetPeaks,
