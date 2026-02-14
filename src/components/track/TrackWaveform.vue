@@ -37,6 +37,8 @@ interface WaveformSegment {
   end_seconds: number
   file_name: string
   file_end_seconds: number
+  left_boundary_is_shuffle_point: boolean
+  right_boundary_is_shuffle_point: boolean
 }
 
 interface TrackWaveformView {
@@ -263,11 +265,31 @@ const drawWaveform = () => {
     const sectionWidth = xEnd - xStart
     if (sectionWidth < 28) continue
 
-    const textX = xStart + sectionWidth / 2
     const textY = 14
     const text = segment.file_name
+    const horizontalPadding = 6
+    const leftIsPoint = segment.left_boundary_is_shuffle_point
+    const rightIsPoint = segment.right_boundary_is_shuffle_point
+
+    let textAlign: CanvasTextAlign
+    let textX: number
+    if (leftIsPoint && rightIsPoint) {
+      textAlign = 'center'
+      textX = xStart + sectionWidth / 2
+    } else if (rightIsPoint) {
+      textAlign = 'right'
+      textX = xEnd - horizontalPadding
+    } else if (leftIsPoint) {
+      textAlign = 'left'
+      textX = xStart + horizontalPadding
+    } else {
+      // No visible shuffle points in-region: center in the canvas.
+      textAlign = 'center'
+      textX = width / 2
+    }
 
     ctx.fillStyle = 'rgba(0, 0, 0, 0.78)'
+    ctx.textAlign = textAlign
     ctx.fillText(text, textX, textY)
   }
 

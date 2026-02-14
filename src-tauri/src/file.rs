@@ -30,6 +30,8 @@ pub struct WaveformSegment {
     pub end_seconds: f64,
     pub file_name: String,
     pub file_end_seconds: f64,
+    pub left_boundary_is_shuffle_point: bool,
+    pub right_boundary_is_shuffle_point: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -283,8 +285,9 @@ pub async fn get_track_waveform_peaks(
     let mut channels_out: Vec<Vec<f32>> = Vec::new();
     let mut segments_out: Vec<WaveformSegment> = Vec::new();
     let mut allocated = 0usize;
+    let total_segments = segment_bounds.len().saturating_sub(1);
 
-    for segment_index in 0..(segment_bounds.len().saturating_sub(1)) {
+    for segment_index in 0..total_segments {
         let seg_start = segment_bounds[segment_index];
         let seg_end = segment_bounds[segment_index + 1];
         let seg_duration = (seg_end - seg_start).max(0.0001);
@@ -316,6 +319,8 @@ pub async fn get_track_waveform_peaks(
             end_seconds: seg_end,
             file_name,
             file_end_seconds,
+            left_boundary_is_shuffle_point: segment_index > 0,
+            right_boundary_is_shuffle_point: segment_index < total_segments.saturating_sub(1),
         });
 
         let segment_channels = get_cached_peak_amplitudes_in_range(
