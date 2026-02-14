@@ -15,8 +15,8 @@ use std::sync::{Arc, Mutex};
 
 use file::*;
 use menu::{
-    set_add_shuffle_point_mode_menu, set_follow_mode_menu, set_remove_shuffle_point_mode_menu,
-    AddShufflePointModeState, FollowModeState, RemoveShufflePointModeState,
+    set_follow_mode_menu, set_shuffle_point_tool_mode_menu, FollowModeState,
+    ShufflePointToolModeState,
 };
 use player::*;
 use project::*;
@@ -40,21 +40,17 @@ fn main() {
         .manage(project::create_project())
         .manage(Arc::new(Mutex::new(None::<Player>)))
         .manage(FollowModeState(Arc::new(Mutex::new(false))))
-        .manage(AddShufflePointModeState(Arc::new(Mutex::new(false))))
-        .manage(RemoveShufflePointModeState(Arc::new(Mutex::new(false))))
+        .manage(ShufflePointToolModeState(Arc::new(Mutex::new(false))))
         .menu(|app_handle| menu::build_menu(app_handle))
         .on_menu_event(|app_handle, event| {
             let follow_mode_state: tauri::State<FollowModeState> = app_handle.state();
-            let add_shuffle_point_mode_state: tauri::State<AddShufflePointModeState> =
-                app_handle.state();
-            let remove_shuffle_point_mode_state: tauri::State<RemoveShufflePointModeState> =
+            let shuffle_point_tool_mode_state: tauri::State<ShufflePointToolModeState> =
                 app_handle.state();
             menu::handle_menu_event(
                 app_handle,
                 event,
                 follow_mode_state.inner(),
-                add_shuffle_point_mode_state.inner(),
-                remove_shuffle_point_mode_state.inner(),
+                shuffle_point_tool_mode_state.inner(),
             );
         })
         .invoke_handler(tauri::generate_handler![
@@ -91,8 +87,7 @@ fn main() {
             set_volume,
             set_effects_chain,
             set_follow_mode_menu,
-            set_add_shuffle_point_mode_menu,
-            set_remove_shuffle_point_mode_menu
+            set_shuffle_point_tool_mode_menu
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");

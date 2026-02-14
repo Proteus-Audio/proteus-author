@@ -221,17 +221,11 @@ onMounted(async () => {
   })
   unlisteners.value.push(menuFollowMode)
 
-  const menuAddShufflePointMode = await listen('MENU_ADD_SHUFFLE_POINT_MODE', (event) => {
+  const menuShufflePointToolMode = await listen('MENU_SHUFFLE_POINT_TOOL_MODE', (event) => {
     const payload = event.payload as { enabled?: boolean }
-    audio.setAddShufflePointMode(!!payload.enabled)
+    audio.setShufflePointToolMode(!!payload.enabled)
   })
-  unlisteners.value.push(menuAddShufflePointMode)
-
-  const menuRemoveShufflePointMode = await listen('MENU_REMOVE_SHUFFLE_POINT_MODE', (event) => {
-    const payload = event.payload as { enabled?: boolean }
-    audio.setRemoveShufflePointMode(!!payload.enabled)
-  })
-  unlisteners.value.push(menuRemoveShufflePointMode)
+  unlisteners.value.push(menuShufflePointToolMode)
 
   trackStore.addEmptyTrackIfNone()
 
@@ -269,16 +263,9 @@ watch(
 )
 
 watch(
-  () => audio.addShufflePointMode,
+  () => audio.shufflePointToolMode,
   (enabled) => {
-    void invoke('set_add_shuffle_point_mode_menu', { enabled })
-  },
-)
-
-watch(
-  () => audio.removeShufflePointMode,
-  (enabled) => {
-    void invoke('set_remove_shuffle_point_mode_menu', { enabled })
+    void invoke('set_shuffle_point_tool_mode_menu', { enabled })
   },
 )
 

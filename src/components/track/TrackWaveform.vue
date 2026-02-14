@@ -9,10 +9,12 @@
         ref="canvasRef"
         class="waveform-canvas"
         :class="{
-          'add-shuffle-point-mode': audio.addShufflePointMode,
-          'remove-shuffle-point-mode': audio.removeShufflePointMode,
+          'shuffle-point-tool-mode': audio.shufflePointToolMode,
+          'shuffle-point-remove-hover': audio.shufflePointToolMode && hoveringShufflePoint,
         }"
         @click="seek"
+        @mousemove="onMouseMove"
+        @mouseleave="onMouseLeave"
         @wheel.prevent="onWheel"
       ></canvas>
       <div class="playhead"></div>
@@ -57,6 +59,7 @@ const overviewContainerRef = ref<HTMLDivElement | null>(null)
 const waveformChannels = ref<number[][]>([])
 const waveformSegments = ref<WaveformSegment[]>([])
 const canvasWidthPx = ref(1)
+const hoveringShufflePoint = ref(false)
 const MIN_FETCH_INTERVAL_MS = 16
 const MAX_FETCH_INTERVAL_MS = 72
 const ADAPTIVE_INTERVAL_SMOOTHING = 0.25
@@ -111,6 +114,27 @@ const parseShufflePointSeconds = (value: string): number | null => {
   }
 
   return hours * 3600 + minutes * 60 + seconds
+}
+
+const shufflePointSeconds = computed(() =>
+  trackShufflePoints.value
+    .map(parseShufflePointSeconds)
+    .filter((time): time is number => time !== null && Number.isFinite(time) && time >= 0),
+)
+
+const findNearestShufflePointSeconds = (seconds: number, toleranceSeconds: number): number | null => {
+  let nearest: number | null = null
+  let nearestDistance = Number.POSITIVE_INFINITY
+
+  for (const point of shufflePointSeconds.value) {
+    const distance = Math.abs(point - seconds)
+    if (distance <= toleranceSeconds && distance < nearestDistance) {
+      nearest = point
+      nearestDistance = distance
+    }
+  }
+
+  return nearest
 }
 
 const drawWaveform = () => {
@@ -226,10 +250,7 @@ const drawWaveform = () => {
   }
 
   // Draw shuffle point indicators on top of waveform and time ticks.
-  const shufflePointTimes = trackShufflePoints.value
-    .map(parseShufflePointSeconds)
-    .filter((time): time is number => time !== null)
-    .filter((time) => time >= start && time <= end)
+  const shufflePointTimes = shufflePointSeconds.value.filter((time) => time >= start && time <= end)
 
   ctx.strokeStyle = 'rgba(196, 50, 50, 0.9)'
   ctx.fillStyle = 'rgba(196, 50, 50, 0.95)'
@@ -378,17 +399,40 @@ const seek = (event: MouseEvent) => {
   const x = event.clientX - rect.left
   const ratio = x / Math.max(rect.width, 1)
   const seconds = audio.getViewStart + ratio * viewDuration.value
-  if (audio.addShufflePointMode) {
+  if (audio.shufflePointToolMode) {
+    const pixelTolerance = 8
+    const toleranceSeconds = (pixelTolerance / Math.max(rect.width, 1)) * viewDuration.value
+    const nearest = findNearestShufflePointSeconds(seconds, toleranceSeconds)
+    if (nearest !== null) {
+      void trackStore.removeShufflePoint(props.track.parentId, nearest, toleranceSeconds)
+      return
+    }
     void trackStore.addShufflePoint(props.track.parentId, seconds)
     return
   }
-  if (audio.removeShufflePointMode) {
-    const pixelTolerance = 8
-    const toleranceSeconds = (pixelTolerance / Math.max(rect.width, 1)) * viewDuration.value
-    void trackStore.removeShufflePoint(props.track.parentId, seconds, toleranceSeconds)
+  void audio.seek(seconds)
+}
+
+const onMouseMove = (event: MouseEvent) => {
+  if (!audio.shufflePointToolMode) {
+    hoveringShufflePoint.value = false
     return
   }
-  void audio.seek(seconds)
+
+  const canvas = canvasRef.value
+  if (!canvas) return
+
+  const rect = canvas.getBoundingClientRect()
+  const x = event.clientX - rect.left
+  const ratio = x / Math.max(rect.width, 1)
+  const seconds = audio.getViewStart + ratio * viewDuration.value
+  const pixelTolerance = 8
+  const toleranceSeconds = (pixelTolerance / Math.max(rect.width, 1)) * viewDuration.value
+  hoveringShufflePoint.value = findNearestShufflePointSeconds(seconds, toleranceSeconds) !== null
+}
+
+const onMouseLeave = () => {
+  hoveringShufflePoint.value = false
 }
 
 const onWheel = (event: WheelEvent) => {
@@ -428,6 +472,13 @@ watch(
   { deep: true },
 )
 
+watch(
+  () => audio.shufflePointToolMode,
+  (enabled) => {
+    if (!enabled) hoveringShufflePoint.value = false
+  },
+)
+
 onMounted(() => {
   queueWaveformUpdate(true)
   window.addEventListener('resize', onResize)
@@ -463,11 +514,11 @@ onBeforeUnmount(() => {
     cursor: pointer;
   }
 
-  .waveform-canvas.add-shuffle-point-mode {
+  .waveform-canvas.shuffle-point-tool-mode {
     cursor: copy;
   }
 
-  .waveform-canvas.remove-shuffle-point-mode {
+  .waveform-canvas.shuffle-point-remove-hover {
     cursor: not-allowed;
   }
 

@@ -27,8 +27,7 @@ export const useAudioStore = defineStore('prot', () => {
   const zoom = ref({ y: 1 })
   const view = ref({ start: 0, end: 10 })
   const followMode = ref(true)
-  const addShufflePointMode = ref(false)
-  const removeShufflePointMode = ref(false)
+  const shufflePointToolMode = ref(false)
   const effects = ref([] as EffectChainItem[])
   const clock: Ref<number> = ref(0.0)
   const levelsDb = ref([-60, -60] as number[])
@@ -158,26 +157,12 @@ export const useAudioStore = defineStore('prot', () => {
     followMode.value = !followMode.value
   }
 
-  const setAddShufflePointMode = (enabled: boolean) => {
-    addShufflePointMode.value = enabled
-    if (enabled) {
-      removeShufflePointMode.value = false
-    }
+  const setShufflePointToolMode = (enabled: boolean) => {
+    shufflePointToolMode.value = enabled
   }
 
-  const toggleAddShufflePointMode = () => {
-    setAddShufflePointMode(!addShufflePointMode.value)
-  }
-
-  const setRemoveShufflePointMode = (enabled: boolean) => {
-    removeShufflePointMode.value = enabled
-    if (enabled) {
-      addShufflePointMode.value = false
-    }
-  }
-
-  const toggleRemoveShufflePointMode = () => {
-    setRemoveShufflePointMode(!removeShufflePointMode.value)
+  const toggleShufflePointToolMode = () => {
+    setShufflePointToolMode(!shufflePointToolMode.value)
   }
 
   const panViewByFraction = (fraction: number) => {
@@ -369,8 +354,7 @@ export const useAudioStore = defineStore('prot', () => {
     zoom,
     view,
     followMode,
-    addShufflePointMode,
-    removeShufflePointMode,
+    shufflePointToolMode,
     effects,
     effectsChain,
     effectsChainForBackend,
@@ -392,10 +376,8 @@ export const useAudioStore = defineStore('prot', () => {
     setViewRange,
     setFollowMode,
     toggleFollowMode,
-    setAddShufflePointMode,
-    toggleAddShufflePointMode,
-    setRemoveShufflePointMode,
-    toggleRemoveShufflePointMode,
+    setShufflePointToolMode,
+    toggleShufflePointToolMode,
     panViewByFraction,
     panViewLeft,
     panViewRight,
