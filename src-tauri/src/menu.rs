@@ -199,8 +199,15 @@ pub fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
             &pan_right,
             &separator,
             &follow_mode,
-            &add_shuffle_point_mode,
         ],
+    )?;
+
+    let tool_tips_menu = Submenu::with_id_and_items(
+        app,
+        "tool_tips",
+        "Tool Tips",
+        true,
+        &[&add_shuffle_point_mode],
     )?;
 
     let window_menu = Submenu::with_id_and_items(
@@ -222,6 +229,7 @@ pub fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     items.push(&file_menu);
     items.push(&edit_menu);
     items.push(&view_menu);
+    items.push(&tool_tips_menu);
     items.push(&window_menu);
 
     Menu::with_id_and_items(app, "main", &items)
