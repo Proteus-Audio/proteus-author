@@ -22,6 +22,38 @@
         </div>
       </template>
 
+      <template v-else-if="type === 'DiffusionReverb'">
+        <div class="control-grid">
+          <AnalogToggle v-model="diffusionEnabled" label="Enabled" />
+          <AnalogKnob v-model="diffusionMix" label="Mix" :min="0" :max="1" :step="0.01" />
+          <AnalogKnob
+            v-model="diffusionPreDelay"
+            label="Pre-delay"
+            :min="0"
+            :max="250"
+            :step="1"
+            units="ms"
+          />
+          <AnalogKnob
+            v-model="diffusionRoomSize"
+            label="Room"
+            :min="1"
+            :max="500"
+            :step="1"
+            units="ms"
+          />
+          <AnalogKnob v-model="diffusionDecay" label="Decay" :min="0" :max="1" :step="0.01" />
+          <AnalogKnob v-model="diffusionDamping" label="Damping" :min="0" :max="1" :step="0.01" />
+          <AnalogKnob
+            v-model="diffusionDiffusion"
+            label="Diffusion"
+            :min="0"
+            :max="1"
+            :step="0.01"
+          />
+        </div>
+      </template>
+
       <template v-else-if="type === 'ConvolutionReverb'">
         <div class="control-grid">
           <AnalogToggle v-model="convolutionEnabled" label="Enabled" />
@@ -224,6 +256,12 @@ const basicSettings = computed(() =>
     : undefined,
 )
 
+const diffusionSettings = computed(() =>
+  effect.value && 'DiffusionReverbSettings' in effect.value
+    ? effect.value.DiffusionReverbSettings
+    : undefined,
+)
+
 const convolutionSettings = computed(() =>
   effect.value && 'ConvolutionReverbSettings' in effect.value
     ? effect.value.ConvolutionReverbSettings
@@ -287,6 +325,55 @@ const basicAmplitude = computed({
   get: () => basicSettings.value?.amplitude ?? 0,
   set: (value: number) => {
     if (basicSettings.value) basicSettings.value.amplitude = value
+  },
+})
+
+const diffusionEnabled = computed({
+  get: () => diffusionSettings.value?.enabled ?? false,
+  set: (value: boolean) => {
+    if (diffusionSettings.value) diffusionSettings.value.enabled = value
+  },
+})
+
+const diffusionMix = computed({
+  get: () => diffusionSettings.value?.mix ?? 0,
+  set: (value: number) => {
+    if (diffusionSettings.value) diffusionSettings.value.mix = value
+  },
+})
+
+const diffusionPreDelay = computed({
+  get: () => diffusionSettings.value?.pre_delay_ms ?? 0,
+  set: (value: number) => {
+    if (diffusionSettings.value) diffusionSettings.value.pre_delay_ms = value
+  },
+})
+
+const diffusionRoomSize = computed({
+  get: () => diffusionSettings.value?.room_size_ms ?? 0,
+  set: (value: number) => {
+    if (diffusionSettings.value) diffusionSettings.value.room_size_ms = value
+  },
+})
+
+const diffusionDecay = computed({
+  get: () => diffusionSettings.value?.decay ?? 0,
+  set: (value: number) => {
+    if (diffusionSettings.value) diffusionSettings.value.decay = value
+  },
+})
+
+const diffusionDamping = computed({
+  get: () => diffusionSettings.value?.damping ?? 0,
+  set: (value: number) => {
+    if (diffusionSettings.value) diffusionSettings.value.damping = value
+  },
+})
+
+const diffusionDiffusion = computed({
+  get: () => diffusionSettings.value?.diffusion ?? 0,
+  set: (value: number) => {
+    if (diffusionSettings.value) diffusionSettings.value.diffusion = value
   },
 })
 
@@ -512,6 +599,7 @@ const gainAmount = computed({
 const enabledState = computed(() => {
   if (!effect.value) return false
   if ('BasicReverbSettings' in effect.value) return effect.value.BasicReverbSettings.enabled
+  if ('DiffusionReverbSettings' in effect.value) return effect.value.DiffusionReverbSettings.enabled
   if ('ConvolutionReverbSettings' in effect.value)
     return effect.value.ConvolutionReverbSettings.enabled
   if ('CompressorSettings' in effect.value) return effect.value.CompressorSettings.enabled
