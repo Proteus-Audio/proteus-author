@@ -252,13 +252,18 @@ pub async fn get_track_waveform_peaks(
     let view_duration = (clamped_end - clamped_start).max(0.001);
     let points_target = target_peaks.max(1);
 
-    let mut points_in_range: Vec<f64> = shuffle_points
+    let mut all_points: Vec<f64> = shuffle_points
         .iter()
         .filter_map(|point| parse_timestamp_seconds(point))
+        .collect();
+    all_points.sort_by(|a, b| a.total_cmp(b));
+    all_points.dedup_by(|a, b| (*a - *b).abs() < f64::EPSILON);
+
+    let points_in_range: Vec<f64> = all_points
+        .iter()
+        .copied()
         .filter(|point| *point > clamped_start && *point < clamped_end)
         .collect();
-    points_in_range.sort_by(|a, b| a.total_cmp(b));
-    points_in_range.dedup_by(|a, b| (*a - *b).abs() < f64::EPSILON);
 
     let mut segment_bounds = Vec::with_capacity(points_in_range.len() + 2);
     segment_bounds.push(clamped_start);
@@ -269,6 +274,10 @@ pub async fn get_track_waveform_peaks(
         .as_ref()
         .and_then(|selection_id| file_ids.iter().position(|id| id == selection_id))
         .unwrap_or(0);
+    let base_segment_index = all_points
+        .iter()
+        .filter(|point| **point <= clamped_start)
+        .count();
 
     let mut channels_out: Vec<Vec<f32>> = Vec::new();
     let mut segments_out: Vec<WaveformSegment> = Vec::new();
@@ -293,7 +302,7 @@ pub async fn get_track_waveform_peaks(
         allocated += segment_target;
 
         // Keep segment choice stable and deterministic relative to selected file.
-        let file_index = (selected_index + segment_index) % file_ids.len();
+        let file_index = (selected_index + base_segment_index + segment_index) % file_ids.len();
         let file_id = &file_ids[file_index];
         let file_name = files
             .iter()
