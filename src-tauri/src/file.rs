@@ -5,7 +5,7 @@ use proteus_lib::container::play_settings::{
 use proteus_lib::dsp::effects::AudioEffect;
 use regex::Regex;
 use serde::Serialize;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
@@ -20,6 +20,7 @@ use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_shell;
 use tauri_plugin_shell::process::CommandEvent;
 use tauri_plugin_shell::ShellExt;
+use proteus_lib::playback::player::Player;
 
 use crate::peaks::*;
 use crate::project::*;
@@ -241,6 +242,17 @@ pub async fn get_track_waveform_peaks(
     let shuffle_points = track.shuffle_points.clone();
     let selection = track.selection.clone();
     let files = project.files.clone();
+    let playable_track_index = project
+        .tracks
+        .iter()
+        .filter(|candidate| {
+            candidate.file_ids.iter().any(|file_id| {
+                files
+                    .iter()
+                    .any(|file| file.id == *file_id && !file.path.is_empty())
+            })
+        })
+        .position(|candidate| candidate.id == track_id);
     drop(project);
 
     if file_ids.is_empty() {
@@ -286,6 +298,40 @@ pub async fn get_track_waveform_peaks(
     let mut segments_out: Vec<WaveformSegment> = Vec::new();
     let mut allocated = 0usize;
     let total_segments = segment_bounds.len().saturating_sub(1);
+    let allowed_file_ids: HashSet<&str> = file_ids.iter().map(|id| id.as_str()).collect();
+    let path_to_file_id: HashMap<&str, &str> = files
+        .iter()
+        .map(|file| (file.path.as_str(), file.id.as_str()))
+        .collect();
+    let shuffle_schedule = {
+        let player_state: State<Arc<Mutex<Option<Player>>>> = window.state();
+        let player = player_state.lock().unwrap();
+        player.as_ref().map(|player| player.get_shuffle_schedule())
+    };
+    let resolve_file_from_schedule = |segment_time: f64| -> Option<String> {
+        let track_index = playable_track_index?;
+        let schedule = shuffle_schedule.as_ref()?;
+        if schedule.is_empty() {
+            return None;
+        }
+
+        let mut current_sources = &schedule[0].1;
+        for (at_seconds, sources) in schedule.iter() {
+            if *at_seconds <= segment_time {
+                current_sources = sources;
+            } else {
+                break;
+            }
+        }
+
+        let path = current_sources.get(track_index)?;
+        let file_id = path_to_file_id.get(path.as_str())?;
+        if allowed_file_ids.contains(*file_id) {
+            Some((*file_id).to_string())
+        } else {
+            None
+        }
+    };
 
     for segment_index in 0..total_segments {
         let seg_start = segment_bounds[segment_index];
@@ -305,15 +351,21 @@ pub async fn get_track_waveform_peaks(
         }
         allocated += segment_target;
 
-        // Keep segment choice stable and deterministic relative to selected file.
-        let file_index = (selected_index + base_segment_index + segment_index) % file_ids.len();
-        let file_id = &file_ids[file_index];
+        let segment_lookup_time = (seg_start + 0.000_001).min(seg_end);
+        let scheduled_file_id = resolve_file_from_schedule(segment_lookup_time);
+        // Fallback keeps prior deterministic behavior if player schedule isn't available.
+        let file_id = if let Some(file_id) = scheduled_file_id {
+            file_id
+        } else {
+            let file_index = (selected_index + base_segment_index + segment_index) % file_ids.len();
+            file_ids[file_index].clone()
+        };
         let file_name = files
             .iter()
-            .find(|file| file.id == *file_id)
+            .find(|file| file.id == file_id)
             .map(|file| file.name.clone())
             .unwrap_or_else(|| "Unknown".to_string());
-        let file_end_seconds = get_cached_peak_duration_seconds(&window, file_id);
+        let file_end_seconds = get_cached_peak_duration_seconds(&window, &file_id);
         segments_out.push(WaveformSegment {
             start_seconds: seg_start,
             end_seconds: seg_end,
@@ -325,7 +377,7 @@ pub async fn get_track_waveform_peaks(
 
         let segment_channels = get_cached_peak_amplitudes_in_range(
             &window,
-            file_id,
+            &file_id,
             seg_start,
             seg_end,
             segment_target,
