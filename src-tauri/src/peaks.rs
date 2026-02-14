@@ -71,6 +71,13 @@ fn peaks_duration_seconds(peaks_data: &proteus_lib::peaks::PeaksData) -> f64 {
     samples / peaks_data.sample_rate as f64
 }
 
+pub fn get_cached_peak_duration_seconds(window: &Window, file_id: &str) -> f64 {
+    let peaks_file_path = ensure_peaks_file(window, file_id);
+    let peaks_data = proteus_lib::peaks::get_peaks(&peaks_file_path, Default::default())
+        .expect("failed to read .peaks");
+    peaks_duration_seconds(&peaks_data).max(0.0)
+}
+
 fn get_peaks_file_path(window: &Window, file_id: &str) -> String {
     let app_cache = get_cache_dir(window).unwrap();
     format!("{}/{}.peaks", app_cache, file_id)

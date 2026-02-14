@@ -29,6 +29,7 @@ pub struct WaveformSegment {
     pub start_seconds: f64,
     pub end_seconds: f64,
     pub file_name: String,
+    pub file_end_seconds: f64,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -309,10 +310,12 @@ pub async fn get_track_waveform_peaks(
             .find(|file| file.id == *file_id)
             .map(|file| file.name.clone())
             .unwrap_or_else(|| "Unknown".to_string());
+        let file_end_seconds = get_cached_peak_duration_seconds(&window, file_id);
         segments_out.push(WaveformSegment {
             start_seconds: seg_start,
             end_seconds: seg_end,
             file_name,
+            file_end_seconds,
         });
 
         let segment_channels = get_cached_peak_amplitudes_in_range(

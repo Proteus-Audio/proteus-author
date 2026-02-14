@@ -36,6 +36,7 @@ interface WaveformSegment {
   start_seconds: number
   end_seconds: number
   file_name: string
+  file_end_seconds: number
 }
 
 interface TrackWaveformView {
@@ -134,6 +135,27 @@ const drawWaveform = () => {
   ctx.fillStyle = 'white'
   ctx.fillRect(0, 0, width, height)
 
+  // Shade timeline regions where the currently displayed file has ended.
+  const start = audio.getViewStart
+  const end = audio.getViewEnd
+  const span = Math.max(end - start, 0.001)
+  for (const segment of waveformSegments.value) {
+    const sectionStart = Math.max(segment.start_seconds, start)
+    const sectionEnd = Math.min(segment.end_seconds, end)
+    if (sectionEnd <= sectionStart) continue
+
+    const pastFileStart = Math.max(sectionStart, segment.file_end_seconds)
+    if (pastFileStart >= sectionEnd) continue
+
+    const xStart = ((pastFileStart - start) / span) * width
+    const xEnd = ((sectionEnd - start) / span) * width
+    const shadeWidth = xEnd - xStart
+    if (shadeWidth <= 0) continue
+
+    ctx.fillStyle = 'rgba(120, 120, 120, 0.16)'
+    ctx.fillRect(xStart, 0, shadeWidth, height)
+  }
+
   const channels = waveformChannels.value
   const channelCount = Math.max(channels.length, 1)
   const channelHeight = height / channelCount
@@ -162,9 +184,6 @@ const drawWaveform = () => {
     ctx.stroke()
   })
 
-  const start = audio.getViewStart
-  const end = audio.getViewEnd
-  const span = Math.max(end - start, 0.001)
   const tickStep = getTickStep(span)
   const firstTick = Math.ceil(start / tickStep) * tickStep
 
@@ -234,6 +253,7 @@ const drawWaveform = () => {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.78)'
     ctx.fillText(text, textX, textY)
   }
+
 }
 
 let updateTimer: number | null = null
