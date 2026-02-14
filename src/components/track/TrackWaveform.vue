@@ -32,6 +32,17 @@ interface Props {
   selected: boolean
 }
 
+interface WaveformSegment {
+  start_seconds: number
+  end_seconds: number
+  file_name: string
+}
+
+interface TrackWaveformView {
+  channels: number[][]
+  segments: WaveformSegment[]
+}
+
 const audio = useAudioStore()
 const trackStore = useTrackStore()
 const props = defineProps<Props>()
@@ -41,6 +52,7 @@ const identifier = computed(() => `${props.track.parentId}-${props.track.id}`)
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 const overviewContainerRef = ref<HTMLDivElement | null>(null)
 const waveformChannels = ref<number[][]>([])
+const waveformSegments = ref<WaveformSegment[]>([])
 const canvasWidthPx = ref(1)
 const MIN_FETCH_INTERVAL_MS = 16
 const MAX_FETCH_INTERVAL_MS = 72
@@ -197,6 +209,31 @@ const drawWaveform = () => {
     ctx.closePath()
     ctx.fill()
   }
+
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.78)'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.font = '10px Silkscreen, Segoe UI, Tahoma, Geneva, Verdana, sans-serif'
+
+  for (const segment of waveformSegments.value) {
+    const sectionStart = Math.max(segment.start_seconds, start)
+    const sectionEnd = Math.min(segment.end_seconds, end)
+    if (sectionEnd <= sectionStart) continue
+
+    const xStart = ((sectionStart - start) / span) * width
+    const xEnd = ((sectionEnd - start) / span) * width
+    const sectionWidth = xEnd - xStart
+    if (sectionWidth < 28) continue
+
+    const textX = xStart + sectionWidth / 2
+    const textY = 14
+    const text = segment.file_name
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.84)'
+    ctx.fillRect(xStart + 2, 4, Math.max(sectionWidth - 4, 0), 16)
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.78)'
+    ctx.fillText(text, textX, textY)
+  }
 }
 
 let updateTimer: number | null = null
@@ -225,7 +262,7 @@ const runWaveformUpdate = async () => {
     const width = Math.max(overviewContainerRef.value?.clientWidth || 0, 1)
     const targetPeaks = Math.max(Math.floor(width / 2), 64)
 
-    const channels = await invoke<number[][]>('get_track_waveform_peaks', {
+    const view = await invoke<TrackWaveformView>('get_track_waveform_peaks', {
       trackId: props.track.parentId,
       startSeconds: audio.getViewStart,
       endSeconds: audio.getViewEnd,
@@ -235,7 +272,8 @@ const runWaveformUpdate = async () => {
     // Drop stale responses if a newer request has already started.
     if (requestId !== activeRequestId) return
 
-    waveformChannels.value = channels
+    waveformChannels.value = view.channels
+    waveformSegments.value = view.segments || []
     await nextTick()
     drawWaveform()
   } finally {

@@ -4,6 +4,7 @@ use proteus_lib::container::play_settings::{
 };
 use proteus_lib::dsp::effects::AudioEffect;
 use regex::Regex;
+use serde::Serialize;
 use std::collections::HashSet;
 use std::fs::File;
 use std::io::prelude::*;
@@ -22,6 +23,19 @@ use tauri_plugin_shell::ShellExt;
 
 use crate::peaks::*;
 use crate::project::*;
+
+#[derive(Debug, Clone, Serialize)]
+pub struct WaveformSegment {
+    pub start_seconds: f64,
+    pub end_seconds: f64,
+    pub file_name: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct TrackWaveformView {
+    pub channels: Vec<Vec<f32>>,
+    pub segments: Vec<WaveformSegment>,
+}
 
 fn split_arguments(string: &str) -> Vec<&str> {
     let re = Regex::new(r#"[^"\s]*("[^"]*)"|([^"\s]+)"#).unwrap();
@@ -211,29 +225,26 @@ pub async fn get_track_waveform_peaks(
     end_seconds: f64,
     target_peaks: usize,
     window: Window,
-) -> Vec<Vec<f32>> {
+) -> TrackWaveformView {
     let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
     let project = project_state.lock().unwrap();
     let Some(track) = project.tracks.iter().find(|track| track.id == track_id) else {
-        return vec![Vec::new()];
+        return TrackWaveformView {
+            channels: vec![Vec::new()],
+            segments: Vec::new(),
+        };
     };
     let file_ids = track.file_ids.clone();
     let shuffle_points = track.shuffle_points.clone();
     let selection = track.selection.clone();
+    let files = project.files.clone();
     drop(project);
 
     if file_ids.is_empty() {
-        return vec![Vec::new()];
-    }
-
-    if file_ids.len() == 1 || shuffle_points.is_empty() {
-        return get_cached_peak_amplitudes_in_range(
-            &window,
-            &file_ids[0],
-            start_seconds,
-            end_seconds,
-            target_peaks,
-        );
+        return TrackWaveformView {
+            channels: vec![Vec::new()],
+            segments: Vec::new(),
+        };
     }
 
     let clamped_start = start_seconds.max(0.0);
@@ -260,6 +271,7 @@ pub async fn get_track_waveform_peaks(
         .unwrap_or(0);
 
     let mut channels_out: Vec<Vec<f32>> = Vec::new();
+    let mut segments_out: Vec<WaveformSegment> = Vec::new();
     let mut allocated = 0usize;
 
     for segment_index in 0..(segment_bounds.len().saturating_sub(1)) {
@@ -283,6 +295,16 @@ pub async fn get_track_waveform_peaks(
         // Keep segment choice stable and deterministic relative to selected file.
         let file_index = (selected_index + segment_index) % file_ids.len();
         let file_id = &file_ids[file_index];
+        let file_name = files
+            .iter()
+            .find(|file| file.id == *file_id)
+            .map(|file| file.name.clone())
+            .unwrap_or_else(|| "Unknown".to_string());
+        segments_out.push(WaveformSegment {
+            start_seconds: seg_start,
+            end_seconds: seg_end,
+            file_name,
+        });
 
         let segment_channels = get_cached_peak_amplitudes_in_range(
             &window,
@@ -312,13 +334,21 @@ pub async fn get_track_waveform_peaks(
     }
 
     if channels_out.is_empty() {
-        return vec![Vec::new()];
+        return TrackWaveformView {
+            channels: vec![Vec::new()],
+            segments: segments_out,
+        };
     }
 
-    channels_out
+    let channels = channels_out
         .into_iter()
         .map(|channel| resample_to_target_peaks(channel, points_target))
-        .collect()
+        .collect();
+
+    TrackWaveformView {
+        channels,
+        segments: segments_out,
+    }
 }
 
 fn parse_timestamp_seconds(value: &str) -> Option<f64> {

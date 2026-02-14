@@ -18,8 +18,6 @@
           placeholder="Click to Add Name"
           v-model="trackName"
         />
-        -
-        <div type="text" class="selection-name">{{ selectedFile?.name }}</div>
 
         <el-button
           :icon="Folder"
