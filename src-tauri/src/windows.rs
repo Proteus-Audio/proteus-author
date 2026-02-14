@@ -1,12 +1,23 @@
 use tauri::{
-    AppHandle, LogicalPosition, TitleBarStyle, WebviewWindow, WebviewWindowBuilder,
+    AppHandle, LogicalPosition, Manager, Runtime, TitleBarStyle, WebviewWindow,
+    WebviewWindowBuilder,
 };
 
-pub fn create_main_window(app_handle: &AppHandle) -> WebviewWindow {
+const MAIN_WINDOW_LABEL: &str = "main-window-1";
+
+pub fn create_main_window<R: Runtime>(app_handle: &AppHandle<R>) -> WebviewWindow<R> {
     create_window(app_handle, 1)
 }
 
-pub fn create_window(app_handle: &AppHandle, count: i32) -> WebviewWindow {
+pub fn get_or_create_main_window<R: Runtime>(app_handle: &AppHandle<R>) -> WebviewWindow<R> {
+    if let Some(existing) = app_handle.get_webview_window(MAIN_WINDOW_LABEL) {
+        return existing;
+    }
+
+    create_main_window(app_handle)
+}
+
+pub fn create_window<R: Runtime>(app_handle: &AppHandle<R>, count: i32) -> WebviewWindow<R> {
     let (width, height, position) = compute_main_window_geometry(app_handle);
 
     let win_builder = WebviewWindowBuilder::new(
@@ -32,7 +43,9 @@ pub fn create_window(app_handle: &AppHandle, count: i32) -> WebviewWindow {
     window
 }
 
-fn compute_main_window_geometry(app_handle: &AppHandle) -> (f64, f64, LogicalPosition<f64>) {
+fn compute_main_window_geometry<R: Runtime>(
+    app_handle: &AppHandle<R>,
+) -> (f64, f64, LogicalPosition<f64>) {
     let fallback_width = 1240.0;
     let fallback_height = 775.0;
 

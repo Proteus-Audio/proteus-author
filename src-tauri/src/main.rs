@@ -20,7 +20,6 @@ use menu::{
 };
 use player::*;
 use project::*;
-use proteus_lib::playback::player::Player;
 use dotenv::dotenv;
 use tauri::Manager;
 
@@ -37,8 +36,9 @@ fn main() {
         // .plugin(tauri_plugin_notification::init())
         // .plugin(tauri_plugin_process::init())
         // .plugin(tauri_plugin_fs::init())
-        .manage(project::create_project())
-        .manage(Arc::new(Mutex::new(None::<Player>)))
+        .manage(project::create_project_state())
+        .manage(project::create_player_state())
+        .manage(project::create_unsaved_state())
         .manage(FollowModeState(Arc::new(Mutex::new(false))))
         .manage(ShufflePointToolModeState(Arc::new(Mutex::new(false))))
         .menu(|app_handle| menu::build_menu(app_handle))

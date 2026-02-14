@@ -3,6 +3,8 @@ use std::sync::{Arc, Mutex};
 use tauri::menu::{CheckMenuItem, Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::{AppHandle, Emitter, Manager, Runtime, State};
 
+use crate::windows;
+
 const ID_ABOUT: &str = "about";
 const ID_NEW_WINDOW: &str = "new_window";
 const ID_SAVE: &str = "save";
@@ -38,9 +40,44 @@ struct ShufflePointToolModePayload {
 }
 
 fn emit_to_main<R: Runtime, S: serde::Serialize>(app: &AppHandle<R>, event: &str, payload: S) {
+    let had_windows = !app.webview_windows().is_empty();
+    if !had_windows {
+        let window = windows::get_or_create_main_window(app);
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+
     for window in app.webview_windows().values() {
         let _ = window.emit(event, &payload);
     }
+
+    if !had_windows {
+        let app_handle = app.clone();
+        let event_name = event.to_string();
+        if let Ok(json_payload) = serde_json::to_value(&payload) {
+            tauri::async_runtime::spawn(async move {
+                std::thread::sleep(std::time::Duration::from_millis(220));
+                for window in app_handle.webview_windows().values() {
+                    let _ = window.emit(&event_name, &json_payload);
+                }
+            });
+        }
+    }
+}
+
+fn create_new_window<R: Runtime>(app: &AppHandle<R>) {
+    let mut count = 1;
+    loop {
+        let label = format!("main-window-{}", count);
+        if app.get_webview_window(&label).is_none() {
+            break;
+        }
+        count += 1;
+    }
+
+    let window = windows::create_window(app, count);
+    let _ = window.show();
+    let _ = window.set_focus();
 }
 
 fn find_check_menu_item<R: Runtime>(menu: &Menu<R>, target_id: &str) -> Option<CheckMenuItem<R>> {
@@ -255,14 +292,7 @@ pub fn handle_menu_event<R: Runtime>(
                 },
             );
     } else if id == ID_NEW_WINDOW {
-        emit_to_main(
-            app,
-            "ALERT",
-            AlertPayload {
-                message: "New Window command not setup".to_string(),
-                r#type: "info".to_string(),
-            },
-        )
+        create_new_window(app)
     } else if id == ID_SAVE {
         emit_to_main(app, "SAVE_FILE", ())
     } else if id == ID_SAVE_AS {
