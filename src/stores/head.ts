@@ -74,6 +74,7 @@ export const useHeadStore = defineStore('head', () => {
       name: t.name,
       selection: t.selection || undefined,
       file_ids: t.file_ids,
+      shuffle_points: t.shuffle_points || [],
     })) as TrackSkeleton[]
 
     const project = {

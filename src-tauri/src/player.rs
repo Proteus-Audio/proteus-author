@@ -13,6 +13,7 @@
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use proteus_lib::container::prot::PathsTrack;
 use proteus_lib::container::play_settings::EffectSettings;
 use proteus_lib::diagnostics::reporter::Report;
 use proteus_lib::playback::player::Player;
@@ -33,39 +34,59 @@ pub async fn init_player(window: Window) {
     let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
     let project = project_state.lock().unwrap();
 
-    let file_list: Vec<Vec<String>> = project
+    let tracks_for_player: Vec<PathsTrack> = project
         .tracks
         .iter()
-        .map(|t| {
-            t.file_ids
+        .filter_map(|track| {
+            let mut file_paths: Vec<String> = track
+                .file_ids
                 .iter()
-                .map(|id| {
+                .filter_map(|id| {
                     project
                         .files
                         .iter()
                         .find(|f| f.id == *id)
-                        .unwrap()
-                        .path
-                        .clone()
+                        .map(|f| f.path.clone())
                 })
-                .collect()
+                .collect();
+
+            if file_paths.is_empty() {
+                return None;
+            }
+
+            // Keep the selected file first so the active take remains stable at init time.
+            if let Some(selection_id) = &track.selection {
+                if let Some(selected_path) = project
+                    .files
+                    .iter()
+                    .find(|f| f.id == *selection_id)
+                    .map(|f| f.path.clone())
+                {
+                    if let Some(index) = file_paths.iter().position(|path| path == &selected_path) {
+                        if index > 0 {
+                            file_paths.swap(0, index);
+                        }
+                    }
+                }
+            }
+
+            Some(PathsTrack {
+                file_paths,
+                level: 1.0,
+                pan: 0.0,
+                selections_count: 1,
+                shuffle_points: track.shuffle_points.clone(),
+            })
         })
         .collect();
 
-    // Remove any empty tracks
-    let file_list: Vec<Vec<String>> = file_list
-        .iter()
-        .filter(|t| t.len() > 0)
-        .map(|t| t.clone())
-        .collect();
-
-    if file_list.len() == 0 {
+    if tracks_for_player.is_empty() {
         player_state.lock().unwrap().take();
         window.emit("PLAYER_CHANGED", ()).unwrap_or(());
         return;
     }
 
-    let mut new_player = Player::new_from_file_paths_legacy(file_list);
+    let mut new_player = Player::new_from_file_paths(tracks_for_player);
     new_player.set_effects(project.effects.clone());
     let handle = window.app_handle().clone();
     let label = String::from(window.label());
@@ -88,6 +109,87 @@ pub async fn init_player(window: Window) {
         "init_player took {}ms",
         start_of_process.elapsed().as_millis()
     );
+}
+
+#[tauri::command]
+pub async fn add_shuffle_point(track_id: u32, seconds: f64, window: Window) -> Vec<String> {
+    let timestamp = format_shuffle_point_timestamp(seconds);
+
+    {
+        let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
+        let mut project = project_state.lock().unwrap();
+        let Some(track) = project.tracks.iter_mut().find(|track| track.id == track_id) else {
+            return Vec::new();
+        };
+
+        if !track.shuffle_points.contains(&timestamp) {
+            track.shuffle_points.push(timestamp.clone());
+            track.shuffle_points
+                .sort_by(|a, b| parse_shuffle_point_seconds(a).total_cmp(&parse_shuffle_point_seconds(b)));
+            track.shuffle_points.dedup();
+        }
+    }
+
+    let (resume_playback, current_time) = {
+        let player_state: State<Arc<Mutex<Option<Player>>>> = window.state();
+        let player = player_state.lock().unwrap();
+        if let Some(player) = player.as_ref() {
+            (player.is_playing(), player.get_time())
+        } else {
+            (false, 0.0)
+        }
+    };
+
+    init_player(window.clone()).await;
+
+    if current_time > 0.0 {
+        seek(current_time, window.clone()).await;
+    }
+    if resume_playback {
+        play(window.clone()).await;
+    }
+
+    let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
+    let project = project_state.lock().unwrap();
+    project
+        .tracks
+        .iter()
+        .find(|track| track.id == track_id)
+        .map(|track| track.shuffle_points.clone())
+        .unwrap_or_default()
+}
+
+fn format_shuffle_point_timestamp(seconds: f64) -> String {
+    let normalized = if seconds.is_finite() {
+        seconds.max(0.0)
+    } else {
+        0.0
+    };
+    format!("{normalized:.3}")
+}
+
+fn parse_shuffle_point_seconds(value: &str) -> f64 {
+    let parts: Vec<&str> = value.trim().split(':').collect();
+    if parts.is_empty() || parts.len() > 3 {
+        return f64::INFINITY;
+    }
+
+    let seconds_component = parts
+        .last()
+        .and_then(|part| part.parse::<f64>().ok())
+        .unwrap_or(f64::INFINITY);
+    let minutes = if parts.len() >= 2 {
+        parts[parts.len() - 2].parse::<f64>().unwrap_or(0.0)
+    } else {
+        0.0
+    };
+    let hours = if parts.len() == 3 {
+        parts[0].parse::<f64>().unwrap_or(0.0)
+    } else {
+        0.0
+    };
+
+    (hours * 3600.0) + (minutes * 60.0) + seconds_component
 }
 
 #[tauri::command]

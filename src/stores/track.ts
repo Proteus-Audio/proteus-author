@@ -151,6 +151,19 @@ export const useTrackStore = defineStore('track', () => {
     void head.logChanges()
   }
 
+  const addShufflePoint = async (trackId: number, seconds: number) => {
+    const index = tracks.value.findIndex((track) => track.id === trackId)
+    if (index === -1) return
+
+    const shufflePoints = await invoke<string[]>('add_shuffle_point', {
+      trackId,
+      seconds,
+    })
+
+    tracks.value[index].shuffle_points = shufflePoints
+    void head.logChanges()
+  }
+
   const sync = async () => {
     const projectState = await invoke<ProjectSkeleton>('get_project_state')
     console.log(projectState)
@@ -181,6 +194,7 @@ export const useTrackStore = defineStore('track', () => {
     shuffle,
     shuffleTrackBin,
     setTrackSelection,
+    addShufflePoint,
     removeFileFromTrack,
     sync,
   }

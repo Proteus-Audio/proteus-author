@@ -3,6 +3,7 @@ interface Track {
   name: string
   selection?: string
   file_ids: string[]
+  shuffle_points?: string[]
   // files: TrackFile[]
 }
 

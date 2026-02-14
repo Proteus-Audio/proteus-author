@@ -27,6 +27,7 @@ export const useAudioStore = defineStore('prot', () => {
   const zoom = ref({ y: 1 })
   const view = ref({ start: 0, end: 10 })
   const followMode = ref(true)
+  const addShufflePointMode = ref(false)
   const effects = ref([] as EffectChainItem[])
   const clock: Ref<number> = ref(0.0)
   const levelsDb = ref([-60, -60] as number[])
@@ -154,6 +155,14 @@ export const useAudioStore = defineStore('prot', () => {
 
   const toggleFollowMode = () => {
     followMode.value = !followMode.value
+  }
+
+  const setAddShufflePointMode = (enabled: boolean) => {
+    addShufflePointMode.value = enabled
+  }
+
+  const toggleAddShufflePointMode = () => {
+    addShufflePointMode.value = !addShufflePointMode.value
   }
 
   const panViewByFraction = (fraction: number) => {
@@ -345,6 +354,7 @@ export const useAudioStore = defineStore('prot', () => {
     zoom,
     view,
     followMode,
+    addShufflePointMode,
     effects,
     effectsChain,
     effectsChainForBackend,
@@ -366,6 +376,8 @@ export const useAudioStore = defineStore('prot', () => {
     setViewRange,
     setFollowMode,
     toggleFollowMode,
+    setAddShufflePointMode,
+    toggleAddShufflePointMode,
     panViewByFraction,
     panViewLeft,
     panViewRight,

@@ -16,6 +16,10 @@ const ID_ZOOM_OUT_VERTICAL: &str = "zoom_vertical_out";
 const ID_SCROLL_LEFT: &str = "scroll_left";
 const ID_SCROLL_RIGHT: &str = "scroll_right";
 const ID_FOLLOW_MODE: &str = "follow_mode";
+const ID_ADD_SHUFFLE_POINT_MODE: &str = "add_shuffle_point_mode";
+
+pub struct FollowModeState(pub Arc<Mutex<bool>>);
+pub struct AddShufflePointModeState(pub Arc<Mutex<bool>>);
 
 #[derive(Debug, Clone, Serialize)]
 struct AlertPayload {
@@ -28,18 +32,24 @@ struct FollowModePayload {
     enabled: bool,
 }
 
+#[derive(Debug, Clone, Serialize)]
+struct AddShufflePointModePayload {
+    enabled: bool,
+}
+
 fn emit_to_main<R: Runtime, S: serde::Serialize>(app: &AppHandle<R>, event: &str, payload: S) {
     for window in app.webview_windows().values() {
         let _ = window.emit(event, &payload);
     }
 }
 
-fn find_follow_menu_item<R: Runtime>(menu: &Menu<R>) -> Option<CheckMenuItem<R>> {
+fn find_check_menu_item<R: Runtime>(menu: &Menu<R>, target_id: &str) -> Option<CheckMenuItem<R>> {
     fn find_in_items<R: Runtime>(
         items: Vec<tauri::menu::MenuItemKind<R>>,
+        target_id: &str,
     ) -> Option<CheckMenuItem<R>> {
         for item in items {
-            if item.id().as_ref() == ID_FOLLOW_MODE {
+            if item.id().as_ref() == target_id {
                 if let Some(check_item) = item.as_check_menuitem() {
                     return Some(check_item.clone());
                 }
@@ -47,7 +57,7 @@ fn find_follow_menu_item<R: Runtime>(menu: &Menu<R>) -> Option<CheckMenuItem<R>>
 
             if let Some(submenu) = item.as_submenu() {
                 if let Ok(sub_items) = submenu.items() {
-                    if let Some(found) = find_in_items(sub_items) {
+                    if let Some(found) = find_in_items(sub_items, target_id) {
                         return Some(found);
                     }
                 }
@@ -56,7 +66,7 @@ fn find_follow_menu_item<R: Runtime>(menu: &Menu<R>) -> Option<CheckMenuItem<R>>
         None
     }
 
-    menu.items().ok().and_then(find_in_items)
+    menu.items().ok().and_then(|items| find_in_items(items, target_id))
 }
 
 pub fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
@@ -165,6 +175,14 @@ pub fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         false,
         Some("Alt+F"),
     )?;
+    let add_shuffle_point_mode = CheckMenuItem::with_id(
+        app,
+        ID_ADD_SHUFFLE_POINT_MODE,
+        "Add Shuffle Point Tool",
+        true,
+        false,
+        Some("Alt+P"),
+    )?;
 
     let view_menu = Submenu::with_id_and_items(
         app,
@@ -181,6 +199,7 @@ pub fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
             &pan_right,
             &separator,
             &follow_mode,
+            &add_shuffle_point_mode,
         ],
     )?;
 
@@ -211,7 +230,8 @@ pub fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
 pub fn handle_menu_event<R: Runtime>(
     app: &AppHandle<R>,
     event: MenuEvent,
-    follow_mode_state: &Arc<Mutex<bool>>,
+    follow_mode_state: &FollowModeState,
+    add_shuffle_point_mode_state: &AddShufflePointModeState,
 ) {
     let id = event.id();
 
@@ -256,13 +276,23 @@ pub fn handle_menu_event<R: Runtime>(
     } else if id == ID_SCROLL_RIGHT {
         emit_to_main(app, "MENU_PAN_RIGHT", ())
     } else if id == ID_FOLLOW_MODE {
-        let mut follow_mode = follow_mode_state.lock().unwrap();
+        let mut follow_mode = follow_mode_state.0.lock().unwrap();
         *follow_mode = !*follow_mode;
         emit_to_main(
             app,
             "MENU_FOLLOW_MODE",
             FollowModePayload {
                 enabled: *follow_mode,
+            },
+        );
+    } else if id == ID_ADD_SHUFFLE_POINT_MODE {
+        let mut add_shuffle_point_mode = add_shuffle_point_mode_state.0.lock().unwrap();
+        *add_shuffle_point_mode = !*add_shuffle_point_mode;
+        emit_to_main(
+            app,
+            "MENU_ADD_SHUFFLE_POINT_MODE",
+            AddShufflePointModePayload {
+                enabled: *add_shuffle_point_mode,
             },
         );
     }
@@ -272,15 +302,33 @@ pub fn handle_menu_event<R: Runtime>(
 pub fn set_follow_mode_menu(
     enabled: bool,
     app: AppHandle,
-    follow_mode_state: State<Arc<Mutex<bool>>>,
+    follow_mode_state: State<FollowModeState>,
 ) {
     {
-        let mut follow_mode = follow_mode_state.lock().unwrap();
+        let mut follow_mode = follow_mode_state.0.lock().unwrap();
         *follow_mode = enabled;
     }
 
     if let Some(menu) = app.menu() {
-        if let Some(check_item) = find_follow_menu_item(&menu) {
+        if let Some(check_item) = find_check_menu_item(&menu, ID_FOLLOW_MODE) {
+            let _ = check_item.set_checked(enabled);
+        }
+    }
+}
+
+#[tauri::command]
+pub fn set_add_shuffle_point_mode_menu(
+    enabled: bool,
+    app: AppHandle,
+    add_shuffle_point_mode_state: State<AddShufflePointModeState>,
+) {
+    {
+        let mut add_shuffle_point_mode = add_shuffle_point_mode_state.0.lock().unwrap();
+        *add_shuffle_point_mode = enabled;
+    }
+
+    if let Some(menu) = app.menu() {
+        if let Some(check_item) = find_check_menu_item(&menu, ID_ADD_SHUFFLE_POINT_MODE) {
             let _ = check_item.set_checked(enabled);
         }
     }

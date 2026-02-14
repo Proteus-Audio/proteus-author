@@ -207,6 +207,12 @@ onMounted(async () => {
   })
   unlisteners.value.push(menuFollowMode)
 
+  const menuAddShufflePointMode = await listen('MENU_ADD_SHUFFLE_POINT_MODE', (event) => {
+    const payload = event.payload as { enabled?: boolean }
+    audio.setAddShufflePointMode(!!payload.enabled)
+  })
+  unlisteners.value.push(menuAddShufflePointMode)
+
   trackStore.addEmptyTrackIfNone()
 
   console.log(await invoke('get_play_state'))
@@ -239,6 +245,13 @@ watch(
   () => audio.followMode,
   (enabled) => {
     void invoke('set_follow_mode_menu', { enabled })
+  },
+)
+
+watch(
+  () => audio.addShufflePointMode,
+  (enabled) => {
+    void invoke('set_add_shuffle_point_mode_menu', { enabled })
   },
 )
 

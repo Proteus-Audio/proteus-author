@@ -13,6 +13,8 @@ pub struct TrackSkeleton {
     pub name: String,
     pub selection: Option<String>,
     pub file_ids: Vec<String>,
+    #[serde(default)]
+    pub shuffle_points: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -58,6 +60,7 @@ pub fn empty_project() -> ProjectSkeleton {
             name: "".to_string(),
             selection: None,
             file_ids: Vec::new(),
+            shuffle_points: Vec::new(),
         }],
         effects: Vec::new(),
         files: Vec::new(),

@@ -104,6 +104,7 @@ pub fn push_file_id(
                 name: "".to_string(),
                 selection: Some(file_id.clone()),
                 file_ids: vec![file_id],
+                shuffle_points: Vec::new(),
             };
 
             project.tracks.push(track);
@@ -522,6 +523,7 @@ pub fn export_prot(project_state: State<Arc<Mutex<ProjectSkeleton>>>, window: Wi
                 name: track.name.clone(),
                 safe_name: track.name.clone(),
                 selections_count: 1,
+                shuffle_points: track.shuffle_points.clone(),
             };
 
             for file_id in &track.file_ids {

@@ -8,6 +8,7 @@
       <canvas
         ref="canvasRef"
         class="waveform-canvas"
+        :class="{ 'add-shuffle-point-mode': audio.addShufflePointMode }"
         @click="seek"
         @wheel.prevent="onWheel"
       ></canvas>
@@ -20,6 +21,7 @@
 import { invoke } from '@tauri-apps/api/core'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useAudioStore } from '../../stores/audio'
+import { useTrackStore } from '../../stores/track'
 import type { TrackFile } from '../../typings/tracks'
 
 interface Props {
@@ -28,6 +30,7 @@ interface Props {
 }
 
 const audio = useAudioStore()
+const trackStore = useTrackStore()
 const props = defineProps<Props>()
 
 const identifier = computed(() => `${props.track.parentId}-${props.track.id}`)
@@ -50,6 +53,11 @@ const playheadPosition = computed(() => {
   return `${x}px`
 })
 
+const trackShufflePoints = computed(() => {
+  const track = trackStore.getTrackFromId(props.track.parentId)
+  return track?.shuffle_points || []
+})
+
 const formatTimestamp = (seconds: number): string => {
   const total = Math.max(0, Math.floor(seconds))
   const mins = Math.floor(total / 60)
@@ -62,6 +70,29 @@ const getTickStep = (secondsPerFrame: number): number => {
   const raw = secondsPerFrame / targetTicks
   const options = [0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600]
   return options.find((v) => v >= raw) || 600
+}
+
+const parseShufflePointSeconds = (value: string): number | null => {
+  const trimmed = value.trim()
+  if (!trimmed) return null
+
+  const parts = trimmed.split(':')
+  if (parts.length > 3) return null
+
+  if (parts.length === 1) {
+    const seconds = Number(parts[0])
+    return Number.isFinite(seconds) && seconds >= 0 ? seconds : null
+  }
+
+  const seconds = Number(parts[parts.length - 1])
+  const minutes = Number(parts[parts.length - 2])
+  const hours = parts.length === 3 ? Number(parts[0]) : 0
+
+  if (![seconds, minutes, hours].every((value) => Number.isFinite(value) && value >= 0)) {
+    return null
+  }
+
+  return hours * 3600 + minutes * 60 + seconds
 }
 
 const drawWaveform = () => {
@@ -137,6 +168,31 @@ const drawWaveform = () => {
     ctx.lineTo(x, height - 10)
     ctx.stroke()
     ctx.fillText(formatTimestamp(tick), x, height - 15)
+  }
+
+  // Draw shuffle point indicators on top of waveform and time ticks.
+  const shufflePointTimes = trackShufflePoints.value
+    .map(parseShufflePointSeconds)
+    .filter((time): time is number => time !== null)
+    .filter((time) => time >= start && time <= end)
+
+  ctx.strokeStyle = 'rgba(196, 50, 50, 0.9)'
+  ctx.fillStyle = 'rgba(196, 50, 50, 0.95)'
+  ctx.lineWidth = 1
+
+  for (const time of shufflePointTimes) {
+    const x = ((time - start) / span) * width
+    ctx.beginPath()
+    ctx.moveTo(x, 0)
+    ctx.lineTo(x, height)
+    ctx.stroke()
+
+    ctx.beginPath()
+    ctx.moveTo(x - 4, 0)
+    ctx.lineTo(x + 4, 0)
+    ctx.lineTo(x, 7)
+    ctx.closePath()
+    ctx.fill()
   }
 }
 
@@ -222,6 +278,10 @@ const seek = (event: MouseEvent) => {
   const x = event.clientX - rect.left
   const ratio = x / Math.max(rect.width, 1)
   const seconds = audio.getViewStart + ratio * viewDuration.value
+  if (audio.addShufflePointMode) {
+    void trackStore.addShufflePoint(props.track.parentId, seconds)
+    return
+  }
   void audio.seek(seconds)
 }
 
@@ -252,6 +312,14 @@ watch(
   () => {
     drawWaveform()
   },
+)
+
+watch(
+  () => trackShufflePoints.value,
+  () => {
+    drawWaveform()
+  },
+  { deep: true },
 )
 
 onMounted(() => {
@@ -287,6 +355,10 @@ onBeforeUnmount(() => {
   .waveform-canvas {
     display: block;
     cursor: pointer;
+  }
+
+  .waveform-canvas.add-shuffle-point-mode {
+    cursor: copy;
   }
 
   .playhead {
