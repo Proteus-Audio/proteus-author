@@ -162,6 +162,21 @@ const drawWaveform = () => {
   const yScale = Number(verticalScale.value)
   const minPeak = 0.008
 
+  const validRanges = waveformSegments.value
+    .map((segment) => {
+      const rangeStart = Math.max(segment.start_seconds, start)
+      const rangeEnd = Math.min(segment.end_seconds, segment.file_end_seconds, end)
+      return rangeEnd > rangeStart ? ([rangeStart, rangeEnd] as const) : null
+    })
+    .filter((range): range is readonly [number, number] => range !== null)
+
+  const isInValidRange = (time: number): boolean => {
+    for (const [rangeStart, rangeEnd] of validRanges) {
+      if (time >= rangeStart && time <= rangeEnd) return true
+    }
+    return false
+  }
+
   ctx.strokeStyle = 'rgba(116, 116, 116, 0.6)'
   ctx.lineWidth = 1
 
@@ -174,9 +189,13 @@ const drawWaveform = () => {
 
     ctx.beginPath()
     channel.forEach((peak, index) => {
+      const time = start + ((index + 0.5) / channel.length) * span
+      if (!isInValidRange(time)) return
+
       const x = index * stepX + stepX / 2
-      peak = yScale * peak
-      const normalizedPeak = peak < minPeak ? minPeak : peak > 1 ? 1 : peak
+      const scaledPeak = peak * yScale
+      const normalizedPeak = scaledPeak < minPeak ? minPeak : scaledPeak > 1 ? 1 : scaledPeak
+      if (normalizedPeak <= 0) return
       const amplitude = normalizedPeak * maxAmplitude
       ctx.moveTo(x, yMid - amplitude)
       ctx.lineTo(x, yMid + amplitude)
@@ -248,8 +267,6 @@ const drawWaveform = () => {
     const textY = 14
     const text = segment.file_name
 
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.84)'
-    ctx.fillRect(xStart + 2, 4, Math.max(sectionWidth - 4, 0), 16)
     ctx.fillStyle = 'rgba(0, 0, 0, 0.78)'
     ctx.fillText(text, textX, textY)
   }
