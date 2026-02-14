@@ -8,7 +8,10 @@
       <canvas
         ref="canvasRef"
         class="waveform-canvas"
-        :class="{ 'add-shuffle-point-mode': audio.addShufflePointMode }"
+        :class="{
+          'add-shuffle-point-mode': audio.addShufflePointMode,
+          'remove-shuffle-point-mode': audio.removeShufflePointMode,
+        }"
         @click="seek"
         @wheel.prevent="onWheel"
       ></canvas>
@@ -282,6 +285,12 @@ const seek = (event: MouseEvent) => {
     void trackStore.addShufflePoint(props.track.parentId, seconds)
     return
   }
+  if (audio.removeShufflePointMode) {
+    const pixelTolerance = 8
+    const toleranceSeconds = (pixelTolerance / Math.max(rect.width, 1)) * viewDuration.value
+    void trackStore.removeShufflePoint(props.track.parentId, seconds, toleranceSeconds)
+    return
+  }
   void audio.seek(seconds)
 }
 
@@ -359,6 +368,10 @@ onBeforeUnmount(() => {
 
   .waveform-canvas.add-shuffle-point-mode {
     cursor: copy;
+  }
+
+  .waveform-canvas.remove-shuffle-point-mode {
+    cursor: not-allowed;
   }
 
   .playhead {

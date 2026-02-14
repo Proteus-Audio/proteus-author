@@ -159,6 +159,68 @@ pub async fn add_shuffle_point(track_id: u32, seconds: f64, window: Window) -> V
         .unwrap_or_default()
 }
 
+#[tauri::command]
+pub async fn remove_shuffle_point(
+    track_id: u32,
+    seconds: f64,
+    tolerance_seconds: f64,
+    window: Window,
+) -> Vec<String> {
+    let target = seconds.max(0.0);
+    let tolerance = tolerance_seconds.max(0.0);
+
+    {
+        let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
+        let mut project = project_state.lock().unwrap();
+        let Some(track) = project.tracks.iter_mut().find(|track| track.id == track_id) else {
+            return Vec::new();
+        };
+
+        let mut best_index: Option<usize> = None;
+        let mut best_distance = f64::INFINITY;
+
+        for (index, point) in track.shuffle_points.iter().enumerate() {
+            let distance = (parse_shuffle_point_seconds(point) - target).abs();
+            if distance <= tolerance && distance < best_distance {
+                best_distance = distance;
+                best_index = Some(index);
+            }
+        }
+
+        if let Some(index) = best_index {
+            track.shuffle_points.remove(index);
+        }
+    }
+
+    let (resume_playback, current_time) = {
+        let player_state: State<Arc<Mutex<Option<Player>>>> = window.state();
+        let player = player_state.lock().unwrap();
+        if let Some(player) = player.as_ref() {
+            (player.is_playing(), player.get_time())
+        } else {
+            (false, 0.0)
+        }
+    };
+
+    init_player(window.clone()).await;
+
+    if current_time > 0.0 {
+        seek(current_time, window.clone()).await;
+    }
+    if resume_playback {
+        play(window.clone()).await;
+    }
+
+    let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
+    let project = project_state.lock().unwrap();
+    project
+        .tracks
+        .iter()
+        .find(|track| track.id == track_id)
+        .map(|track| track.shuffle_points.clone())
+        .unwrap_or_default()
+}
+
 fn format_shuffle_point_timestamp(seconds: f64) -> String {
     let normalized = if seconds.is_finite() {
         seconds.max(0.0)

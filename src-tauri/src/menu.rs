@@ -17,9 +17,11 @@ const ID_SCROLL_LEFT: &str = "scroll_left";
 const ID_SCROLL_RIGHT: &str = "scroll_right";
 const ID_FOLLOW_MODE: &str = "follow_mode";
 const ID_ADD_SHUFFLE_POINT_MODE: &str = "add_shuffle_point_mode";
+const ID_REMOVE_SHUFFLE_POINT_MODE: &str = "remove_shuffle_point_mode";
 
 pub struct FollowModeState(pub Arc<Mutex<bool>>);
 pub struct AddShufflePointModeState(pub Arc<Mutex<bool>>);
+pub struct RemoveShufflePointModeState(pub Arc<Mutex<bool>>);
 
 #[derive(Debug, Clone, Serialize)]
 struct AlertPayload {
@@ -34,6 +36,11 @@ struct FollowModePayload {
 
 #[derive(Debug, Clone, Serialize)]
 struct AddShufflePointModePayload {
+    enabled: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+struct RemoveShufflePointModePayload {
     enabled: bool,
 }
 
@@ -183,6 +190,14 @@ pub fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         false,
         Some("Alt+P"),
     )?;
+    let remove_shuffle_point_mode = CheckMenuItem::with_id(
+        app,
+        ID_REMOVE_SHUFFLE_POINT_MODE,
+        "Remove Shuffle Point Tool",
+        true,
+        false,
+        Some("Alt+Shift+P"),
+    )?;
 
     let view_menu = Submenu::with_id_and_items(
         app,
@@ -207,7 +222,7 @@ pub fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         "tool_tips",
         "Tool Tips",
         true,
-        &[&add_shuffle_point_mode],
+        &[&add_shuffle_point_mode, &remove_shuffle_point_mode],
     )?;
 
     let window_menu = Submenu::with_id_and_items(
@@ -240,6 +255,7 @@ pub fn handle_menu_event<R: Runtime>(
     event: MenuEvent,
     follow_mode_state: &FollowModeState,
     add_shuffle_point_mode_state: &AddShufflePointModeState,
+    remove_shuffle_point_mode_state: &RemoveShufflePointModeState,
 ) {
     let id = event.id();
 
@@ -296,11 +312,39 @@ pub fn handle_menu_event<R: Runtime>(
     } else if id == ID_ADD_SHUFFLE_POINT_MODE {
         let mut add_shuffle_point_mode = add_shuffle_point_mode_state.0.lock().unwrap();
         *add_shuffle_point_mode = !*add_shuffle_point_mode;
+        if *add_shuffle_point_mode {
+            let mut remove_shuffle_point_mode = remove_shuffle_point_mode_state.0.lock().unwrap();
+            *remove_shuffle_point_mode = false;
+            emit_to_main(
+                app,
+                "MENU_REMOVE_SHUFFLE_POINT_MODE",
+                RemoveShufflePointModePayload { enabled: false },
+            );
+        }
         emit_to_main(
             app,
             "MENU_ADD_SHUFFLE_POINT_MODE",
             AddShufflePointModePayload {
                 enabled: *add_shuffle_point_mode,
+            },
+        );
+    } else if id == ID_REMOVE_SHUFFLE_POINT_MODE {
+        let mut remove_shuffle_point_mode = remove_shuffle_point_mode_state.0.lock().unwrap();
+        *remove_shuffle_point_mode = !*remove_shuffle_point_mode;
+        if *remove_shuffle_point_mode {
+            let mut add_shuffle_point_mode = add_shuffle_point_mode_state.0.lock().unwrap();
+            *add_shuffle_point_mode = false;
+            emit_to_main(
+                app,
+                "MENU_ADD_SHUFFLE_POINT_MODE",
+                AddShufflePointModePayload { enabled: false },
+            );
+        }
+        emit_to_main(
+            app,
+            "MENU_REMOVE_SHUFFLE_POINT_MODE",
+            RemoveShufflePointModePayload {
+                enabled: *remove_shuffle_point_mode,
             },
         );
     }
@@ -337,6 +381,24 @@ pub fn set_add_shuffle_point_mode_menu(
 
     if let Some(menu) = app.menu() {
         if let Some(check_item) = find_check_menu_item(&menu, ID_ADD_SHUFFLE_POINT_MODE) {
+            let _ = check_item.set_checked(enabled);
+        }
+    }
+}
+
+#[tauri::command]
+pub fn set_remove_shuffle_point_mode_menu(
+    enabled: bool,
+    app: AppHandle,
+    remove_shuffle_point_mode_state: State<RemoveShufflePointModeState>,
+) {
+    {
+        let mut remove_shuffle_point_mode = remove_shuffle_point_mode_state.0.lock().unwrap();
+        *remove_shuffle_point_mode = enabled;
+    }
+
+    if let Some(menu) = app.menu() {
+        if let Some(check_item) = find_check_menu_item(&menu, ID_REMOVE_SHUFFLE_POINT_MODE) {
             let _ = check_item.set_checked(enabled);
         }
     }
