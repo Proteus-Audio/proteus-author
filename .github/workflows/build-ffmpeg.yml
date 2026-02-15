@@ -34,6 +34,8 @@ jobs:
             target: x86_64-pc-windows-msvc
             output: ffmpeg-x86_64-pc-windows-msvc.exe
             msystem: MINGW64
+            cc: gcc
+            configure_extra: ""
             win_packages: >-
               git
               make
@@ -47,6 +49,8 @@ jobs:
             target: aarch64-pc-windows-msvc
             output: ffmpeg-aarch64-pc-windows-msvc.exe
             msystem: CLANGARM64
+            cc: clang
+            configure_extra: "--enable-cross-compile --target-os=mingw32 --arch=aarch64"
             win_packages: >-
               git
               make
@@ -138,6 +142,7 @@ jobs:
 
           ./configure \
             --prefix="$PWD/build" \
+            --cc="${{ matrix.cc }}" \
             --disable-everything \
             --enable-ffmpeg \
             --enable-protocol=file \
@@ -162,7 +167,8 @@ jobs:
             --disable-ffprobe \
             --disable-avdevice \
             --disable-swscale \
-            --disable-network
+            --disable-network \
+            ${{ matrix.configure_extra }}
 
           make -j"$(nproc)"
           make install
