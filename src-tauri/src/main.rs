@@ -5,6 +5,7 @@
 
 mod file;
 mod menu;
+mod alerts;
 mod helpers;
 mod peaks;
 mod player;
@@ -14,15 +15,15 @@ mod windows;
 use std::sync::{Arc, Mutex};
 
 use file::*;
+use alerts::*;
 use menu::{
     set_follow_mode_menu, set_shuffle_point_tool_mode_menu, FollowModeState,
     ShufflePointToolModeState,
 };
 use player::*;
 use project::*;
-use proteus_lib::playback::player::Player;
 use dotenv::dotenv;
-use tauri::Manager;
+use tauri::{Manager, RunEvent, WindowEvent};
 
 fn main() {
     dotenv().ok();
@@ -37,8 +38,9 @@ fn main() {
         // .plugin(tauri_plugin_notification::init())
         // .plugin(tauri_plugin_process::init())
         // .plugin(tauri_plugin_fs::init())
-        .manage(project::create_project())
-        .manage(Arc::new(Mutex::new(None::<Player>)))
+        .manage(project::create_project_state())
+        .manage(project::create_player_state())
+        .manage(project::create_unsaved_state())
         .manage(FollowModeState(Arc::new(Mutex::new(false))))
         .manage(ShufflePointToolModeState(Arc::new(Mutex::new(false))))
         .menu(|app_handle| menu::build_menu(app_handle))
@@ -87,7 +89,9 @@ fn main() {
             set_volume,
             set_effects_chain,
             set_follow_mode_menu,
-            set_shuffle_point_tool_mode_menu
+            set_shuffle_point_tool_mode_menu,
+            alert_current_window,
+            alert_all_windows
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -96,13 +100,28 @@ fn main() {
     // windows::create_docs_window(&handle);
 
     app.run(|_app_handle, event| match event {
+        RunEvent::WindowEvent {
+            label,
+            event: WindowEvent::Destroyed,
+            ..
+        } => {
+            let project_state: tauri::State<WindowProjectState> = _app_handle.state();
+            let player_state: tauri::State<WindowPlayerState> = _app_handle.state();
+            let unsaved_state: tauri::State<WindowUnsavedState> = _app_handle.state();
+            clear_window_state_by_label(
+                &label,
+                &project_state,
+                &player_state,
+                &unsaved_state,
+            );
+        }
         #[cfg(target_os = "macos")]
-        tauri::RunEvent::ExitRequested { api, .. } => {
+        RunEvent::ExitRequested { api, .. } => {
             println!("exit requested");
             api.prevent_exit();
         }
          #[cfg(any(target_os = "macos", target_os = "ios"))]
-        tauri::RunEvent::Reopen {
+        RunEvent::Reopen {
             has_visible_windows,
             ..
         } => {
@@ -119,7 +138,7 @@ fn main() {
         }
 
          #[cfg(any(target_os = "macos", target_os = "ios"))]
-        tauri::RunEvent::Opened { urls, .. } => {
+        RunEvent::Opened { urls, .. } => {
             println!("opened: {:?}", urls);
         }
         _ => {}

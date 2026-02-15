@@ -9,9 +9,6 @@ use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
-use std::sync::Arc;
-use std::sync::Mutex;
-use tauri::AppHandle;
 use tauri::Emitter;
 use tauri::Manager;
 use tauri::State;
@@ -20,8 +17,7 @@ use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_shell;
 use tauri_plugin_shell::process::CommandEvent;
 use tauri_plugin_shell::ShellExt;
-use proteus_lib::playback::player::Player;
-
+use crate::alerts::emit_alert_current_window;
 use crate::peaks::*;
 use crate::project::*;
 
@@ -103,31 +99,31 @@ fn unique_attachment_name(name: &str, used: &mut HashSet<String>) -> String {
 pub fn push_file_id(
     track_id: u32,
     file_id: String,
-    project_state: State<Arc<Mutex<ProjectSkeleton>>>,
+    window: Window,
+    project_state: State<WindowProjectState>,
 ) {
-    let mut project = project_state.lock().unwrap();
+    with_project_mut(&window, &project_state, |project| {
+        let track = project.tracks.iter_mut().find(|t| t.id == track_id);
 
-    let track = project.tracks.iter_mut().find(|t| t.id == track_id);
+        match track {
+            Some(track) => {
+                if !track.file_ids.iter().any(|id| id == &file_id) {
+                    track.file_ids.push(file_id);
+                }
+            }
+            None => {
+                let track = TrackSkeleton {
+                    id: track_id,
+                    name: "".to_string(),
+                    selection: Some(file_id.clone()),
+                    file_ids: vec![file_id],
+                    shuffle_points: Vec::new(),
+                };
 
-    match track {
-        Some(track) => {
-            if !track.file_ids.iter().any(|id| id == &file_id) {
-                track.file_ids.push(file_id);
+                project.tracks.push(track);
             }
         }
-        None => {
-            // Create new track
-            let track = TrackSkeleton {
-                id: track_id,
-                name: "".to_string(),
-                selection: Some(file_id.clone()),
-                file_ids: vec![file_id],
-                shuffle_points: Vec::new(),
-            };
-
-            project.tracks.push(track);
-        }
-    }
+    });
 }
 
 #[tauri::command]
@@ -136,15 +132,12 @@ pub async fn register_file(
     track_id: u32,
     window: Window,
 ) -> Result<FileInfoSkeleton, String> {
-    let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
-
-    let project = project_state.lock().unwrap();
-    let project_clone = project.clone();
-    drop(project);
+    let project_state: State<WindowProjectState> = window.state();
+    let project_clone = read_project(&window, &project_state);
 
     // See if file is already registered
     if let Some(existing_file) = project_clone.files.iter().find(|file| file.path == file_path) {
-        push_file_id(track_id, existing_file.id.clone(), project_state.clone());
+        push_file_id(track_id, existing_file.id.clone(), window.clone(), project_state.clone());
         return Ok(FileInfoSkeleton {
             id: existing_file.id.clone(),
             path: existing_file.path.clone(),
@@ -172,11 +165,11 @@ pub async fn register_file(
             // peaks: Some(peaks),
         };
 
-        let mut project = project_state.lock().unwrap();
-        project.files.push(file.clone());
-        drop(project);
+        with_project_mut(&window, &project_state, |project| {
+            project.files.push(file.clone());
+        });
 
-        push_file_id(track_id, file.id.clone(), project_state.clone());
+        push_file_id(track_id, file.id.clone(), window.clone(), project_state.clone());
 
         let peaks_start = std::time::Instant::now();
         let _peaks = get_cached_peaks(&window, &file.id);
@@ -230,8 +223,8 @@ pub async fn get_track_waveform_peaks(
     target_peaks: usize,
     window: Window,
 ) -> TrackWaveformView {
-    let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
-    let project = project_state.lock().unwrap();
+    let project_state: State<WindowProjectState> = window.state();
+    let project = read_project(&window, &project_state);
     let Some(track) = project.tracks.iter().find(|track| track.id == track_id) else {
         return TrackWaveformView {
             channels: vec![Vec::new()],
@@ -253,7 +246,6 @@ pub async fn get_track_waveform_peaks(
             })
         })
         .position(|candidate| candidate.id == track_id);
-    drop(project);
 
     if file_ids.is_empty() {
         return TrackWaveformView {
@@ -304,9 +296,10 @@ pub async fn get_track_waveform_peaks(
         .map(|file| (file.path.as_str(), file.id.as_str()))
         .collect();
     let shuffle_schedule = {
-        let player_state: State<Arc<Mutex<Option<Player>>>> = window.state();
-        let player = player_state.lock().unwrap();
-        player.as_ref().map(|player| player.get_shuffle_schedule())
+        let player_state: State<WindowPlayerState> = window.state();
+        with_player(&window, &player_state, |player| {
+            player.as_ref().map(|player| player.get_shuffle_schedule())
+        })
     };
     let resolve_file_from_schedule = |segment_time: f64| -> Option<String> {
         let track_index = playable_track_index?;
@@ -501,71 +494,70 @@ pub fn get_peaks(file_path: &str) -> Vec<Vec<(f32, f32)>> {
 pub fn project_changes(
     new_project: ProjectSkeleton,
     window: Window,
-    project_state: State<Arc<Mutex<ProjectSkeleton>>>,
+    project_state: State<WindowProjectState>,
+    unsaved_state: State<WindowUnsavedState>,
 ) -> String {
     println!("new_project: {:?}", new_project);
-    let project = project_state.lock().unwrap();
-    let project_json = serde_json::to_string(&*project).unwrap();
+    let project = read_project(&window, &project_state);
+    let project_json = serde_json::to_string(&project).unwrap();
     let new_project_json = serde_json::to_string(&new_project).unwrap();
 
     let file_name = project.name.clone().unwrap_or("Untitled".to_string());
 
     if project_json != new_project_json {
-        UNSAVED_CHANGES.store(true, std::sync::atomic::Ordering::Relaxed);
+        set_unsaved(&window, &unsaved_state, true);
         window
             .set_title(&format!("{}*", file_name).as_str())
             .unwrap();
         "Unsaved Changes".to_string()
     } else {
-        UNSAVED_CHANGES.store(false, std::sync::atomic::Ordering::Relaxed);
+        set_unsaved(&window, &unsaved_state, false);
         window.set_title(&format!("{}", file_name)).unwrap();
         "Saved".to_string()
     }
 }
 
 #[tauri::command]
-pub fn auto_save(new_project: ProjectSkeleton, project_state: State<Arc<Mutex<ProjectSkeleton>>>) {
+pub fn auto_save(
+    new_project: ProjectSkeleton,
+    window: Window,
+    project_state: State<WindowProjectState>,
+) {
     println!("Auto Saving");
-    let mut project = project_state.lock().unwrap();
-    println!("Project: {:?}", project);
-    project.tracks = new_project.tracks.clone();
-    println!("Project: {:?}", project);
-    project.effects = new_project.effects.clone();
-    println!("Project: {:?}", project);
-    drop(project);
+    with_project_mut(&window, &project_state, |project| {
+        project.tracks = new_project.tracks.clone();
+        project.effects = new_project.effects.clone();
+    });
 }
 
 #[tauri::command]
 pub async fn save_file(window: Window) -> Option<ProjectSkeleton> {
     // auto_save(new_project.clone());
-    let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
+    let project_state: State<WindowProjectState> = window.state();
+    let unsaved_state: State<WindowUnsavedState> = window.state();
 
-    let project_state_clone = project_state.clone();
-    if UNSAVED_CHANGES.load(std::sync::atomic::Ordering::Relaxed) == false {
-        let project = project_state_clone.lock().unwrap();
+    if !get_unsaved(&window, &unsaved_state) {
+        let project = read_project(&window, &project_state);
         println!("No changes to save");
-        if !project.location.is_none() {
+        if project.location.is_some() {
             return None;
         }
-        drop(project);
     }
 
-    let project_already_saved = project_state.lock().unwrap().location.is_some();
-    // let project_already_saved = new_project.location.is_some();
-    // drop(project);
+    let project_already_saved = read_project(&window, &project_state).location.is_some();
 
     if !project_already_saved {
         return save_file_as(window).await;
     }
 
-    let project = project_state.lock().unwrap();
-    let project_json = serde_json::to_string(&*project).unwrap();
+    let project = read_project(&window, &project_state);
+    let project_json = serde_json::to_string(&project).unwrap();
 
     let mut file = File::create(project.location.clone().unwrap()).unwrap();
     file.write_all(project_json.as_bytes()).unwrap();
 
     let file_name = project.name.clone().unwrap_or("Untitled".to_string());
-    UNSAVED_CHANGES.store(false, std::sync::atomic::Ordering::Relaxed);
+    set_unsaved(&window, &unsaved_state, false);
     window.set_title(&format!("{}", file_name)).unwrap();
 
     Some(project.clone())
@@ -573,10 +565,10 @@ pub async fn save_file(window: Window) -> Option<ProjectSkeleton> {
 
 #[tauri::command]
 pub async fn save_file_as(window: Window) -> Option<ProjectSkeleton> {
-    let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
-    let project = project_state.lock().unwrap();
+    let project_state: State<WindowProjectState> = window.state();
+    let unsaved_state: State<WindowUnsavedState> = window.state();
+    let project = read_project(&window, &project_state);
     let file_name = project.name.clone().unwrap_or("untitled".to_string());
-    drop(project);
 
     // let file_name = new_project.name.clone().unwrap_or("untitled".to_string()) + ".protproject";
     // auto_save(new_project)
@@ -604,19 +596,17 @@ pub async fn save_file_as(window: Window) -> Option<ProjectSkeleton> {
     let file_name =
         String::from(path_buff.file_name().unwrap().to_str().unwrap()).replace(".protproject", "");
 
-    let mut project = project_state.lock().unwrap();
-
+    let mut project = read_project(&window, &project_state);
     project.name = Some(file_name.clone());
     project.location = Some(path_buff.to_str().unwrap().to_string());
-
-    println!("Project: {:?}", serde_json::to_string(&project.clone()));
-
-    let project_json = serde_json::to_string(&*project).unwrap();
+    println!("Project: {:?}", serde_json::to_string(&project).unwrap());
+    let project_json = serde_json::to_string(&project).unwrap();
+    set_project(&window, &project_state, project.clone());
 
     let mut file = File::create(&path_buff).unwrap();
     file.write_all(project_json.as_bytes()).unwrap();
 
-    UNSAVED_CHANGES.store(false, std::sync::atomic::Ordering::Relaxed);
+    set_unsaved(&window, &unsaved_state, false);
 
     window.set_title(&file_name).unwrap();
 
@@ -626,11 +616,16 @@ pub async fn save_file_as(window: Window) -> Option<ProjectSkeleton> {
 #[tauri::command]
 pub async fn open_file(window: Window) {
     println!("Window: {:?}", window);
+    let app = window.app_handle().clone();
+    let label = window.label().to_string();
     window
         .dialog()
         .file()
         .add_filter("Proteus Project", &["protproject"])
         .pick_file(move |file| {
+            let Some(window) = app.get_webview_window(&label) else {
+                return;
+            };
             if file.is_none() {
                 println!("No file selected");
                 return;
@@ -644,8 +639,6 @@ pub async fn open_file(window: Window) {
                     return;
                 }
             };
-            let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
-
             if path_buff.extension().unwrap() != "protproject" {
                 println!("File extension is not .protproject");
                 ()
@@ -657,40 +650,32 @@ pub async fn open_file(window: Window) {
             let file_contents = std::fs::read_to_string(path_buff.clone()).unwrap();
             let project_result: Result<ProjectSkeleton, serde_json::Error> =
                 serde_json::from_str(&file_contents);
-
-            let mut project = project_state.lock().unwrap();
+            let project_state: State<WindowProjectState> = app.state();
+            let unsaved_state: State<WindowUnsavedState> = app.state();
 
             match project_result {
-                Ok(new_project) => {
-                    project.name = Some(file_name.to_string());
-                    project.location = Some(project_location.to_string());
-                    project.tracks = new_project.tracks.clone();
-                    project.effects = new_project.effects.clone();
-                    project.files = new_project.files.clone();
+                Ok(mut new_project) => {
+                    new_project.name = Some(file_name.to_string());
+                    new_project.location = Some(project_location.to_string());
+                    set_project_by_label(&label, &project_state, new_project.clone());
+                    set_unsaved_by_label(&label, &unsaved_state, false);
+                    window.set_title(file_name).unwrap();
+                    app
+                        .emit_to(label.as_str(), "FILE_LOADED", new_project)
+                        .expect("failed to emit event");
                 }
                 Err(e) => {
                     println!("Error: {:?}", e);
                 }
             }
-
-            let file_name = project.name.clone().unwrap();
-            window.set_title(&file_name.as_str()).unwrap();
-            window
-                .emit("FILE_LOADED", project.clone())
-                .expect("failed to emit event");
-
-            drop(project);
         });
 }
 
 #[tauri::command]
-pub async fn load_empty_project(handle: AppHandle) {
-    let empty_project = Arc::new(Mutex::new(empty_project()));
-    let project = empty_project.lock().unwrap();
-
-    let window = handle
-        .get_webview_window(&"main-window-1".to_string())
-        .unwrap();
+pub async fn load_empty_project(window: Window) {
+    let project_state: State<WindowProjectState> = window.state();
+    let project = empty_project();
+    set_project(&window, &project_state, project.clone());
     window
         .set_title(
             &project
@@ -701,14 +686,14 @@ pub async fn load_empty_project(handle: AppHandle) {
         )
         .unwrap();
     window
-        .emit("FILE_LOADED", project.clone())
+        .app_handle()
+        .emit_to(window.label(), "FILE_LOADED", project.clone())
         .expect("failed to emit event");
-    drop(project);
 }
 
 #[tauri::command]
-pub fn export_prot(project_state: State<Arc<Mutex<ProjectSkeleton>>>, window: Window) {
-    let project = project_state.lock().unwrap().clone();
+pub fn export_prot(window: Window, project_state: State<WindowProjectState>) {
+    let project = read_project(&window, &project_state);
     let file_name = project.name.clone().unwrap_or("export".to_string()) + ".prot";
     let save_dialog = window
         .dialog()
@@ -718,11 +703,12 @@ pub fn export_prot(project_state: State<Arc<Mutex<ProjectSkeleton>>>, window: Wi
         .set_file_name(file_name.as_str());
 
     let handle = window.app_handle().clone();
+    let alert_window = window.clone();
 
     save_dialog.save_file(move |file_path| {
         if file_path.is_none() {
             println!("No file selected");
-            handle.emit("EXPORTING", "Cancelled").unwrap();
+            emit_alert_current_window(&alert_window, "Cancelled", "info");
             ()
         }
 
@@ -730,15 +716,13 @@ pub fn export_prot(project_state: State<Arc<Mutex<ProjectSkeleton>>>, window: Wi
             Ok(path) => path,
             Err(err) => {
                 println!("Invalid file path: {:?}", err);
-                handle.emit("EXPORTING", "Cancelled").unwrap();
+                emit_alert_current_window(&alert_window, "Cancelled", "info");
                 return;
             }
         };
         let file_name = file_path.file_name().unwrap().to_str().unwrap();
 
-        handle
-            .emit("EXPORTING", format!("Exporting {}", file_name))
-            .unwrap();
+        emit_alert_current_window(&alert_window, format!("Exporting {}", file_name), "info");
         // `new_sidecar()` expects just the filename, NOT the whole path like in JavaScript
         let mut reduced_file_list = Vec::new();
 
@@ -898,6 +882,7 @@ pub fn export_prot(project_state: State<Arc<Mutex<ProjectSkeleton>>>, window: Wi
             .spawn()
             .expect("Failed to spawn sidecar");
 
+        let alert_window_for_task = alert_window.clone();
         tauri::async_runtime::spawn(async move {
             // read events such as stdout
             while let Some(event) = rx.recv().await {
@@ -925,7 +910,7 @@ pub fn export_prot(project_state: State<Arc<Mutex<ProjectSkeleton>>>, window: Wi
                 std::fs::rename(output_file.clone(), output_file.replace(".mka", ".prot")).unwrap();
             }
 
-            handle.emit("EXPORTING", "Export Finished").unwrap();
+            emit_alert_current_window(&alert_window_for_task, "Export Finished", "info");
         });
     });
 }

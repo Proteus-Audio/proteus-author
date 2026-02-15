@@ -32,14 +32,15 @@ use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::thread;
+use tauri::Manager;
 use tauri::State;
-use tauri::{Manager, Window};
+use tauri::Window;
 
 use crate::helpers::get_cache_dir;
 
-use crate::project::ProjectSkeleton;
+use crate::project::{read_project, WindowProjectState};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SimplifiedPeaks {
@@ -90,8 +91,8 @@ fn ensure_peaks_file(window: &Window, file_id: &str) -> String {
         return peaks_file_path;
     }
 
-    let project_state: State<Arc<Mutex<ProjectSkeleton>>> = window.state();
-    let project = project_state.lock().unwrap();
+    let project_state: State<WindowProjectState> = window.state();
+    let project = read_project(window, &project_state);
     let file_path = project
         .files
         .iter()
@@ -99,7 +100,6 @@ fn ensure_peaks_file(window: &Window, file_id: &str) -> String {
         .unwrap()
         .path
         .clone();
-    drop(project);
 
     proteus_lib::peaks::write_peaks(&file_path, &peaks_file_path)
         .expect("failed to write .peaks file");

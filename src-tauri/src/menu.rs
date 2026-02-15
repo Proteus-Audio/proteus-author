@@ -3,6 +3,9 @@ use std::sync::{Arc, Mutex};
 use tauri::menu::{CheckMenuItem, Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::{AppHandle, Emitter, Manager, Runtime, State};
 
+use crate::alerts::AlertPayload;
+use crate::windows;
+
 const ID_ABOUT: &str = "about";
 const ID_NEW_WINDOW: &str = "new_window";
 const ID_SAVE: &str = "save";
@@ -22,12 +25,6 @@ pub struct FollowModeState(pub Arc<Mutex<bool>>);
 pub struct ShufflePointToolModeState(pub Arc<Mutex<bool>>);
 
 #[derive(Debug, Clone, Serialize)]
-struct AlertPayload {
-    message: String,
-    r#type: String,
-}
-
-#[derive(Debug, Clone, Serialize)]
 struct FollowModePayload {
     enabled: bool,
 }
@@ -37,10 +34,30 @@ struct ShufflePointToolModePayload {
     enabled: bool,
 }
 
-fn emit_to_main<R: Runtime, S: serde::Serialize>(app: &AppHandle<R>, event: &str, payload: S) {
-    for window in app.webview_windows().values() {
-        let _ = window.emit(event, &payload);
+fn emit_to_active_window<R: Runtime, S: serde::Serialize>(app: &AppHandle<R>, event: &str, payload: S) {
+    let focused_window = app
+        .webview_windows()
+        .values()
+        .find(|window| window.is_focused().unwrap_or(false))
+        .cloned();
+
+    let window = focused_window.unwrap_or_else(|| windows::get_or_create_main_window(app));
+    let _ = window.emit(event, &payload);
+}
+
+fn create_new_window<R: Runtime>(app: &AppHandle<R>) {
+    let mut count = 1;
+    loop {
+        let label = format!("main-window-{}", count);
+        if app.get_webview_window(&label).is_none() {
+            break;
+        }
+        count += 1;
     }
+
+    let window = windows::create_window(app, count);
+    let _ = window.show();
+    let _ = window.set_focus();
 }
 
 fn find_check_menu_item<R: Runtime>(menu: &Menu<R>, target_id: &str) -> Option<CheckMenuItem<R>> {
@@ -246,47 +263,40 @@ pub fn handle_menu_event<R: Runtime>(
     if id == ID_ABOUT {
             let app_name = app.package_info().name.clone();
             let version = app.package_info().version.to_string();
-            emit_to_main(
+            emit_to_active_window(
                 app,
-                "ALERT",
+                "ALERT_CURRENT_WINDOW",
                 AlertPayload {
                     message: format!("{} v{}\\n©Adam Thomas Howard 2024", app_name, version),
                     r#type: "info".to_string(),
                 },
             );
     } else if id == ID_NEW_WINDOW {
-        emit_to_main(
-            app,
-            "ALERT",
-            AlertPayload {
-                message: "New Window command not setup".to_string(),
-                r#type: "info".to_string(),
-            },
-        )
+        create_new_window(app)
     } else if id == ID_SAVE {
-        emit_to_main(app, "SAVE_FILE", ())
+        emit_to_active_window(app, "SAVE_FILE", ())
     } else if id == ID_SAVE_AS {
-        emit_to_main(app, "SAVE_FILE_AS", ())
+        emit_to_active_window(app, "SAVE_FILE_AS", ())
     } else if id == ID_OPEN {
-        emit_to_main(app, "OPEN_FILE", ())
+        emit_to_active_window(app, "OPEN_FILE", ())
     } else if id == ID_EXPORT_PROT {
-        emit_to_main(app, "START_EXPORT", ())
+        emit_to_active_window(app, "START_EXPORT", ())
     } else if id == ID_ZOOM_IN {
-        emit_to_main(app, "MENU_ZOOM_IN", ())
+        emit_to_active_window(app, "MENU_ZOOM_IN", ())
     } else if id == ID_ZOOM_OUT {
-        emit_to_main(app, "MENU_ZOOM_OUT", ())
+        emit_to_active_window(app, "MENU_ZOOM_OUT", ())
     } else if id == ID_ZOOM_IN_VERTICAL {
-        emit_to_main(app, "MENU_ZOOM_IN_VERTICAL", ())
+        emit_to_active_window(app, "MENU_ZOOM_IN_VERTICAL", ())
     } else if id == ID_ZOOM_OUT_VERTICAL {
-        emit_to_main(app, "MENU_ZOOM_OUT_VERTICAL", ())
+        emit_to_active_window(app, "MENU_ZOOM_OUT_VERTICAL", ())
     } else if id == ID_SCROLL_LEFT {
-        emit_to_main(app, "MENU_PAN_LEFT", ())
+        emit_to_active_window(app, "MENU_PAN_LEFT", ())
     } else if id == ID_SCROLL_RIGHT {
-        emit_to_main(app, "MENU_PAN_RIGHT", ())
+        emit_to_active_window(app, "MENU_PAN_RIGHT", ())
     } else if id == ID_FOLLOW_MODE {
         let mut follow_mode = follow_mode_state.0.lock().unwrap();
         *follow_mode = !*follow_mode;
-        emit_to_main(
+        emit_to_active_window(
             app,
             "MENU_FOLLOW_MODE",
             FollowModePayload {
@@ -296,7 +306,7 @@ pub fn handle_menu_event<R: Runtime>(
     } else if id == ID_SHUFFLE_POINT_TOOL_MODE {
         let mut shuffle_point_tool_mode = shuffle_point_tool_mode_state.0.lock().unwrap();
         *shuffle_point_tool_mode = !*shuffle_point_tool_mode;
-        emit_to_main(
+        emit_to_active_window(
             app,
             "MENU_SHUFFLE_POINT_TOOL_MODE",
             ShufflePointToolModePayload {
