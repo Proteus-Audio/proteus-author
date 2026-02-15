@@ -1,0 +1,159 @@
+name: Build FFmpeg Binaries
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - ffmpeg/small/build-instructions.md
+      - .github/workflows/build-ffmpeg.yml
+
+permissions:
+  contents: read
+
+jobs:
+  build-ffmpeg:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            target: aarch64-apple-darwin
+            output: ffmpeg-aarch64-apple-darwin
+          - os: macos-13
+            target: x86_64-apple-darwin
+            output: ffmpeg-x86_64-apple-darwin
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            output: ffmpeg-x86_64-unknown-linux-gnu
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            output: ffmpeg-x86_64-pc-windows-msvc.exe
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup MSYS2 (Windows only)
+        if: matrix.os == 'windows-latest'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            git
+            make
+            diffutils
+            pkgconf
+            yasm
+            nasm
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-libvorbis
+
+      - name: Install dependencies (Linux only)
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            pkg-config \
+            yasm \
+            nasm \
+            libvorbis-dev
+
+      - name: Install dependencies (macOS only)
+        if: startsWith(matrix.os, 'macos-')
+        run: |
+          brew install pkg-config yasm nasm libvorbis
+
+      - name: Build FFmpeg (macOS/Linux)
+        if: matrix.os != 'windows-latest'
+        run: |
+          set -euxo pipefail
+          git clone --depth 1 https://github.com/FFmpeg/FFmpeg.git ffmpeg-src
+          cd ffmpeg-src
+          make distclean 2>/dev/null || true
+
+          ./configure \
+            --prefix="$PWD/build" \
+            --disable-everything \
+            --enable-ffmpeg \
+            --enable-protocol=file \
+            --enable-muxer=matroska \
+            --enable-encoder=libvorbis \
+            --enable-libvorbis \
+            --enable-demuxer=wav \
+            --enable-decoder=pcm_s16le \
+            --enable-decoder=pcm_s24le \
+            --enable-decoder=pcm_s32le \
+            --enable-decoder=pcm_f32le \
+            --enable-demuxer=mp3 \
+            --enable-decoder=mp3 \
+            --enable-parser=mp3 \
+            --enable-swresample \
+            --enable-avfilter \
+            --enable-filter=aresample \
+            --enable-filter=aformat \
+            --enable-filter=anull \
+            --disable-doc \
+            --disable-ffplay \
+            --disable-ffprobe \
+            --disable-avdevice \
+            --disable-swscale \
+            --disable-network
+
+          make -j"$(getconf _NPROCESSORS_ONLN || sysctl -n hw.ncpu)"
+          make install
+          strip build/bin/ffmpeg || true
+          cp build/bin/ffmpeg "../${{ matrix.output }}"
+
+      - name: Build FFmpeg (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: msys2 {0}
+        run: |
+          set -euxo pipefail
+          git clone --depth 1 https://github.com/FFmpeg/FFmpeg.git ffmpeg-src
+          cd ffmpeg-src
+          make distclean 2>/dev/null || true
+
+          ./configure \
+            --prefix="$PWD/build" \
+            --disable-everything \
+            --enable-ffmpeg \
+            --enable-protocol=file \
+            --enable-muxer=matroska \
+            --enable-encoder=libvorbis \
+            --enable-libvorbis \
+            --enable-demuxer=wav \
+            --enable-decoder=pcm_s16le \
+            --enable-decoder=pcm_s24le \
+            --enable-decoder=pcm_s32le \
+            --enable-decoder=pcm_f32le \
+            --enable-demuxer=mp3 \
+            --enable-decoder=mp3 \
+            --enable-parser=mp3 \
+            --enable-swresample \
+            --enable-avfilter \
+            --enable-filter=aresample \
+            --enable-filter=aformat \
+            --enable-filter=anull \
+            --disable-doc \
+            --disable-ffplay \
+            --disable-ffprobe \
+            --disable-avdevice \
+            --disable-swscale \
+            --disable-network
+
+          make -j"$(nproc)"
+          make install
+          strip build/bin/ffmpeg.exe || true
+          cp build/bin/ffmpeg.exe "../${{ matrix.output }}"
+
+      - name: Upload FFmpeg artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.output }}
+          path: ${{ matrix.output }}
+          if-no-files-found: error
