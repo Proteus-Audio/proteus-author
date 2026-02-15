@@ -173,20 +173,23 @@ onMounted(async () => {
   })
   unlisteners.value.push(startExport)
 
-  const alert = await appWindow.listen('ALERT', (event) => {
+  const alertCurrentWindow = await appWindow.listen('ALERT_CURRENT_WINDOW', (event) => {
     const { message, type } = event.payload as {
       message: string
       type: AlertType
     }
     alerts.addAlert(message, type)
   })
-  unlisteners.value.push(alert)
+  unlisteners.value.push(alertCurrentWindow)
 
-  const exporting = await appWindow.listen('EXPORTING', (event) => {
-    const message = event.payload as string
-    alerts.addAlert(message, 'info')
+  const alertAllWindows = await appWindow.listen('ALERT_ALL_WINDOWS', (event) => {
+    const { message, type } = event.payload as {
+      message: string
+      type: AlertType
+    }
+    alerts.addAlert(message, type)
   })
-  unlisteners.value.push(exporting)
+  unlisteners.value.push(alertAllWindows)
 
   const updatePlayhead = await appWindow.listen('UPDATE_PLAYHEAD', (event) => {
     const time = event.payload as number

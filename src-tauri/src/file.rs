@@ -17,6 +17,7 @@ use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_shell;
 use tauri_plugin_shell::process::CommandEvent;
 use tauri_plugin_shell::ShellExt;
+use crate::alerts::emit_alert_current_window;
 use crate::peaks::*;
 use crate::project::*;
 
@@ -701,11 +702,12 @@ pub fn export_prot(window: Window, project_state: State<WindowProjectState>) {
         .set_file_name(file_name.as_str());
 
     let handle = window.app_handle().clone();
+    let alert_window = window.clone();
 
     save_dialog.save_file(move |file_path| {
         if file_path.is_none() {
             println!("No file selected");
-            handle.emit("EXPORTING", "Cancelled").unwrap();
+            emit_alert_current_window(&alert_window, "Cancelled", "info");
             ()
         }
 
@@ -713,15 +715,13 @@ pub fn export_prot(window: Window, project_state: State<WindowProjectState>) {
             Ok(path) => path,
             Err(err) => {
                 println!("Invalid file path: {:?}", err);
-                handle.emit("EXPORTING", "Cancelled").unwrap();
+                emit_alert_current_window(&alert_window, "Cancelled", "info");
                 return;
             }
         };
         let file_name = file_path.file_name().unwrap().to_str().unwrap();
 
-        handle
-            .emit("EXPORTING", format!("Exporting {}", file_name))
-            .unwrap();
+        emit_alert_current_window(&alert_window, format!("Exporting {}", file_name), "info");
         // `new_sidecar()` expects just the filename, NOT the whole path like in JavaScript
         let mut reduced_file_list = Vec::new();
 
@@ -881,6 +881,7 @@ pub fn export_prot(window: Window, project_state: State<WindowProjectState>) {
             .spawn()
             .expect("Failed to spawn sidecar");
 
+        let alert_window_for_task = alert_window.clone();
         tauri::async_runtime::spawn(async move {
             // read events such as stdout
             while let Some(event) = rx.recv().await {
@@ -908,7 +909,7 @@ pub fn export_prot(window: Window, project_state: State<WindowProjectState>) {
                 std::fs::rename(output_file.clone(), output_file.replace(".mka", ".prot")).unwrap();
             }
 
-            handle.emit("EXPORTING", "Export Finished").unwrap();
+            emit_alert_current_window(&alert_window_for_task, "Export Finished", "info");
         });
     });
 }

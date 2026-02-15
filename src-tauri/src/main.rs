@@ -5,6 +5,7 @@
 
 mod file;
 mod menu;
+mod alerts;
 mod helpers;
 mod peaks;
 mod player;
@@ -14,6 +15,7 @@ mod windows;
 use std::sync::{Arc, Mutex};
 
 use file::*;
+use alerts::*;
 use menu::{
     set_follow_mode_menu, set_shuffle_point_tool_mode_menu, FollowModeState,
     ShufflePointToolModeState,
@@ -87,7 +89,9 @@ fn main() {
             set_volume,
             set_effects_chain,
             set_follow_mode_menu,
-            set_shuffle_point_tool_mode_menu
+            set_shuffle_point_tool_mode_menu,
+            alert_current_window,
+            alert_all_windows
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");

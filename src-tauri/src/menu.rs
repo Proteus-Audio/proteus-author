@@ -3,6 +3,7 @@ use std::sync::{Arc, Mutex};
 use tauri::menu::{CheckMenuItem, Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::{AppHandle, Emitter, Manager, Runtime, State};
 
+use crate::alerts::AlertPayload;
 use crate::windows;
 
 const ID_ABOUT: &str = "about";
@@ -22,12 +23,6 @@ const ID_SHUFFLE_POINT_TOOL_MODE: &str = "shuffle_point_tool_mode";
 
 pub struct FollowModeState(pub Arc<Mutex<bool>>);
 pub struct ShufflePointToolModeState(pub Arc<Mutex<bool>>);
-
-#[derive(Debug, Clone, Serialize)]
-struct AlertPayload {
-    message: String,
-    r#type: String,
-}
 
 #[derive(Debug, Clone, Serialize)]
 struct FollowModePayload {
@@ -270,7 +265,7 @@ pub fn handle_menu_event<R: Runtime>(
             let version = app.package_info().version.to_string();
             emit_to_active_window(
                 app,
-                "ALERT",
+                "ALERT_CURRENT_WINDOW",
                 AlertPayload {
                     message: format!("{} v{}\\n©Adam Thomas Howard 2024", app_name, version),
                     r#type: "info".to_string(),
