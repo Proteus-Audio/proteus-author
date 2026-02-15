@@ -660,8 +660,8 @@ pub async fn open_file(window: Window) {
                     set_project_by_label(&label, &project_state, new_project.clone());
                     set_unsaved_by_label(&label, &unsaved_state, false);
                     window.set_title(file_name).unwrap();
-                    window
-                        .emit("FILE_LOADED", new_project)
+                    app
+                        .emit_to(label.as_str(), "FILE_LOADED", new_project)
                         .expect("failed to emit event");
                 }
                 Err(e) => {
@@ -686,7 +686,8 @@ pub async fn load_empty_project(window: Window) {
         )
         .unwrap();
     window
-        .emit("FILE_LOADED", project.clone())
+        .app_handle()
+        .emit_to(window.label(), "FILE_LOADED", project.clone())
         .expect("failed to emit event");
 }
 
