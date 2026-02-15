@@ -21,7 +21,7 @@ use menu::{
 use player::*;
 use project::*;
 use dotenv::dotenv;
-use tauri::Manager;
+use tauri::{Manager, RunEvent, WindowEvent};
 
 fn main() {
     dotenv().ok();
@@ -96,13 +96,28 @@ fn main() {
     // windows::create_docs_window(&handle);
 
     app.run(|_app_handle, event| match event {
+        RunEvent::WindowEvent {
+            label,
+            event: WindowEvent::Destroyed,
+            ..
+        } => {
+            let project_state: tauri::State<WindowProjectState> = _app_handle.state();
+            let player_state: tauri::State<WindowPlayerState> = _app_handle.state();
+            let unsaved_state: tauri::State<WindowUnsavedState> = _app_handle.state();
+            clear_window_state_by_label(
+                &label,
+                &project_state,
+                &player_state,
+                &unsaved_state,
+            );
+        }
         #[cfg(target_os = "macos")]
-        tauri::RunEvent::ExitRequested { api, .. } => {
+        RunEvent::ExitRequested { api, .. } => {
             println!("exit requested");
             api.prevent_exit();
         }
          #[cfg(any(target_os = "macos", target_os = "ios"))]
-        tauri::RunEvent::Reopen {
+        RunEvent::Reopen {
             has_visible_windows,
             ..
         } => {
@@ -119,7 +134,7 @@ fn main() {
         }
 
          #[cfg(any(target_os = "macos", target_os = "ios"))]
-        tauri::RunEvent::Opened { urls, .. } => {
+        RunEvent::Opened { urls, .. } => {
             println!("opened: {:?}", urls);
         }
         _ => {}

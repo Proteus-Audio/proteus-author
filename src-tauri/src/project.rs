@@ -201,6 +201,30 @@ pub fn get_unsaved_by_label(label: &str, unsaved_state: &State<WindowUnsavedStat
     *map.get(label).unwrap_or(&false)
 }
 
+pub fn clear_window_state_by_label(
+    label: &str,
+    project_state: &State<WindowProjectState>,
+    player_state: &State<WindowPlayerState>,
+    unsaved_state: &State<WindowUnsavedState>,
+) {
+    {
+        let mut map = project_state.0.lock().unwrap();
+        map.remove(label);
+    }
+
+    {
+        let mut map = player_state.0.lock().unwrap();
+        if let Some(Some(player)) = map.remove(label) {
+            player.stop();
+        }
+    }
+
+    {
+        let mut map = unsaved_state.0.lock().unwrap();
+        map.remove(label);
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ProjectStatus {
     pub project: ProjectSkeleton,
