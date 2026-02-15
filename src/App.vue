@@ -36,7 +36,8 @@
 
 <script setup lang="ts">
 import { invoke } from '@tauri-apps/api/core'
-import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { type UnlistenFn } from '@tauri-apps/api/event'
+import { Window } from '@tauri-apps/api/window'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import BaseAlertBox from './components/base/BaseAlertBox.vue'
 import BaseContainer from './components/base/BaseContainer.vue'
@@ -133,10 +134,16 @@ const effectRackHeight = computed(() => (effectRackHover.value ? `7rem` : `5rem`
 
 onMounted(async () => {
   registerShortcuts()
+  const appWindow = Window.getCurrent()
+  const runIfFocused = async (action: () => void | Promise<void>) => {
+    const focused = await appWindow.isFocused()
+    if (!focused) return
+    await action()
+  }
 
   // listen to the `click` event and get a function to remove the event listener
   // there's also a `once` function that subscribes to an event and automatically unsubscribes the listener on the first event
-  const fileLoaded = await listen('FILE_LOADED', (event) => {
+  const fileLoaded = await appWindow.listen('FILE_LOADED', (event) => {
     console.log('file loaded', event)
     const project = event?.payload as ProjectSkeleton
     if (project.location) alerts.addAlert('Loading project…', 'info')
@@ -144,27 +151,29 @@ onMounted(async () => {
   })
   unlisteners.value.push(fileLoaded)
 
-  const saveFile = await listen('SAVE_FILE', () => {
-    void handleSaveFile()
+  const saveFile = await appWindow.listen('SAVE_FILE', () => {
+    void runIfFocused(handleSaveFile)
   })
   unlisteners.value.push(saveFile)
 
-  const saveFileAs = await listen('SAVE_FILE_AS', () => {
-    void handleSaveFileAs()
+  const saveFileAs = await appWindow.listen('SAVE_FILE_AS', () => {
+    void runIfFocused(handleSaveFileAs)
   })
   unlisteners.value.push(saveFileAs)
 
-  const openFile = await listen('OPEN_FILE', () => {
-    void invoke('open_file')
+  const openFile = await appWindow.listen('OPEN_FILE', () => {
+    void runIfFocused(async () => {
+      await invoke('open_file')
+    })
   })
   unlisteners.value.push(openFile)
 
-  const startExport = await listen('START_EXPORT', () => {
-    void handleStartExport()
+  const startExport = await appWindow.listen('START_EXPORT', () => {
+    void runIfFocused(handleStartExport)
   })
   unlisteners.value.push(startExport)
 
-  const alert = await listen('ALERT', (event) => {
+  const alert = await appWindow.listen('ALERT', (event) => {
     const { message, type } = event.payload as {
       message: string
       type: AlertType
@@ -173,57 +182,73 @@ onMounted(async () => {
   })
   unlisteners.value.push(alert)
 
-  const exporting = await listen('EXPORTING', (event) => {
+  const exporting = await appWindow.listen('EXPORTING', (event) => {
     const message = event.payload as string
     alerts.addAlert(message, 'info')
   })
   unlisteners.value.push(exporting)
 
-  const updatePlayhead = await listen('UPDATE_PLAYHEAD', (event) => {
+  const updatePlayhead = await appWindow.listen('UPDATE_PLAYHEAD', (event) => {
     const time = event.payload as number
     audio.setClock(time)
   })
   unlisteners.value.push(updatePlayhead)
 
-  const menuZoomIn = await listen('MENU_ZOOM_IN', () => {
-    audio.zoomIn('x')
+  const menuZoomIn = await appWindow.listen('MENU_ZOOM_IN', () => {
+    void runIfFocused(async () => {
+      audio.zoomIn('x')
+    })
   })
   unlisteners.value.push(menuZoomIn)
 
-  const menuZoomOut = await listen('MENU_ZOOM_OUT', () => {
-    audio.zoomOut('x')
+  const menuZoomOut = await appWindow.listen('MENU_ZOOM_OUT', () => {
+    void runIfFocused(async () => {
+      audio.zoomOut('x')
+    })
   })
   unlisteners.value.push(menuZoomOut)
 
-  const menuZoomInVertical = await listen('MENU_ZOOM_IN_VERTICAL', () => {
-    audio.zoomIn('y')
+  const menuZoomInVertical = await appWindow.listen('MENU_ZOOM_IN_VERTICAL', () => {
+    void runIfFocused(async () => {
+      audio.zoomIn('y')
+    })
   })
   unlisteners.value.push(menuZoomInVertical)
 
-  const menuZoomOutVertical = await listen('MENU_ZOOM_OUT_VERTICAL', () => {
-    audio.zoomOut('y')
+  const menuZoomOutVertical = await appWindow.listen('MENU_ZOOM_OUT_VERTICAL', () => {
+    void runIfFocused(async () => {
+      audio.zoomOut('y')
+    })
   })
   unlisteners.value.push(menuZoomOutVertical)
 
-  const menuPanLeft = await listen('MENU_PAN_LEFT', () => {
-    audio.panViewLeft(0.2)
+  const menuPanLeft = await appWindow.listen('MENU_PAN_LEFT', () => {
+    void runIfFocused(async () => {
+      audio.panViewLeft(0.2)
+    })
   })
   unlisteners.value.push(menuPanLeft)
 
-  const menuPanRight = await listen('MENU_PAN_RIGHT', () => {
-    audio.panViewRight(0.2)
+  const menuPanRight = await appWindow.listen('MENU_PAN_RIGHT', () => {
+    void runIfFocused(async () => {
+      audio.panViewRight(0.2)
+    })
   })
   unlisteners.value.push(menuPanRight)
 
-  const menuFollowMode = await listen('MENU_FOLLOW_MODE', (event) => {
-    const payload = event.payload as { enabled?: boolean }
-    audio.setFollowMode(!!payload.enabled)
+  const menuFollowMode = await appWindow.listen('MENU_FOLLOW_MODE', (event) => {
+    void runIfFocused(async () => {
+      const payload = event.payload as { enabled?: boolean }
+      audio.setFollowMode(!!payload.enabled)
+    })
   })
   unlisteners.value.push(menuFollowMode)
 
-  const menuShufflePointToolMode = await listen('MENU_SHUFFLE_POINT_TOOL_MODE', (event) => {
-    const payload = event.payload as { enabled?: boolean }
-    audio.setShufflePointToolMode(!!payload.enabled)
+  const menuShufflePointToolMode = await appWindow.listen('MENU_SHUFFLE_POINT_TOOL_MODE', (event) => {
+    void runIfFocused(async () => {
+      const payload = event.payload as { enabled?: boolean }
+      audio.setShufflePointToolMode(!!payload.enabled)
+    })
   })
   unlisteners.value.push(menuShufflePointToolMode)
 

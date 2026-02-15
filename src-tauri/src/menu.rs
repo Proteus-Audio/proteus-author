@@ -39,30 +39,15 @@ struct ShufflePointToolModePayload {
     enabled: bool,
 }
 
-fn emit_to_main<R: Runtime, S: serde::Serialize>(app: &AppHandle<R>, event: &str, payload: S) {
-    let had_windows = !app.webview_windows().is_empty();
-    if !had_windows {
-        let window = windows::get_or_create_main_window(app);
-        let _ = window.show();
-        let _ = window.set_focus();
-    }
+fn emit_to_active_window<R: Runtime, S: serde::Serialize>(app: &AppHandle<R>, event: &str, payload: S) {
+    let focused_window = app
+        .webview_windows()
+        .values()
+        .find(|window| window.is_focused().unwrap_or(false))
+        .cloned();
 
-    for window in app.webview_windows().values() {
-        let _ = window.emit(event, &payload);
-    }
-
-    if !had_windows {
-        let app_handle = app.clone();
-        let event_name = event.to_string();
-        if let Ok(json_payload) = serde_json::to_value(&payload) {
-            tauri::async_runtime::spawn(async move {
-                std::thread::sleep(std::time::Duration::from_millis(220));
-                for window in app_handle.webview_windows().values() {
-                    let _ = window.emit(&event_name, &json_payload);
-                }
-            });
-        }
-    }
+    let window = focused_window.unwrap_or_else(|| windows::get_or_create_main_window(app));
+    let _ = window.emit(event, &payload);
 }
 
 fn create_new_window<R: Runtime>(app: &AppHandle<R>) {
@@ -283,7 +268,7 @@ pub fn handle_menu_event<R: Runtime>(
     if id == ID_ABOUT {
             let app_name = app.package_info().name.clone();
             let version = app.package_info().version.to_string();
-            emit_to_main(
+            emit_to_active_window(
                 app,
                 "ALERT",
                 AlertPayload {
@@ -294,29 +279,29 @@ pub fn handle_menu_event<R: Runtime>(
     } else if id == ID_NEW_WINDOW {
         create_new_window(app)
     } else if id == ID_SAVE {
-        emit_to_main(app, "SAVE_FILE", ())
+        emit_to_active_window(app, "SAVE_FILE", ())
     } else if id == ID_SAVE_AS {
-        emit_to_main(app, "SAVE_FILE_AS", ())
+        emit_to_active_window(app, "SAVE_FILE_AS", ())
     } else if id == ID_OPEN {
-        emit_to_main(app, "OPEN_FILE", ())
+        emit_to_active_window(app, "OPEN_FILE", ())
     } else if id == ID_EXPORT_PROT {
-        emit_to_main(app, "START_EXPORT", ())
+        emit_to_active_window(app, "START_EXPORT", ())
     } else if id == ID_ZOOM_IN {
-        emit_to_main(app, "MENU_ZOOM_IN", ())
+        emit_to_active_window(app, "MENU_ZOOM_IN", ())
     } else if id == ID_ZOOM_OUT {
-        emit_to_main(app, "MENU_ZOOM_OUT", ())
+        emit_to_active_window(app, "MENU_ZOOM_OUT", ())
     } else if id == ID_ZOOM_IN_VERTICAL {
-        emit_to_main(app, "MENU_ZOOM_IN_VERTICAL", ())
+        emit_to_active_window(app, "MENU_ZOOM_IN_VERTICAL", ())
     } else if id == ID_ZOOM_OUT_VERTICAL {
-        emit_to_main(app, "MENU_ZOOM_OUT_VERTICAL", ())
+        emit_to_active_window(app, "MENU_ZOOM_OUT_VERTICAL", ())
     } else if id == ID_SCROLL_LEFT {
-        emit_to_main(app, "MENU_PAN_LEFT", ())
+        emit_to_active_window(app, "MENU_PAN_LEFT", ())
     } else if id == ID_SCROLL_RIGHT {
-        emit_to_main(app, "MENU_PAN_RIGHT", ())
+        emit_to_active_window(app, "MENU_PAN_RIGHT", ())
     } else if id == ID_FOLLOW_MODE {
         let mut follow_mode = follow_mode_state.0.lock().unwrap();
         *follow_mode = !*follow_mode;
-        emit_to_main(
+        emit_to_active_window(
             app,
             "MENU_FOLLOW_MODE",
             FollowModePayload {
@@ -326,7 +311,7 @@ pub fn handle_menu_event<R: Runtime>(
     } else if id == ID_SHUFFLE_POINT_TOOL_MODE {
         let mut shuffle_point_tool_mode = shuffle_point_tool_mode_state.0.lock().unwrap();
         *shuffle_point_tool_mode = !*shuffle_point_tool_mode;
-        emit_to_main(
+        emit_to_active_window(
             app,
             "MENU_SHUFFLE_POINT_TOOL_MODE",
             ShufflePointToolModePayload {
