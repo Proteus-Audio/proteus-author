@@ -5,12 +5,20 @@ import './assets/analog.css'
 import './assets/fonts.css'
 import { createPinia } from 'pinia'
 import App from './App.vue'
+import { startupMark } from './utils/startup-trace'
 
 import ElementPlus from 'element-plus'
+
+startupMark('main.ts:start')
 
 const app = createApp(App)
 const pinia = createPinia()
 
 app.use(ElementPlus)
 app.use(pinia)
+startupMark('main.ts:before-mount')
 app.mount('#app')
+startupMark('main.ts:after-mount')
+requestAnimationFrame(() => {
+  startupMark('main.ts:first-animation-frame')
+})

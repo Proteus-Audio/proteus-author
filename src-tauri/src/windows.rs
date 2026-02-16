@@ -2,6 +2,7 @@ use tauri::{
     AppHandle, LogicalPosition, Manager, Runtime, TitleBarStyle, WebviewWindow,
     WebviewWindowBuilder,
 };
+use crate::startup::{log_rust, StartupTraceState};
 
 const MAIN_WINDOW_LABEL: &str = "main-window-1";
 
@@ -35,6 +36,12 @@ pub fn create_window<R: Runtime>(app_handle: &AppHandle<R>, count: i32) -> Webvi
     let win_builder = win_builder.title_bar_style(TitleBarStyle::Transparent);
 
     let window = win_builder.build().unwrap();
+    let startup_trace_state: tauri::State<StartupTraceState> = app_handle.state();
+    log_rust(
+        &startup_trace_state,
+        &format!("window:{}", window.label()),
+        "webview window built",
+    );
 
     if count < 1 {
         create_window(app_handle, count + 1);

@@ -4,6 +4,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { ProjectSkeleton } from '../typings/proteus'
 import type { DropFileSkeleton, Track, TrackFile } from '../typings/tracks'
+import { startupMark } from '../utils/startup-trace'
 import { useAudioStore } from './audio'
 import { useHeadStore } from './head'
 
@@ -18,6 +19,7 @@ export const useTrackStore = defineStore('track', () => {
   const tracks = ref([] as Track[])
   const files = ref([] as DropFileSkeleton[])
   const possibleCombinations = ref('0')
+  const startupSyncTraced = ref(false)
 
   /////////////
   // GETTERS //
@@ -189,7 +191,11 @@ export const useTrackStore = defineStore('track', () => {
   }
 
   const sync = async () => {
+    const shouldTraceStartup = !startupSyncTraced.value
+    if (shouldTraceStartup) startupMark('track.sync:start')
+
     const projectState = await invoke<ProjectSkeleton>('get_project_state')
+    if (shouldTraceStartup) startupMark('track.sync:after-get-project-state')
     console.log(projectState)
 
     files.value = projectState.files
@@ -197,6 +203,10 @@ export const useTrackStore = defineStore('track', () => {
 
     addEmptyTrackIfNone()
     await refreshPossibleCombinations()
+    if (shouldTraceStartup) {
+      startupMark('track.sync:after-refresh-possible-combinations')
+      startupSyncTraced.value = true
+    }
   }
 
   return {

@@ -54,12 +54,14 @@ import { useHeadStore } from './stores/head'
 import { useTrackStore } from './stores/track'
 import type { AlertType, ProjectSkeleton } from './typings/proteus'
 import { useElementHover } from '@vueuse/core'
+import { startupMark } from './utils/startup-trace'
 
 const head = useHeadStore()
 const trackStore = useTrackStore()
 const audio = useAudioStore()
 const alerts = useAlertStore()
 const { registerShortcuts, unregisterShortcuts } = useAppShortcuts()
+startupMark('App.vue:setup-start')
 
 const windowTitle = computed(() => {
   return head.name.replace('.protproject', '')
@@ -84,14 +86,6 @@ watch(
     console.log(await head.logChanges())
   },
   { deep: true },
-)
-
-watch(
-  audio.effects,
-  async () => {
-    await audio.syncEffects()
-  },
-  { deep: true, immediate: true },
 )
 
 const handleSaveFile = async () => {
@@ -133,6 +127,7 @@ const effectRackHover = useElementHover(effectRackRef)
 const effectRackHeight = computed(() => (effectRackHover.value ? `7rem` : `5rem`))
 
 onMounted(async () => {
+  startupMark('App.vue:onMounted-start')
   registerShortcuts()
   const appWindow = Window.getCurrent()
   const runIfFocused = async (action: () => void | Promise<void>) => {
@@ -257,9 +252,16 @@ onMounted(async () => {
 
   trackStore.addEmptyTrackIfNone()
 
+  startupMark('App.vue:before-get-play-state')
   console.log(await invoke('get_play_state'))
+  startupMark('App.vue:after-get-play-state')
 
+  startupMark('App.vue:before-track-sync')
   await trackStore.sync()
+  startupMark('App.vue:after-track-sync')
+  requestAnimationFrame(() => {
+    startupMark('App.vue:first-frame-after-mounted-work')
+  })
 })
 
 onUnmounted(() => {
