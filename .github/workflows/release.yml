@@ -8,6 +8,9 @@ on:
 permissions:
   contents: write
 
+env:
+  RELEASE_TAG_PREFIX: proteus-author-v
+
 jobs:
   prepare-release:
     runs-on: ubuntu-latest
@@ -28,7 +31,7 @@ jobs:
         id: build_notes
         run: |
           VERSION="$(grep -m1 '"version"' package.json | sed -E 's/.*"version": "([^"]+)".*/\1/')"
-          git cliff --unreleased --tag "app-v${VERSION}" > release-notes.md
+          git cliff --unreleased --tag "${RELEASE_TAG_PREFIX}${VERSION}" > release-notes.md
           if [ ! -s release-notes.md ]; then
             echo "No notable changes in this release." > release-notes.md
           fi
@@ -97,9 +100,47 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tauriScript: bun run tauri
-          tagName: proteus-author-v__VERSION__
+          tagName: ${{ env.RELEASE_TAG_PREFIX }}__VERSION__
           releaseName: 'Proteus Author v__VERSION__'
           releaseBody: ${{ needs.prepare-release.outputs.release_body }}
           releaseDraft: false
           prerelease: false
           args: --target ${{ matrix.target }}
+
+  publish-downloads-manifest:
+    needs: publish-tauri
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build downloads.json
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="$(grep -m1 '"version"' package.json | sed -E 's/.*"version": "([^"]+)".*/\1/')"
+          TAG="${RELEASE_TAG_PREFIX}${VERSION}"
+
+          gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${TAG}" > release.json
+
+          jq \
+            --arg version "${VERSION}" \
+            --arg tag "${TAG}" \
+            --arg generated_at "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+            '{
+              version: $version,
+              tag: $tag,
+              release_url: .html_url,
+              generated_at: $generated_at,
+              assets: [
+                .assets[]
+                | select(.name != "downloads.json")
+                | {
+                    name,
+                    size,
+                    content_type,
+                    download_url: .browser_download_url
+                  }
+              ]
+            }' release.json > downloads.json
+
+          gh release upload "${TAG}" downloads.json --clobber
