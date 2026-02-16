@@ -9,7 +9,35 @@ permissions:
   contents: write
 
 jobs:
+  prepare-release:
+    runs-on: ubuntu-latest
+    outputs:
+      release_body: ${{ steps.build_notes.outputs.release_body }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install git-cliff
+        run: cargo install git-cliff --locked
+
+      - name: Build release notes
+        id: build_notes
+        run: |
+          VERSION="$(grep -m1 '"version"' package.json | sed -E 's/.*"version": "([^"]+)".*/\1/')"
+          git cliff --unreleased --tag "app-v${VERSION}" > release-notes.md
+
+          {
+            echo "release_body<<'EOF'"
+            cat release-notes.md
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
   publish-tauri:
+    needs: prepare-release
     strategy:
       fail-fast: false
       matrix:
@@ -67,7 +95,7 @@ jobs:
           tauriScript: bun run tauri
           tagName: app-v__VERSION__
           releaseName: 'App v__VERSION__'
-          releaseBody: 'See the assets to download this version and install.'
+          releaseBody: ${{ needs.prepare-release.outputs.release_body }}
           releaseDraft: false
           prerelease: false
           args: --target ${{ matrix.target }}
