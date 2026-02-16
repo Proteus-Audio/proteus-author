@@ -655,11 +655,12 @@ pub async fn open_file(window: Window) {
 
             match project_result {
                 Ok(mut new_project) => {
-                    new_project.name = Some(file_name.to_string());
+                    let project_name = file_name.to_string().replace(".protproject", "");
+                    new_project.name = Some(project_name);
                     new_project.location = Some(project_location.to_string());
                     set_project_by_label(&label, &project_state, new_project.clone());
                     set_unsaved_by_label(&label, &unsaved_state, false);
-                    window.set_title(file_name).unwrap();
+                    window.set_title(project_name.as_str()).unwrap();
                     app
                         .emit_to(label.as_str(), "FILE_LOADED", new_project)
                         .expect("failed to emit event");
