@@ -1,9 +1,13 @@
 <template>
-  <div class="grid justify-items-stretch gap-1.5">
-    <span
-      class="block w-full border-4 border-sky-100 bg-slate-100 transition-colors duration-150"
-      :class="[sizeClass, state ? activeColorClass : '', frozen && state ? 'bg-slate-400!' : '']"
-    ></span>
+  <div
+    class="digital-indicator"
+    :class="[
+      sizeClass,
+      `color-${props.color}`,
+      { on: state, frozen: frozen && state, 'blue-scale': blueScale },
+    ]"
+  >
+    <span class="light"></span>
     <span v-if="label" class="text-center text-[10px] leading-none text-zinc-500">{{ label }}</span>
   </div>
 </template>
@@ -29,34 +33,99 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const sizeClass = computed(() => {
-  if (props.size === 'small') return 'h-3'
-  if (props.size === 'large') return 'h-8'
-  return 'h-5'
-})
-
-const activeColorClass = computed(() => {
-  if (props.frozen) return 'bg-slate-400'
-
-  const blueScaleMap: Record<NonNullable<Props['color']>, string> = {
-    green: 'bg-sky-300',
-    lime: 'bg-sky-400',
-    yellow: 'bg-sky-500',
-    amber: 'bg-sky-600',
-    orange: 'bg-sky-700',
-    red: 'bg-sky-800',
-    'dark-red': 'bg-red-800',
-  }
-
-  const standardMap: Record<NonNullable<Props['color']>, string> = {
-    green: 'bg-green-600',
-    lime: 'bg-lime-500',
-    yellow: 'bg-yellow-400',
-    amber: 'bg-amber-400',
-    orange: 'bg-orange-500',
-    red: 'bg-red-600',
-    'dark-red': 'bg-red-800',
-  }
-
-  return props.blueScale ? blueScaleMap[props.color] : standardMap[props.color]
+  if (props.size === 'small') return 'small'
+  if (props.size === 'large') return 'large'
+  return 'medium'
 })
 </script>
+
+<style scoped>
+@reference "../../assets/index.css";
+
+.digital-indicator {
+  @apply grid justify-items-stretch gap-1.5;
+
+  .light {
+    @apply block w-full border-4 border-gray-200 bg-slate-100/50 transition-colors duration-150;
+  }
+
+  &.small .light {
+    @apply h-3;
+  }
+
+  &.medium .light {
+    @apply h-5;
+  }
+
+  &.large .light {
+    @apply h-8;
+  }
+
+  &.on {
+    &.color-green .light {
+      @apply bg-green-600;
+    }
+
+    &.color-lime .light {
+      @apply bg-lime-500;
+    }
+
+    &.color-yellow .light {
+      @apply bg-yellow-400;
+    }
+
+    &.color-amber .light {
+      @apply bg-amber-400;
+    }
+
+    &.color-orange .light {
+      @apply bg-orange-500;
+    }
+
+    &.color-red .light {
+      @apply bg-red-600;
+    }
+
+    &.color-dark-red .light {
+      @apply bg-red-800;
+    }
+  }
+
+  &.blue-scale.on {
+    &.color-green .light {
+      @apply bg-cyan-500;
+    }
+
+    &.color-lime .light {
+      @apply bg-cyan-600;
+    }
+
+    &.color-yellow .light {
+      @apply bg-cyan-700;
+    }
+
+    &.color-amber .light {
+      @apply bg-cyan-800;
+    }
+
+    &.color-orange .light {
+      @apply bg-cyan-900;
+    }
+
+    &.color-red .light {
+      @apply bg-cyan-950;
+    }
+
+    &.color-dark-red .light {
+      @apply bg-red-800;
+    }
+    &.frozen.on .light {
+        @apply bg-slate-400;
+    }
+  }
+
+  &.frozen.on .light {
+    @apply bg-slate-400;
+  }
+}
+</style>
