@@ -39,3 +39,37 @@ Yes. Based on your current code path, this is what happens between window open a
   - Vue mounted
   - first animation frame
   - first backend sync done.
+
+  
+  
+  _____
+  
+  
+  ### Best next moves
+ 
+   1. Measure release startup separately
+ 
+   - Dev startup and packaged startup have different bottlenecks.
+   - If your end-user concern is app launch speed, we should benchmark packaged app startup (tauri build) and
+     trace there too.
+ 
+   2. Further reduce dev cold-start transform
+ 
+   - Keep Vite running warm between launches.
+   - If you fully stop/start, first load always pays transform cost.
+   - If needed, we can tune warmup list further based on actual import graph.
+ 
+   3. Prune Nuxt UI runtime surface
+ 
+   - You now use a small subset of components (UButton, UAlert, UDrawer, UModal, etc.).
+   - Next big optimization would be replacing these with lightweight local wrappers for hot-path screens, then
+     keeping Nuxt UI only for less frequent views.
+ 
+   4. Defer non-critical CSS
+ 
+   - Move some non-essential styles out of entry CSS and load after first frame (carefully to avoid visual
+     flash).
+   - We can do this in a targeted way for effect/editor-specific styling.
+ 
+   If you want, I can implement #4 next with a small, low-risk deferred CSS split and we can immediately
+   compare trace + visual behavior.

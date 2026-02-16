@@ -126,10 +126,19 @@ Additional migration-safe cleanup applied:
 
 ## Phase 4: CSS/Font Startup Cost
 
-- [ ] Add `font-display: swap` to `@font-face` definitions.
-- [ ] Limit startup font variants to only required weights for first paint.
+- [x] Add `font-display: swap` to `@font-face` definitions.
+- [x] Limit startup font variants to only required weights for first paint.
 - [ ] Defer or prune non-essential global CSS.
 - [ ] Re-measure first paint and text render timing.
+
+Latest CSS/font pass:
+
+- Removed unused `theme.css` import from entry.
+- Reduced bundled font files from many Inter/Silkscreen variants to:
+  - Inter 400 (`woff2`)
+  - Inter 600 (`woff2`)
+  - Silkscreen 400 (`woff2`)
+- CSS bundle reduced to `194.68kB` (gzip `27.37kB`).
 
 ## Phase 5: Validate and Guard
 
