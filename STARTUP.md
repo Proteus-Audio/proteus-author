@@ -106,6 +106,19 @@ Latest build snapshot (after waveform/track lazy loading):
 - `index-*.css`: 480.11kB (gzip 63.01kB)
 - `vendor-element-plus-*.js`: 761.95kB (gzip 241.30kB)
 
+Latest build snapshot (after removing global `@nuxt/ui/vue-plugin` in entry):
+
+- transformed modules: `1540 -> 667`
+- `index-*.css`: `480.11kB -> 196.52kB`
+- `vendor-misc-*.js`: `~336kB -> 313.08kB`
+- `index-*.js`: `30.79kB -> 33.42kB` (roughly flat)
+
+Notes:
+
+- Kept `@nuxt/ui/vite` plugin and component usage intact.
+- Removed only the global runtime install (`app.use(ui)`), which appears to be unnecessary in this Vite setup and expensive on startup.
+- Added Vite dev warmup + dependency pre-bundling for hot startup modules to reduce first-request transform latency in `tauri dev`.
+
 Additional migration-safe cleanup applied:
 
 - Removed `lodash` and `@types/lodash` dependencies.

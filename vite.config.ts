@@ -47,10 +47,41 @@ export default defineConfig({
   server: {
     port: 1420,
     strictPort: true,
+    // Pre-transform hot startup modules so the first webview navigation does
+    // less on-demand work before `main.ts` executes.
+    warmup: {
+      clientFiles: [
+        './index.html',
+        './src/main.ts',
+        './src/App.vue',
+        './src/assets/index.css',
+        './src/assets/theme.css',
+        './src/assets/fonts.css',
+      ],
+    },
   },
   // to make use of `TAURI_DEBUG` and other env variables
   // https://tauri.studio/v1/api/config#buildconfig.beforedevcommand
   envPrefix: ['VITE_', 'TAURI_'],
+  // Pre-bundle frequently used dependencies to reduce first-request transform
+  // latency in `tauri dev` cold starts.
+  optimizeDeps: {
+    include: [
+      'vue',
+      'pinia',
+      '@vueuse/core',
+      'vuedraggable',
+      '@tauri-apps/api/core',
+      '@tauri-apps/api/event',
+      '@tauri-apps/api/window',
+      '@nuxt/ui/runtime/components/Button.vue',
+      '@nuxt/ui/runtime/components/Alert.vue',
+      '@nuxt/ui/runtime/components/Drawer.vue',
+      '@nuxt/ui/runtime/components/DropdownMenu.vue',
+      '@nuxt/ui/runtime/components/Input.vue',
+      '@nuxt/ui/runtime/components/Modal.vue',
+    ],
+  },
   build: {
     // Tauri supports es2021
     target: ['es2021', 'chrome100', 'safari13'],
