@@ -11,7 +11,11 @@ export default defineConfig({
       ui: {
         colors: {
           primary: 'sky',
-          secondary: 'indigo',
+          secondary: 'slate',
+          success: 'emerald',
+          info: 'cyan',
+          warning: 'amber',
+          error: 'rose',
           neutral: 'zinc',
         },
         button: {

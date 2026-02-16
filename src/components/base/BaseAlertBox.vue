@@ -6,13 +6,13 @@
     <div
       v-for="(al, i) in alerts"
       :key="i"
-      class="mb-4 transition-opacity duration-500"
+      class="mb-4 transition-opacity duration-500 bg-white rounded-lg"
       :class="al.class === 'stale' ? 'opacity-0' : 'opacity-100'"
     >
       <UAlert
         :title="al.contents"
         :color="alertColor(al.type)"
-        variant="solid"
+        variant="subtle"
         :close="{ color: 'white', variant: 'ghost' }"
         @update:open="(open: boolean) => !open && closeAlert(i)"
       />
@@ -28,7 +28,12 @@ import type { AlertType, AlertView } from '../../typings/proteus'
 
 const alertStore = useAlertStore()
 const alerts = ref([] as AlertView[])
-// const alerts = ref([{ class: 'fresh', type: 'info', added: new Date(), contents: 'Success!' }] as AlertView[])
+// const alerts = ref([
+//   { class: 'fresh', type: 'success', added: new Date(), contents: 'Success!' },
+//   { class: 'fresh', type: 'info', added: new Date(), contents: 'Info!' },
+//   { class: 'fresh', type: 'warning', added: new Date(), contents: 'Warning!' },
+//   { class: 'fresh', type: 'error', added: new Date(), contents: 'Error!' }
+// ] as AlertView[])
 
 const { y } = useWindowScroll()
 
