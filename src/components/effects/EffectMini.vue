@@ -1,38 +1,47 @@
 <template>
-  <div class="fx-icon" @click.stop="toggleEdit">
-    <button class="effect-drag-handle" type="button" aria-label="Drag effect" @click.stop>
+  <div
+    class="relative flex h-full min-w-max w-max cursor-grab flex-col items-center justify-center gap-2 overflow-hidden rounded-lg bg-zinc-700 px-8 py-3 text-white transition-[height,margin] duration-300 hover:opacity-85"
+    @click.stop="toggleEdit"
+  >
+    <button
+      class="effect-drag-handle absolute top-[0.65rem] right-[0.65rem] cursor-grab border-0 bg-transparent px-1 py-0.5 text-[0.8rem] leading-none tracking-[1px] text-white/75 active:cursor-grabbing"
+      type="button"
+      aria-label="Drag effect"
+      @click.stop
+    >
       |||
     </button>
-    <div class="fx-indicator">
+
+    <div class="absolute top-3 left-3">
       <AnalogIndicator size="small" :state="true" :color="enabled ? 'green' : 'red'" />
     </div>
-    <div class="fx-label">{{ label }}</div>
-    <el-dialog
-      v-model="editOpen"
-      width="calc(100% - 4em)"
-      style="height: fit-content"
-      align-center
-      :append-to-body="true"
-      :close-on-click-modal="true"
-    >
-      <div class="dialog-body" @click.stop>
-        <EffectDialog :effectIndex="index" />
-        <div class="dialog-actions">
-          <el-button :icon="Close" @click="toggleEdit">Close</el-button>
-          <el-button :icon="Delete" @click="removeEffect">Remove Effect</el-button>
+
+    <div class="grid items-center whitespace-nowrap text-center font-semibold">{{ label }}</div>
+
+    <UModal v-model:open="editOpen" :ui="{ content: 'max-w-[calc(100%-4em)]' }">
+      <template #content>
+        <div class="p-4" @click.stop>
+          <EffectDialog :effectIndex="index" />
+          <div class="mt-4 grid grid-cols-[auto_auto] justify-end gap-3">
+            <UButton icon="i-lucide-x" variant="outline" color="neutral" @click="toggleEdit"
+              >Close</UButton
+            >
+            <UButton icon="i-lucide-trash-2" variant="outline" color="error" @click="removeEffect">
+              Remove Effect
+            </UButton>
+          </div>
         </div>
-      </div>
-    </el-dialog>
+      </template>
+    </UModal>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, defineAsyncComponent, ref } from 'vue'
-import { Close, Delete } from '@element-plus/icons-vue'
-import { AnalogIndicator } from '../analog'
-import { useAudioStore } from '../../stores/audio'
 import type { EffectChainItem } from '../../assets/effects'
+import { useAudioStore } from '../../stores/audio'
 import { EffectSettings } from '../../typings/effects'
+import { AnalogIndicator } from '../analog'
 
 const EffectDialog = defineAsyncComponent(() => import('./EffectsDialog.vue'))
 
@@ -70,72 +79,3 @@ const removeEffect = () => {
   audio.removeEffect(props.item.id)
 }
 </script>
-
-<style lang="scss" scoped>
-.fx-icon {
-  position: relative;
-  width: max-content;
-  min-width: max-content;
-  height: 100%;
-  background-color: rgb(69, 69, 69);
-  margin-top: 0em;
-  border-radius: 0.5em;
-  padding: 0.75em 2em;
-  color: white;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  /* grid-template-rows: 1fr auto; */
-  gap: 0.5em;
-  overflow: hidden;
-  transition:
-    height 0.3s,
-    margin 0.3s;
-  cursor: grab;
-
-  &:hover {
-    opacity: 0.85;
-  }
-
-  .fx-indicator {
-    position: absolute;
-    top: 0.75rem;
-    left: 0.75rem;
-  }
-
-  .effect-drag-handle {
-    position: absolute;
-    top: 0.65rem;
-    right: 0.65rem;
-    border: 0;
-    background: transparent;
-    color: rgba(255, 255, 255, 0.75);
-    font-size: 0.8rem;
-    letter-spacing: 1px;
-    line-height: 1;
-    cursor: grab;
-    padding: 0.2rem 0.25rem;
-
-    &:active {
-      cursor: grabbing;
-    }
-  }
-}
-
-.fx-label {
-  font-weight: 600;
-  text-align: center;
-  display: grid;
-  align-items: center;
-  white-space: nowrap;
-}
-
-.dialog-actions {
-  display: grid;
-  grid-template-columns: auto auto;
-  justify-content: end;
-  gap: 0.75em;
-  margin-top: 1em;
-}
-</style>

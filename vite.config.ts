@@ -1,9 +1,40 @@
-import { defineConfig } from 'vite'
+import ui from '@nuxt/ui/vite'
 import vue from '@vitejs/plugin-vue'
+import { defineConfig } from 'vite'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    ui({
+      router: false,
+      ui: {
+        colors: {
+          primary: 'sky',
+          secondary: 'indigo',
+          neutral: 'zinc',
+        },
+        button: {
+          defaultVariants: {
+            color: 'neutral',
+            size: 'sm',
+            variant: 'ghost',
+          },
+        },
+        alert: {
+          defaultVariants: {
+            variant: 'outline',
+          },
+        },
+      },
+      theme: {
+        defaultVariants: {
+          color: 'neutral',
+          size: 'sm',
+        },
+      },
+    }),
+  ],
 
   // Vite optons tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   // prevent vite from obscuring rust errors
@@ -30,8 +61,6 @@ export default defineConfig({
 
           // Keep major ecosystems isolated so the entry chunk stays small and
           // hot-path parsing can start sooner.
-          if (id.includes('/node_modules/element-plus/')) return 'vendor-element-plus'
-          if (id.includes('/node_modules/@element-plus/')) return 'vendor-element-icons'
           if (id.includes('/node_modules/vue/') || id.includes('/node_modules/@vue/')) {
             return 'vendor-vue'
           }

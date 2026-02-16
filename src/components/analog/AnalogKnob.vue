@@ -1,15 +1,29 @@
 <template>
-  <div class="analog-knob" :style="knobStyle">
+  <div class="grid justify-items-center gap-1.5" :style="{ '--knob-size': `${props.size}px` }">
     <label v-if="label" class="analog-label">{{ label }}</label>
-    <div class="knob-wrap">
-      <div class="knob" @pointerdown="onKnobPointerDown">
-        <div class="knob-notch"></div>
-      </div>
+
+    <div
+      class="relative h-[var(--knob-size)] w-[var(--knob-size)] rounded-[var(--knob-size)] border-2 border-[#151311] bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.15),transparent_55%),radial-gradient(circle_at_70%_70%,rgba(0,0,0,0.5),transparent_50%),linear-gradient(145deg,#3a3530,#1e1b18)] shadow-[inset_0_2px_4px_rgba(255,255,255,0.08),inset_0_-6px_10px_rgba(0,0,0,0.6),0_6px_14px_rgba(0,0,0,0.5)]"
+    >
+      <button
+        type="button"
+        class="relative size-full cursor-pointer touch-none"
+        :style="{ transform: `rotate(${rotation}deg)` }"
+        @pointerdown="onKnobPointerDown"
+      >
+        <span
+          class="absolute top-[10px] left-1/2 h-[18px] w-1 -translate-x-1/2 rounded-[2px] bg-[linear-gradient(180deg,var(--color-analog-accent),var(--color-analog-accent-deep))] shadow-[0_0_4px_var(--color-analog-glow)]"
+        ></span>
+      </button>
     </div>
-    <div v-if="showValue" class="knob-readout">
+
+    <div
+      v-if="showValue"
+      class="flex items-baseline gap-1.5 text-[0.7rem] uppercase tracking-[0.08em] text-[var(--color-analog-muted)]"
+    >
       <input
         v-if="allowNumericInput"
-        class="value-input"
+        class="w-[4.2rem] appearance-none rounded border border-[#3f372d] bg-[#1f1b18] px-1.5 py-0.5 text-right text-[0.75rem] tracking-[0.04em] text-[var(--color-analog-text)] outline-[1px] outline-transparent focus:border-[var(--color-analog-accent-deep)] focus:outline-[var(--color-analog-accent)]"
         type="number"
         :min="min"
         :max="max"
@@ -20,8 +34,8 @@
         @blur="commitTypedValue"
         @keydown.enter.prevent="commitTypedValue"
       />
-      <span v-else class="value">{{ displayValue }}</span>
-      <span v-if="units" class="units">{{ units }}</span>
+      <span v-else class="text-[var(--color-analog-text)]">{{ displayValue }}</span>
+      <span v-if="units" class="opacity-70">{{ units }}</span>
     </div>
   </div>
 </template>
@@ -136,11 +150,6 @@ const rotation = computed(() => {
   return -135 + ratio * 270
 })
 
-const knobStyle = computed(() => ({
-  '--knob-size': `${props.size}px`,
-  '--knob-rotation': `${rotation.value}deg`,
-}))
-
 watch(
   () => props.modelValue,
   (value) => {
@@ -162,94 +171,3 @@ onBeforeUnmount(() => {
 
 const displayValue = computed(() => formatValue(props.modelValue))
 </script>
-
-<style lang="scss" scoped>
-.analog-knob {
-  display: grid;
-  gap: 0.4rem;
-  justify-items: center;
-}
-
-.knob-wrap {
-  position: relative;
-  width: var(--knob-size);
-  height: var(--knob-size);
-  border-radius: var(--knob-size);
-  background:
-    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.15), transparent 55%),
-    radial-gradient(circle at 70% 70%, rgba(0, 0, 0, 0.5), transparent 50%),
-    linear-gradient(145deg, #3a3530, #1e1b18);
-  border: 2px solid #151311;
-  box-shadow:
-    inset 0 2px 4px rgba(255, 255, 255, 0.08),
-    inset 0 -6px 10px rgba(0, 0, 0, 0.6),
-    0 6px 14px rgba(0, 0, 0, 0.5);
-}
-
-.knob {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  transform: rotate(var(--knob-rotation));
-  transition: transform 0.08s ease-out;
-  cursor: ns-resize;
-  cursor: pointer;
-  touch-action: none;
-}
-
-.knob-notch {
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  width: 4px;
-  height: 18px;
-  border-radius: 2px;
-  transform: translateX(-50%);
-  background: linear-gradient(180deg, var(--analog-accent), var(--analog-accent-deep));
-  box-shadow: 0 0 4px var(--analog-glow);
-}
-
-.knob-readout {
-  display: flex;
-  align-items: baseline;
-  gap: 0.35rem;
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--analog-muted);
-}
-
-.knob-readout .value {
-  color: var(--analog-text);
-  font-variant-numeric: tabular-nums;
-}
-
-.value-input {
-  appearance: textfield;
-  width: 4.2rem;
-  border: 1px solid #3f372d;
-  border-radius: 4px;
-  background: #1f1b18;
-  color: var(--analog-text);
-  font: inherit;
-  font-size: 0.75rem;
-  letter-spacing: 0.04em;
-  text-align: right;
-  padding: 0.2rem 0.35rem;
-}
-
-.value-input::-webkit-outer-spin-button,
-.value-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.value-input:focus {
-  outline: 1px solid var(--analog-accent);
-  border-color: var(--analog-accent-deep);
-}
-
-.knob-readout .units {
-  opacity: 0.7;
-}
-</style>

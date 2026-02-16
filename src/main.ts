@@ -1,20 +1,18 @@
 import { createApp } from 'vue'
 import './assets/theme.css'
 import './assets/index.css'
-import './assets/analog.css'
 import './assets/fonts.css'
 import { createPinia } from 'pinia'
+import ui from '@nuxt/ui/vue-plugin'
 import App from './App.vue'
 import { startupMark } from './utils/startup-trace'
-
-import ElementPlus from 'element-plus'
 
 startupMark('main.ts:start')
 
 const app = createApp(App)
 const pinia = createPinia()
 
-app.use(ElementPlus)
+app.use(ui)
 app.use(pinia)
 startupMark('main.ts:before-mount')
 app.mount('#app')

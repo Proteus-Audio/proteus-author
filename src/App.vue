@@ -1,31 +1,47 @@
 <template>
-  <div id="proteus-author">
+  <div
+    id="proteus-author"
+    class="min-h-screen"
+    :style="{
+      '--meter-width': '154px',
+      '--effect-rack-height': effectRackHeight,
+    }"
+  >
     <Teleport to="head">
       <title>Proteus Author - {{ windowTitle }}</title>
     </Teleport>
-    <div class="app-layout">
-      <div class="app-main">
+
+    <div class="min-h-screen">
+      <div class="pr-[var(--meter-width)]">
         <BaseContainer>
           <BaseAlertBox />
           <BaseTitle />
-          <el-affix :offset="0">
-            <BaseTransport />
-          </el-affix>
 
-          <div class="bin-container">
-            <TrackBin v-for="track in trackStore.tracks" :track-id="track.id" :key="track.id" />
+          <div class="sticky top-0 z-30 bg-white/95 py-2 backdrop-blur-sm">
+            <BaseTransport />
           </div>
-          <div class="combinations-total">
+
+          <div class="w-full overflow-hidden rounded-lg">
+            <TrackBin v-for="track in trackStore.tracks" :key="track.id" :track-id="track.id" />
+          </div>
+
+          <div class="mt-3 text-[0.95rem] opacity-85">
             Unique playback combinations: {{ formattedPossibleCombinations }}
           </div>
-          <div class="padding"></div>
+
+          <div class="inline-block size-4"></div>
         </BaseContainer>
 
-        <EffectRack ref="effectRackRef" />
+        <div ref="effectRackRef">
+          <EffectRack />
+        </div>
       </div>
 
-      <aside class="app-meter">
-        <div class="app-meter-inner">
+      <aside
+        class="fixed top-0 right-0 w-[var(--meter-width)] border-l border-zinc-300 bg-zinc-100 transition-[bottom] duration-300"
+        :style="{ bottom: 'var(--effect-rack-height)' }"
+      >
+        <div class="grid h-full grid-cols-[1fr_54px]">
           <BaseLevelMeter vertical />
           <DigitalFader />
         </div>
@@ -38,6 +54,7 @@
 import { invoke } from '@tauri-apps/api/core'
 import { type UnlistenFn } from '@tauri-apps/api/event'
 import { Window } from '@tauri-apps/api/window'
+import { useElementHover } from '@vueuse/core'
 import { computed, defineAsyncComponent, onMounted, onUnmounted, ref, watch } from 'vue'
 import BaseAlertBox from './components/base/BaseAlertBox.vue'
 import BaseContainer from './components/base/BaseContainer.vue'
@@ -52,7 +69,6 @@ import { useAudioStore } from './stores/audio'
 import { useHeadStore } from './stores/head'
 import { useTrackStore } from './stores/track'
 import type { AlertType, ProjectSkeleton } from './typings/proteus'
-import { useElementHover } from '@vueuse/core'
 import { startupMark } from './utils/startup-trace'
 
 const TrackBin = defineAsyncComponent(() => import('./components/track/TrackBin.vue'))
@@ -129,7 +145,10 @@ const effectRackRef = ref<HTMLElement | null>(null)
 const effectRackHover = useElementHover(effectRackRef)
 const effectRackHeight = computed(() => (effectRackHover.value ? `7rem` : `5rem`))
 
-const registerWindowListeners = async (appWindow: Window, runIfFocused: (action: () => void | Promise<void>) => Promise<void>) => {
+const registerWindowListeners = async (
+  appWindow: Window,
+  runIfFocused: (action: () => void | Promise<void>) => Promise<void>,
+) => {
   const listeners = await Promise.all([
     appWindow.listen('FILE_LOADED', (event) => {
       console.log('file loaded', event)
@@ -170,43 +189,43 @@ const registerWindowListeners = async (appWindow: Window, runIfFocused: (action:
       audio.setClock(time)
     }),
     appWindow.listen('MENU_ZOOM_IN', () => {
-      void runIfFocused(async () => {
+      void runIfFocused(() => {
         audio.zoomIn('x')
       })
     }),
     appWindow.listen('MENU_ZOOM_OUT', () => {
-      void runIfFocused(async () => {
+      void runIfFocused(() => {
         audio.zoomOut('x')
       })
     }),
     appWindow.listen('MENU_ZOOM_IN_VERTICAL', () => {
-      void runIfFocused(async () => {
+      void runIfFocused(() => {
         audio.zoomIn('y')
       })
     }),
     appWindow.listen('MENU_ZOOM_OUT_VERTICAL', () => {
-      void runIfFocused(async () => {
+      void runIfFocused(() => {
         audio.zoomOut('y')
       })
     }),
     appWindow.listen('MENU_PAN_LEFT', () => {
-      void runIfFocused(async () => {
+      void runIfFocused(() => {
         audio.panViewLeft(0.2)
       })
     }),
     appWindow.listen('MENU_PAN_RIGHT', () => {
-      void runIfFocused(async () => {
+      void runIfFocused(() => {
         audio.panViewRight(0.2)
       })
     }),
     appWindow.listen('MENU_FOLLOW_MODE', (event) => {
-      void runIfFocused(async () => {
+      void runIfFocused(() => {
         const payload = event.payload as { enabled?: boolean }
         audio.setFollowMode(!!payload.enabled)
       })
     }),
     appWindow.listen('MENU_SHUFFLE_POINT_TOOL_MODE', (event) => {
-      void runIfFocused(async () => {
+      void runIfFocused(() => {
         const payload = event.payload as { enabled?: boolean }
         audio.setShufflePointToolMode(!!payload.enabled)
       })
@@ -247,7 +266,7 @@ const runDeferredStartup = async () => {
   })
 }
 
-onMounted(async () => {
+onMounted(() => {
   startupMark('App.vue:onMounted-start')
   requestAnimationFrame(() => {
     void runDeferredStartup()
@@ -312,74 +331,3 @@ watch(
   },
 )
 </script>
-
-<style lang="scss">
-body {
-  margin: 0;
-  font-family: 'Silkscreen', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-.shuffler {
-  cursor: pointer;
-  margin-bottom: 1em;
-  display: block;
-
-  &:hover {
-    opacity: 0.7;
-  }
-}
-
-.padding {
-  display: inline-block;
-  width: 1em;
-  height: 1em;
-}
-
-.bin-container {
-  width: 100%;
-  overflow: hidden;
-  border-radius: 0.5em;
-}
-
-.combinations-total {
-  margin: 0.75rem 0 0.25rem;
-  font-size: 0.95rem;
-  opacity: 0.85;
-}
-
-#proteus-author {
-  --meter-width: 154px;
-  --effect-rack-height: v-bind(effectRackHeight);
-}
-
-.app-layout {
-  min-height: 100vh;
-}
-
-.app-main {
-  padding-right: var(--meter-width);
-}
-
-.app-meter {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  bottom: var(--effect-rack-height);
-  width: var(--meter-width);
-  background: #f6f6f6;
-  border-left: 1px solid #d8d8d8;
-  transition: bottom 0.3s;
-}
-
-.app-meter-inner {
-  display: grid;
-  grid-template-columns: 1fr 54px;
-  height: 100%;
-}
-
-#effect-rack {
-  width: calc(100% - var(--meter-width));
-  right: var(--meter-width);
-}
-</style>

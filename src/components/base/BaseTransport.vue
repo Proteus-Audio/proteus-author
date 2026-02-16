@@ -1,38 +1,70 @@
 <template>
-  <div class="transport">
-    <el-button v-if="!audio.isPlaying" :icon="VideoPlay" @click="play" text>play</el-button>
-    <el-button v-else :icon="VideoPause" @click="pause" text>pause</el-button>
-    <el-button id="BaseTransportStop" :icon="Close" @click="stop" text>stop</el-button>
-    <el-button id="BaseTransportShuffle" :icon="Refresh" @click="shuffle" text>shuffle</el-button>
-    <el-button
+  <div class="grid grid-cols-[100px_100px_100px_110px_50px_50px_70px_70px] gap-4 text-right">
+    <UButton
+      v-if="!audio.isPlaying"
+      icon="i-lucide-play"
+      variant="ghost"
+      color="neutral"
+      @click="play"
+    >
+      play
+    </UButton>
+    <UButton v-else icon="i-lucide-pause" variant="ghost" color="neutral" @click="pause">
+      pause
+    </UButton>
+    <UButton
+      id="BaseTransportStop"
+      icon="i-lucide-square"
+      variant="ghost"
+      color="neutral"
+      @click="stop"
+    >
+      stop
+    </UButton>
+    <UButton
+      id="BaseTransportShuffle"
+      icon="i-lucide-shuffle"
+      variant="ghost"
+      color="neutral"
+      @click="shuffle"
+    >
+      shuffle
+    </UButton>
+    <UButton
       id="BaseTransportFollowMode"
+      :color="audio.followMode ? 'primary' : 'neutral'"
+      :variant="audio.followMode ? 'outline' : 'ghost'"
       @click="toggleFollowMode"
-      :type="audio.followMode ? 'primary' : 'default'"
-      plain
     >
       follow {{ audio.followMode ? 'on' : 'off' }}
-    </el-button>
-    <el-button :icon="ZoomIn" @click="zoomIn" text :disabled="zoomInDisabled"></el-button>
-    <el-button :icon="ZoomOut" @click="zoomOut" text :disabled="zoomOutDisabled"></el-button>
-    <el-button :icon="Back" @click="panLeft" text>left</el-button>
-    <el-button :icon="Right" @click="panRight" text>right</el-button>
+    </UButton>
+    <UButton
+      icon="i-lucide-zoom-in"
+      variant="ghost"
+      color="neutral"
+      :disabled="zoomInDisabled"
+      @click="zoomIn"
+    />
+    <UButton
+      icon="i-lucide-zoom-out"
+      variant="ghost"
+      color="neutral"
+      :disabled="zoomOutDisabled"
+      @click="zoomOut"
+    />
+    <UButton icon="i-lucide-arrow-left" variant="ghost" color="neutral" @click="panLeft"
+      >left</UButton
+    >
+    <UButton icon="i-lucide-arrow-right" variant="ghost" color="neutral" @click="panRight"
+      >right</UButton
+    >
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useAudioStore } from '../../stores/audio'
 import { useTrackStore } from '../../stores/track'
-import {
-  VideoPlay,
-  VideoPause,
-  Close,
-  Refresh,
-  ZoomOut,
-  ZoomIn,
-  Back,
-  Right,
-} from '@element-plus/icons-vue'
-import { computed } from 'vue'
 
 const audio = useAudioStore()
 const track = useTrackStore()
@@ -68,15 +100,3 @@ const zoomOut = () => audio.zoomOut()
 const panLeft = () => audio.panViewLeft(0.2)
 const panRight = () => audio.panViewRight(0.2)
 </script>
-
-<style lang="scss" scoped>
-.transport {
-  /* margin-bottom: 1em; */
-  background-color: white;
-  padding: 1em 0;
-  text-align: right;
-  display: grid;
-  grid-template-columns: 100px 100px 100px 110px 50px 50px 70px 70px;
-  gap: 1em;
-}
-</style>

@@ -1,21 +1,39 @@
 <template>
-  <div class="alert-box" :class="{ lower: y > 150 }">
-    <div v-for="(al, i) in alerts" :key="i" :class="`alert ${al.class}`">
-      <el-alert :title="al.contents" :type="al.type" @close="() => closeAlert(i)" />
+  <div
+    class="fixed left-1/2 z-10 w-[calc(100%-2rem)] max-w-[600px] -translate-x-1/2 transition-[top] duration-300"
+    :class="y > 150 ? 'top-20' : 'top-8'"
+  >
+    <div
+      v-for="(al, i) in alerts"
+      :key="i"
+      class="mb-4 transition-opacity duration-500"
+      :class="al.class === 'stale' ? 'opacity-0' : 'opacity-100'"
+    >
+      <UAlert
+        :title="al.contents"
+        :color="alertColor(al.type)"
+        variant="outline"
+        :close="{ color: 'neutral', variant: 'ghost' }"
+        @update:open="(open: boolean) => !open && closeAlert(i)"
+      />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useWindowScroll } from '@vueuse/core'
 import { onMounted, onUpdated, ref, watch } from 'vue'
 import { useAlertStore } from '../../stores/alerts'
-import { AlertView } from '../../typings/proteus'
-import { useWindowScroll } from '@vueuse/core'
+import type { AlertType, AlertView } from '../../typings/proteus'
 
 const alertStore = useAlertStore()
 const alerts = ref([] as AlertView[])
 
 const { y } = useWindowScroll()
+
+const alertColor = (type: AlertType): 'success' | 'warning' | 'info' | 'error' => {
+  return type
+}
 
 const closeAlert = (index: number) => {
   alerts.value[index].autoClose = true
@@ -59,29 +77,3 @@ onMounted(() => {
   processAlerts()
 })
 </script>
-
-<style lang="scss" scoped>
-.alert-box {
-  position: fixed;
-  top: 2em;
-  width: calc(100% - 4em);
-  max-width: 600px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10;
-  transition: top 0.3s;
-
-  &.lower {
-    top: 5em;
-  }
-
-  .alert {
-    margin-bottom: 1em;
-    transition: 0.5s opacity;
-
-    &.stale {
-      opacity: 0;
-    }
-  }
-}
-</style>

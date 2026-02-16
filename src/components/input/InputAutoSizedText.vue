@@ -1,15 +1,17 @@
 <template>
-  <div class="auto-size">
+  <div class="relative inline-block">
     <input
       ref="textInput"
       type="text"
-      class="input"
+      class="mb-4 min-w-[10px] max-w-full border-none bg-transparent p-0 text-base outline-none"
       :style="`width: ${width}px;`"
-      placeholder="Click to Add Name"
+      :placeholder="placeholder"
       :value="modelValue"
       @input="updateValue"
     />
-    <div ref="sizer" class="sizer">{{ sizerText }}</div>
+    <div ref="sizer" class="invisible absolute top-0 left-0 inline-block whitespace-pre">
+      {{ sizerText }}
+    </div>
   </div>
 </template>
 
@@ -39,7 +41,6 @@ const sizerText = computed(() =>
 
 const resize = () => {
   width.value = sizer.value?.offsetWidth || width.value
-  //   txt.style.width = hide.offsetWidth + "px";
 }
 
 onMounted(() => {
@@ -49,43 +50,4 @@ onMounted(() => {
 onUpdated(() => {
   resize()
 })
-
-// const hide = document.getElementById("hide");
-// const txt = document.getElementById("txt");
-// resize();
-// txt.addEventListener("input", resize);
-
-// function resize() {
-// }
 </script>
-
-<style lang="scss" scoped>
-.auto-size {
-  .input {
-    font-family: inherit;
-    font-size: 1em;
-    background: transparent;
-    border: none;
-    max-width: 100%;
-    min-width: 10px;
-    width: fit-content;
-    margin-bottom: 1em;
-    padding: 0;
-
-    &:focus,
-    &:focus-visible {
-      border: none;
-      outline: none;
-    }
-  }
-
-  .sizer {
-    position: absolute;
-    top: 0;
-    left: 0;
-    opacity: 0;
-    white-space: pre;
-    display: inline-block;
-  }
-}
-</style>

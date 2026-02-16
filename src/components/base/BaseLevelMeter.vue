@@ -1,21 +1,21 @@
 <template>
   <div
     ref="meterRef"
-    class="level-meter"
-    :class="{ inactive: !audio.isPlaying, vertical }"
+    class="grid items-stretch gap-1.5 border border-zinc-300 bg-zinc-100 p-1"
+    :class="vertical ? 'h-full border-y-0 border-r-0 rounded-none px-1.5 py-2' : 'h-10 rounded-md'"
     :style="{ gridTemplateColumns: `repeat(${levelsDb.length}, 1fr)` }"
   >
-    <div v-for="(level, index) in levelsDb" :key="index" class="meter-column">
+    <div v-for="(level, index) in levelsDb" :key="index" class="flex h-full flex-col gap-1.5">
       <button
         type="button"
-        class="peak-button"
+        class="cursor-pointer bg-transparent px-1 py-0"
         :aria-pressed="clipPeaks[index] ? 'true' : 'false'"
         @click="clearAllClipPeaks"
       >
         <DigitalIndicator :state="clipPeaks[index] ?? false" color="dark-red" size="small" />
       </button>
 
-      <div class="meter-channel">
+      <div class="grid flex-1 auto-rows-fr gap-[3px] rounded p-1">
         <DigitalIndicator
           v-for="indicator in channelIndicators[index]"
           :key="indicator.id"
@@ -26,7 +26,12 @@
         />
       </div>
 
-      <div class="meter-label">{{ `${level.toFixed(1)} dB` }}</div>
+      <div
+        class="text-center text-[11px] leading-none tabular-nums"
+        :class="audio.isPlaying ? 'text-zinc-600' : 'text-zinc-400'"
+      >
+        {{ `${level.toFixed(1)} dB` }}
+      </div>
     </div>
   </div>
 </template>
@@ -34,8 +39,8 @@
 <script setup lang="ts">
 import { useElementSize } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
-import { DigitalIndicator } from '../digital'
 import { useAudioStore } from '../../stores/audio'
+import { DigitalIndicator } from '../digital'
 
 const props = defineProps<{
   vertical?: boolean
@@ -70,7 +75,6 @@ const indicatorCount = computed(() => {
 })
 
 const colorForDb = (db: number): IndicatorColor => {
-  // if (db >= -1) return 'dark-red'
   if (db >= -6) return 'red'
   if (db >= -12) return 'orange'
   if (db >= -24) return 'yellow'
@@ -102,11 +106,6 @@ const syncClipPeaks = (channelCount: number) => {
     (_, index) => clipPeaks.value[index] ?? false,
   )
 }
-
-// const clearClipPeak = (channelIndex: number) => {
-//   if (clipPeaks.value[channelIndex] == null) return
-//   clipPeaks.value[channelIndex] = false
-// }
 
 const clearAllClipPeaks = () => {
   clipPeaks.value = clipPeaks.value.map(() => false)
@@ -146,79 +145,3 @@ watch(
   },
 )
 </script>
-
-<style scoped lang="scss">
-.level-meter {
-  height: 40px;
-  width: 100%;
-  display: grid;
-  gap: 6px;
-  padding: 4px;
-  border-radius: 6px;
-  background: #f6f6f6;
-  border: 1px solid #d8d8d8;
-  align-items: stretch;
-}
-
-.level-meter.vertical {
-  height: 100%;
-  border-radius: 0;
-  border-left: 1px solid #d8d8d8;
-  border-right: 0;
-  border-top: 0;
-  border-bottom: 0;
-  padding: 8px 6px;
-}
-
-.meter-column {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  height: 100%;
-}
-
-.peak-button {
-  border: 0;
-  padding: 0;
-  background: transparent;
-  cursor: pointer;
-  padding: 0 4px;
-}
-
-.peak-button :deep(.digital-indicator) {
-  gap: 2px;
-}
-
-.peak-button :deep(.digital-label) {
-  display: block;
-  font-size: 10px;
-  text-align: center;
-  color: #616161;
-  line-height: 1;
-}
-
-.meter-channel {
-  display: grid;
-  grid-auto-rows: minmax(0, 1fr);
-  gap: 3px;
-  flex: 1 1 auto;
-  border-radius: 4px;
-  padding: 4px;
-}
-
-.meter-label {
-  font-size: 11px;
-  text-align: center;
-  color: #616161;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-
-.inactive .peak-button :deep(.digital-label) {
-  color: #8a8a8a;
-}
-
-.inactive .meter-label {
-  color: #8a8a8a;
-}
-</style>

@@ -1,28 +1,41 @@
 <template>
-  <div class="digital-fader">
-    <div class="fader-label">GAIN</div>
+  <div
+    class="grid h-full w-[54px] grid-rows-[24px_minmax(0,1fr)_22px] gap-2 border-l-2 border-zinc-400 bg-zinc-200 px-1.5 py-2"
+  >
+    <div class="text-center text-[10px] tracking-[0.04em] text-zinc-600">GAIN</div>
 
-    <div class="fader-container">
-      <!-- <div class="scale-label scale-top">+10</div> -->
-      <!-- <div class="scale-label scale-mid">-25</div> -->
-      <!-- <div class="scale-label scale-bottom">-60</div> -->
+    <div class="relative overflow-hidden rounded-[2px] border-2 border-zinc-500 bg-zinc-300">
+      <div
+        ref="trackRef"
+        class="absolute top-8 right-0 bottom-3 left-0 cursor-ns-resize"
+        @pointerdown="onTrackPointerDown"
+      >
+        <div
+          class="pointer-events-none absolute inset-0 -top-5 bg-[repeating-linear-gradient(to_right,transparent_0,transparent_17px,rgba(80,80,80,0.18)_17px,rgba(80,80,80,0.18)_19px,transparent_19px,transparent_36px)]"
+        ></div>
+        <div
+          class="pointer-events-none absolute right-0 bottom-0 left-0"
+          :style="{ height: `${fillPercent}%` }"
+        ></div>
 
-      <div ref="trackRef" class="fader-track" @pointerdown="onTrackPointerDown">
-        <div class="fader-grid"></div>
-        <div class="fader-fill" :style="{ height: `${fillPercent}%` }"></div>
         <button
           type="button"
-          class="fader-cap"
+          class="absolute right-[3px] left-[3px] h-[42px] cursor-ns-resize border-2 border-zinc-600 bg-zinc-100 p-0"
           :style="{ bottom: capBottom }"
           aria-label="Volume fader"
           @pointerdown.stop="onCapPointerDown"
         >
-          <span class="cap-grip"></span>
+          <span
+            class="absolute inset-0 bg-[repeating-linear-gradient(to_bottom,white_0,white_3px,#969696_3px,transparent_20px,white_34px,#969696_34px,#969696_42px)]"
+          ></span>
+          <span
+            class="relative block h-full w-full bg-[repeating-linear-gradient(to_bottom,transparent_0,transparent_3px,#969696_3px,#969696_5px)]"
+          ></span>
         </button>
       </div>
     </div>
 
-    <div class="fader-readout">{{ dbReadout }}</div>
+    <div class="text-center text-[10px] tracking-[0.04em] text-zinc-600">{{ dbReadout }}</div>
   </div>
 </template>
 
@@ -109,131 +122,3 @@ onBeforeUnmount(() => {
   }
 })
 </script>
-
-<style scoped lang="scss">
-.digital-fader {
-  width: 54px;
-  height: 100%;
-  display: grid;
-  grid-template-rows: 24px minmax(0, 1fr) 22px;
-  gap: 8px;
-  padding: 8px 6px;
-  background: #e5e5e5;
-  border-left: 2px solid #b9b9b9;
-}
-
-.fader-container {
-  position: relative;
-  border: 2px solid #8f8f8f;
-  border-radius: 2px;
-  background: #d2d2d2;
-  overflow: hidden;
-}
-
-.scale-label {
-  position: absolute;
-  right: 2px;
-  font-size: 8px;
-  color: #5d5d5d;
-  z-index: 2;
-  line-height: 1;
-  pointer-events: none;
-}
-
-.scale-top {
-  top: 3px;
-}
-
-.scale-mid {
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-.scale-bottom {
-  bottom: 3px;
-}
-
-.fader-label,
-.fader-readout {
-  font-size: 10px;
-  text-align: center;
-  color: #4b4b4b;
-  letter-spacing: 0.04em;
-}
-
-.fader-track {
-  position: absolute;
-  top: 2rem;
-  left: 0;
-  right: 0;
-  bottom: 0.8rem;
-  cursor: ns-resize;
-}
-
-.fader-grid {
-  position: absolute;
-  inset: 0;
-  top: -1.2rem;
-  background-image: repeating-linear-gradient(
-    to right,
-    transparent 0,
-    transparent 17px,
-    rgba(80, 80, 80, 0.18) 17px,
-    rgba(80, 80, 80, 0.18) 19px,
-    transparent 19px,
-    transparent 36px
-  );
-  pointer-events: none;
-}
-
-.fader-fill {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  pointer-events: none;
-}
-
-.fader-cap {
-  position: absolute;
-  left: 3px;
-  right: 3px;
-  height: 42px;
-  border: 2px solid #616161;
-  background: #f0f0f0;
-  padding: 0;
-  cursor: ns-resize;
-
-  &:before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 100%;
-    background: repeating-linear-gradient(
-      to bottom,
-      white 0,
-      white 3px,
-      #969696 3px,
-      transparent 20px,
-      white 34px,
-      #969696 34px,
-      #969696 42px
-    );
-  }
-}
-
-.cap-grip {
-  display: block;
-  width: 100%;
-  height: 100%;
-  background-image: repeating-linear-gradient(
-    to bottom,
-    transparent 0,
-    transparent 3px,
-    #969696 3px,
-    #969696 5px
-  );
-}
-</style>
