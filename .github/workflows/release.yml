@@ -97,8 +97,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tauriScript: bun run tauri
-          tagName: app-v__VERSION__
-          releaseName: 'App v__VERSION__'
+          tagName: proteus-author-v__VERSION__
+          releaseName: 'Proteus Author v__VERSION__'
           releaseBody: ${{ needs.prepare-release.outputs.release_body }}
           releaseDraft: false
           prerelease: false

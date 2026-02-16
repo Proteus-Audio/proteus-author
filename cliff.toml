@@ -1,15 +1,18 @@
 [changelog]
 header = """
-# Changelog
+# Proteus Author
+You can find the binaries associated with this release for Linux, Windows, and macOS on the bottom of the page.
+
+## Changelog
 """
 body = """
 {% if version %}
-## {{ version }} - {{ timestamp | date(format="%Y-%m-%d") }}
+### {{ version }} - {{ timestamp | date(format="%Y-%m-%d") }}
 {% else %}
-## Unreleased
+### Unreleased
 {% endif %}
 {% for group, commits in commits | group_by(attribute="group") %}
-### {{ group | upper_first }}
+#### {{ group | upper_first }}
 {% for commit in commits %}
 - {{ commit.message | upper_first }}{% if commit.id %} ({{ commit.id | truncate(length=7, end="") }}){% endif %}
 {% endfor %}
