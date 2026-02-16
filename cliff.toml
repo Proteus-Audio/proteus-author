@@ -24,7 +24,7 @@ trim = true
 conventional_commits = true
 filter_unconventional = false
 split_commits = false
-tag_pattern = "app-v[0-9].*"
+tag_pattern = "proteus-author-v[0-9].*"
 sort_commits = "oldest"
 
 commit_parsers = [
