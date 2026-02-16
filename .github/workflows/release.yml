@@ -29,11 +29,15 @@ jobs:
         run: |
           VERSION="$(grep -m1 '"version"' package.json | sed -E 's/.*"version": "([^"]+)".*/\1/')"
           git cliff --unreleased --tag "app-v${VERSION}" > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "No notable changes in this release." > release-notes.md
+          fi
 
+          DELIM="RELEASE_BODY_$(date +%s)_$RANDOM"
           {
-            echo "release_body<<'EOF'"
+            echo "release_body<<${DELIM}"
             cat release-notes.md
-            echo "EOF"
+            echo "${DELIM}"
           } >> "$GITHUB_OUTPUT"
 
   publish-tauri:
