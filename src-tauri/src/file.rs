@@ -1,3 +1,6 @@
+use crate::alerts::emit_alert_current_window;
+use crate::peaks::*;
+use crate::project::*;
 use proteus_lib::container::play_settings::PlaySettingsContainer;
 use proteus_lib::container::play_settings::{
     PlaySettingsFile, PlaySettingsV2, PlaySettingsV2File, SettingsTrack,
@@ -17,9 +20,6 @@ use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_shell;
 use tauri_plugin_shell::process::CommandEvent;
 use tauri_plugin_shell::ShellExt;
-use crate::alerts::emit_alert_current_window;
-use crate::peaks::*;
-use crate::project::*;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct WaveformSegment {
@@ -35,6 +35,59 @@ pub struct WaveformSegment {
 pub struct TrackWaveformView {
     pub channels: Vec<Vec<f32>>,
     pub segments: Vec<WaveformSegment>,
+}
+
+fn canonical_project_json(project: &ProjectSkeleton) -> String {
+    let mut canonical = project.clone();
+    canonical.location = None;
+    serde_json::to_string(&canonical).unwrap_or_else(|_| "{}".to_string())
+}
+
+fn get_saved_snapshot_by_label(
+    label: &str,
+    saved_snapshot_state: &State<WindowSavedSnapshotState>,
+) -> Option<String> {
+    let map = saved_snapshot_state.0.lock().unwrap();
+    map.get(label).cloned()
+}
+
+fn set_saved_snapshot_by_label(
+    label: &str,
+    saved_snapshot_state: &State<WindowSavedSnapshotState>,
+    snapshot: String,
+) {
+    let mut map = saved_snapshot_state.0.lock().unwrap();
+    map.insert(label.to_string(), snapshot);
+}
+
+fn ensure_saved_snapshot_baseline(
+    label: &str,
+    project_state: &State<WindowProjectState>,
+    saved_snapshot_state: &State<WindowSavedSnapshotState>,
+) {
+    if get_saved_snapshot_by_label(label, saved_snapshot_state).is_some() {
+        return;
+    }
+
+    let project = read_project_by_label(label, project_state);
+    set_saved_snapshot_by_label(
+        label,
+        saved_snapshot_state,
+        canonical_project_json(&project),
+    );
+}
+
+fn update_window_title(window: &Window, project: &ProjectSkeleton, is_unsaved: bool) {
+    let file_name = project.name.clone().unwrap_or("Untitled".to_string());
+    let title = if is_unsaved {
+        format!("{}*", file_name)
+    } else {
+        file_name
+    };
+
+    if let Err(err) = window.set_title(&title) {
+        println!("Failed to set title: {:?}", err);
+    }
 }
 
 fn split_arguments(string: &str) -> Vec<&str> {
@@ -136,8 +189,17 @@ pub async fn register_file(
     let project_clone = read_project(&window, &project_state);
 
     // See if file is already registered
-    if let Some(existing_file) = project_clone.files.iter().find(|file| file.path == file_path) {
-        push_file_id(track_id, existing_file.id.clone(), window.clone(), project_state.clone());
+    if let Some(existing_file) = project_clone
+        .files
+        .iter()
+        .find(|file| file.path == file_path)
+    {
+        push_file_id(
+            track_id,
+            existing_file.id.clone(),
+            window.clone(),
+            project_state.clone(),
+        );
         return Ok(FileInfoSkeleton {
             id: existing_file.id.clone(),
             path: existing_file.path.clone(),
@@ -169,7 +231,12 @@ pub async fn register_file(
             project.files.push(file.clone());
         });
 
-        push_file_id(track_id, file.id.clone(), window.clone(), project_state.clone());
+        push_file_id(
+            track_id,
+            file.id.clone(),
+            window.clone(),
+            project_state.clone(),
+        );
 
         let peaks_start = std::time::Instant::now();
         let _peaks = get_cached_peaks(&window, &file.id);
@@ -206,13 +273,7 @@ pub async fn get_waveform_peaks(
     target_peaks: usize,
     window: Window,
 ) -> Vec<Vec<f32>> {
-    get_cached_peak_amplitudes_in_range(
-        &window,
-        &file_id,
-        start_seconds,
-        end_seconds,
-        target_peaks,
-    )
+    get_cached_peak_amplitudes_in_range(&window, &file_id, start_seconds, end_seconds, target_peaks)
 }
 
 #[tauri::command]
@@ -339,7 +400,9 @@ pub async fn get_track_waveform_peaks(
         if remaining_segments == 1 {
             segment_target = remaining_budget.max(1);
         } else {
-            let max_for_segment = remaining_budget.saturating_sub(remaining_segments - 1).max(1);
+            let max_for_segment = remaining_budget
+                .saturating_sub(remaining_segments - 1)
+                .max(1);
             segment_target = segment_target.min(max_for_segment);
         }
         allocated += segment_target;
@@ -486,7 +549,12 @@ pub fn get_peaks(file_path: &str) -> Vec<Vec<(f32, f32)>> {
     peaks_data
         .channels
         .into_iter()
-        .map(|channel| channel.into_iter().map(|peak| (peak.max, peak.min)).collect())
+        .map(|channel| {
+            channel
+                .into_iter()
+                .map(|peak| (peak.max, peak.min))
+                .collect()
+        })
         .collect()
 }
 
@@ -496,23 +564,29 @@ pub fn project_changes(
     window: Window,
     project_state: State<WindowProjectState>,
     unsaved_state: State<WindowUnsavedState>,
+    saved_snapshot_state: State<WindowSavedSnapshotState>,
 ) -> String {
-    println!("new_project: {:?}", new_project);
+    let label = window.label().to_string();
+    ensure_saved_snapshot_baseline(&label, &project_state, &saved_snapshot_state);
+
+    with_project_mut(&window, &project_state, |project| {
+        project.name = new_project.name.clone();
+        project.tracks = new_project.tracks.clone();
+        project.effects = new_project.effects.clone();
+    });
+
     let project = read_project(&window, &project_state);
-    let project_json = serde_json::to_string(&project).unwrap();
-    let new_project_json = serde_json::to_string(&new_project).unwrap();
+    let current_snapshot = canonical_project_json(&project);
+    let saved_snapshot = get_saved_snapshot_by_label(&label, &saved_snapshot_state)
+        .unwrap_or_else(|| current_snapshot.clone());
+    let is_unsaved = current_snapshot != saved_snapshot;
 
-    let file_name = project.name.clone().unwrap_or("Untitled".to_string());
+    set_unsaved(&window, &unsaved_state, is_unsaved);
+    update_window_title(&window, &project, is_unsaved);
 
-    if project_json != new_project_json {
-        set_unsaved(&window, &unsaved_state, true);
-        window
-            .set_title(&format!("{}*", file_name).as_str())
-            .unwrap();
+    if is_unsaved {
         "Unsaved Changes".to_string()
     } else {
-        set_unsaved(&window, &unsaved_state, false);
-        window.set_title(&format!("{}", file_name)).unwrap();
         "Saved".to_string()
     }
 }
@@ -535,12 +609,13 @@ pub async fn save_file(window: Window) -> Option<ProjectSkeleton> {
     // auto_save(new_project.clone());
     let project_state: State<WindowProjectState> = window.state();
     let unsaved_state: State<WindowUnsavedState> = window.state();
+    let saved_snapshot_state: State<WindowSavedSnapshotState> = window.state();
 
     if !get_unsaved(&window, &unsaved_state) {
         let project = read_project(&window, &project_state);
         println!("No changes to save");
         if project.location.is_some() {
-            return None;
+            return Some(project);
         }
     }
 
@@ -551,14 +626,39 @@ pub async fn save_file(window: Window) -> Option<ProjectSkeleton> {
     }
 
     let project = read_project(&window, &project_state);
-    let project_json = serde_json::to_string(&project).unwrap();
+    let project_json = match serde_json::to_string(&project) {
+        Ok(json) => json,
+        Err(err) => {
+            println!("Failed to serialize project: {:?}", err);
+            return None;
+        }
+    };
 
-    let mut file = File::create(project.location.clone().unwrap()).unwrap();
-    file.write_all(project_json.as_bytes()).unwrap();
+    let Some(location) = project.location.clone() else {
+        println!("Project location missing during save");
+        return None;
+    };
 
-    let file_name = project.name.clone().unwrap_or("Untitled".to_string());
+    let mut file = match File::create(location) {
+        Ok(file) => file,
+        Err(err) => {
+            println!("Failed to create project file: {:?}", err);
+            return None;
+        }
+    };
+    if let Err(err) = file.write_all(project_json.as_bytes()) {
+        println!("Failed to write project file: {:?}", err);
+        return None;
+    }
+
+    let label = window.label().to_string();
+    set_saved_snapshot_by_label(
+        &label,
+        &saved_snapshot_state,
+        canonical_project_json(&project),
+    );
     set_unsaved(&window, &unsaved_state, false);
-    window.set_title(&format!("{}", file_name)).unwrap();
+    update_window_title(&window, &project, false);
 
     Some(project.clone())
 }
@@ -567,6 +667,7 @@ pub async fn save_file(window: Window) -> Option<ProjectSkeleton> {
 pub async fn save_file_as(window: Window) -> Option<ProjectSkeleton> {
     let project_state: State<WindowProjectState> = window.state();
     let unsaved_state: State<WindowUnsavedState> = window.state();
+    let saved_snapshot_state: State<WindowSavedSnapshotState> = window.state();
     let project = read_project(&window, &project_state);
     let file_name = project.name.clone().unwrap_or("untitled".to_string());
 
@@ -599,16 +700,36 @@ pub async fn save_file_as(window: Window) -> Option<ProjectSkeleton> {
     let mut project = read_project(&window, &project_state);
     project.name = Some(file_name.clone());
     project.location = Some(path_buff.to_str().unwrap().to_string());
-    println!("Project: {:?}", serde_json::to_string(&project).unwrap());
-    let project_json = serde_json::to_string(&project).unwrap();
+    let project_json = match serde_json::to_string(&project) {
+        Ok(json) => json,
+        Err(err) => {
+            println!("Failed to serialize project: {:?}", err);
+            return None;
+        }
+    };
     set_project(&window, &project_state, project.clone());
 
-    let mut file = File::create(&path_buff).unwrap();
-    file.write_all(project_json.as_bytes()).unwrap();
+    let mut file = match File::create(&path_buff) {
+        Ok(file) => file,
+        Err(err) => {
+            println!("Failed to create project file: {:?}", err);
+            return None;
+        }
+    };
+    if let Err(err) = file.write_all(project_json.as_bytes()) {
+        println!("Failed to write project file: {:?}", err);
+        return None;
+    }
 
+    let label = window.label().to_string();
+    set_saved_snapshot_by_label(
+        &label,
+        &saved_snapshot_state,
+        canonical_project_json(&project),
+    );
     set_unsaved(&window, &unsaved_state, false);
 
-    window.set_title(&file_name).unwrap();
+    update_window_title(&window, &project, false);
 
     Some(project.clone())
 }
@@ -652,6 +773,7 @@ pub async fn open_file(window: Window) {
                 serde_json::from_str(&file_contents);
             let project_state: State<WindowProjectState> = app.state();
             let unsaved_state: State<WindowUnsavedState> = app.state();
+            let saved_snapshot_state: State<WindowSavedSnapshotState> = app.state();
 
             match project_result {
                 Ok(mut new_project) => {
@@ -660,9 +782,16 @@ pub async fn open_file(window: Window) {
                     new_project.location = Some(project_location.to_string());
                     set_project_by_label(&label, &project_state, new_project.clone());
                     set_unsaved_by_label(&label, &unsaved_state, false);
-                    window.set_title(project_name.as_str()).unwrap();
-                    app
-                        .emit_to(label.as_str(), "FILE_LOADED", new_project)
+                    set_saved_snapshot_by_label(
+                        &label,
+                        &saved_snapshot_state,
+                        canonical_project_json(&new_project),
+                    );
+                    let title = new_project.name.clone().unwrap_or("Untitled".to_string());
+                    if let Err(err) = window.set_title(&title) {
+                        println!("Failed to set title: {:?}", err);
+                    }
+                    app.emit_to(label.as_str(), "FILE_LOADED", new_project)
                         .expect("failed to emit event");
                 }
                 Err(e) => {
@@ -675,17 +804,18 @@ pub async fn open_file(window: Window) {
 #[tauri::command]
 pub async fn load_empty_project(window: Window) {
     let project_state: State<WindowProjectState> = window.state();
+    let unsaved_state: State<WindowUnsavedState> = window.state();
+    let saved_snapshot_state: State<WindowSavedSnapshotState> = window.state();
     let project = empty_project();
     set_project(&window, &project_state, project.clone());
-    window
-        .set_title(
-            &project
-                .name
-                .clone()
-                .unwrap_or("untitled".to_string())
-                .as_str(),
-        )
-        .unwrap();
+    let label = window.label().to_string();
+    set_saved_snapshot_by_label(
+        &label,
+        &saved_snapshot_state,
+        canonical_project_json(&project),
+    );
+    set_unsaved(&window, &unsaved_state, false);
+    update_window_title(&window, &project, false);
     window
         .app_handle()
         .emit_to(window.label(), "FILE_LOADED", project.clone())

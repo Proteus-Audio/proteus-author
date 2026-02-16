@@ -71,6 +71,7 @@ pub fn empty_project() -> ProjectSkeleton {
 pub struct WindowProjectState(pub Arc<Mutex<HashMap<String, ProjectSkeleton>>>);
 pub struct WindowPlayerState(pub Arc<Mutex<HashMap<String, Option<Player>>>>);
 pub struct WindowUnsavedState(pub Arc<Mutex<HashMap<String, bool>>>);
+pub struct WindowSavedSnapshotState(pub Arc<Mutex<HashMap<String, String>>>);
 
 pub fn create_project_state() -> WindowProjectState {
     WindowProjectState(Arc::new(Mutex::new(HashMap::new())))
@@ -82,6 +83,10 @@ pub fn create_player_state() -> WindowPlayerState {
 
 pub fn create_unsaved_state() -> WindowUnsavedState {
     WindowUnsavedState(Arc::new(Mutex::new(HashMap::new())))
+}
+
+pub fn create_saved_snapshot_state() -> WindowSavedSnapshotState {
+    WindowSavedSnapshotState(Arc::new(Mutex::new(HashMap::new())))
 }
 
 fn window_key(window: &Window) -> String {
@@ -102,11 +107,7 @@ pub fn read_project(window: &Window, project_state: &State<WindowProjectState>) 
     read_project_by_label(&window_key(window), project_state)
 }
 
-pub fn with_project_mut<R, F>(
-    window: &Window,
-    project_state: &State<WindowProjectState>,
-    f: F,
-) -> R
+pub fn with_project_mut<R, F>(window: &Window, project_state: &State<WindowProjectState>, f: F) -> R
 where
     F: FnOnce(&mut ProjectSkeleton) -> R,
 {
@@ -126,7 +127,11 @@ where
     f(project)
 }
 
-pub fn set_project(window: &Window, project_state: &State<WindowProjectState>, project: ProjectSkeleton) {
+pub fn set_project(
+    window: &Window,
+    project_state: &State<WindowProjectState>,
+    project: ProjectSkeleton,
+) {
     set_project_by_label(&window_key(window), project_state, project);
 }
 
@@ -139,11 +144,7 @@ pub fn set_project_by_label(
     map.insert(label.to_string(), project);
 }
 
-pub fn with_player_mut<R, F>(
-    window: &Window,
-    player_state: &State<WindowPlayerState>,
-    f: F,
-) -> R
+pub fn with_player_mut<R, F>(window: &Window, player_state: &State<WindowPlayerState>, f: F) -> R
 where
     F: FnOnce(&mut Option<Player>) -> R,
 {
@@ -170,11 +171,7 @@ where
     with_player_by_label(&window_key(window), player_state, f)
 }
 
-pub fn with_player_by_label<R, F>(
-    label: &str,
-    player_state: &State<WindowPlayerState>,
-    f: F,
-) -> R
+pub fn with_player_by_label<R, F>(label: &str, player_state: &State<WindowPlayerState>, f: F) -> R
 where
     F: FnOnce(&Option<Player>) -> R,
 {
@@ -206,6 +203,7 @@ pub fn clear_window_state_by_label(
     project_state: &State<WindowProjectState>,
     player_state: &State<WindowPlayerState>,
     unsaved_state: &State<WindowUnsavedState>,
+    saved_snapshot_state: &State<WindowSavedSnapshotState>,
 ) {
     {
         let mut map = project_state.0.lock().unwrap();
@@ -221,6 +219,11 @@ pub fn clear_window_state_by_label(
 
     {
         let mut map = unsaved_state.0.lock().unwrap();
+        map.remove(label);
+    }
+
+    {
+        let mut map = saved_snapshot_state.0.lock().unwrap();
         map.remove(label);
     }
 }

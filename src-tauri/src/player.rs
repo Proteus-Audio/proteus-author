@@ -13,9 +13,9 @@
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use proteus_lib::container::play_settings::EffectSettings;
 use proteus_lib::container::prot::PathsTrack;
 use proteus_lib::container::prot::Prot;
-use proteus_lib::container::play_settings::EffectSettings;
 use proteus_lib::diagnostics::reporter::Report;
 use proteus_lib::playback::player::Player;
 use serde::Deserialize;
@@ -134,7 +134,8 @@ pub fn get_possible_combinations(window: Window) -> Option<String> {
     }
 
     let prot = Prot::new_from_file_paths(tracks_for_player);
-    prot.count_possible_combinations().map(|count| count.to_string())
+    prot.count_possible_combinations()
+        .map(|count| count.to_string())
 }
 
 #[tauri::command]
@@ -299,7 +300,10 @@ pub async fn play(window: Window) {
     let project_state: State<WindowProjectState> = window.state();
     let effects = read_project(&window, &project_state).effects;
     with_player_mut(&window, &player_state, |player| {
-        println!("playing ({})", if player.is_none() { "nope" } else { "yep" });
+        println!(
+            "playing ({})",
+            if player.is_none() { "nope" } else { "yep" }
+        );
         if let Some(player) = player.as_mut() {
             println!("Setting Effects: {:?}", effects);
             player.set_effects(effects);
@@ -362,7 +366,10 @@ pub async fn shuffle(window: Window) {
 pub async fn get_position(window: Window) -> f64 {
     let player_state: State<WindowPlayerState> = window.state();
     with_player(&window, &player_state, |player| {
-        player.as_ref().map(|player| player.get_time()).unwrap_or(0.0)
+        player
+            .as_ref()
+            .map(|player| player.get_time())
+            .unwrap_or(0.0)
     })
 }
 
@@ -440,7 +447,10 @@ pub fn set_volume(volume: f32, window: Window) {
 pub fn get_volume(window: Window) -> f32 {
     let player_state: State<WindowPlayerState> = window.state();
     with_player(&window, &player_state, |player| {
-        player.as_ref().map(|player| player.get_volume()).unwrap_or(1.0)
+        player
+            .as_ref()
+            .map(|player| player.get_volume())
+            .unwrap_or(1.0)
     })
 }
 

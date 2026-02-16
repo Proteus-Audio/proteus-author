@@ -63,7 +63,8 @@ fn to_legacy_peaks(peaks_data: proteus_lib::peaks::PeaksData) -> Vec<Vec<(f32, f
 }
 
 fn peaks_duration_seconds(peaks_data: &proteus_lib::peaks::PeaksData) -> f64 {
-    if peaks_data.channels.is_empty() || peaks_data.sample_rate == 0 || peaks_data.window_size == 0 {
+    if peaks_data.channels.is_empty() || peaks_data.sample_rate == 0 || peaks_data.window_size == 0
+    {
         return 0.0;
     }
 
@@ -165,9 +166,8 @@ pub fn simplify_peaks(peaks: Vec<Vec<(f32, f32)>>, zoom: usize) -> Vec<Simplifie
 
 pub fn get_cached_peaks(window: &Window, file_id: &str) -> Vec<Vec<(f32, f32)>> {
     let peaks_file_path = ensure_peaks_file(window, file_id);
-    let peaks_data =
-        proteus_lib::peaks::get_peaks(&peaks_file_path, Default::default())
-            .expect("failed to read .peaks");
+    let peaks_data = proteus_lib::peaks::get_peaks(&peaks_file_path, Default::default())
+        .expect("failed to read .peaks");
     to_legacy_peaks(peaks_data)
 }
 
