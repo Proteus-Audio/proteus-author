@@ -38,7 +38,7 @@
 import { invoke } from '@tauri-apps/api/core'
 import { type UnlistenFn } from '@tauri-apps/api/event'
 import { Window } from '@tauri-apps/api/window'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, onMounted, onUnmounted, ref, watch } from 'vue'
 import BaseAlertBox from './components/base/BaseAlertBox.vue'
 import BaseContainer from './components/base/BaseContainer.vue'
 import BaseLevelMeter from './components/base/BaseLevelMeter.vue'
@@ -46,7 +46,6 @@ import BaseTitle from './components/base/BaseTitle.vue'
 import BaseTransport from './components/base/BaseTransport.vue'
 import { DigitalFader } from './components/digital'
 import EffectRack from './components/effects/EffectRack.vue'
-import TrackBin from './components/track/TrackBin.vue'
 import { useAppShortcuts } from './composables/useAppShortcuts'
 import { useAlertStore } from './stores/alerts'
 import { useAudioStore } from './stores/audio'
@@ -55,6 +54,8 @@ import { useTrackStore } from './stores/track'
 import type { AlertType, ProjectSkeleton } from './typings/proteus'
 import { useElementHover } from '@vueuse/core'
 import { startupMark } from './utils/startup-trace'
+
+const TrackBin = defineAsyncComponent(() => import('./components/track/TrackBin.vue'))
 
 const head = useHeadStore()
 const trackStore = useTrackStore()

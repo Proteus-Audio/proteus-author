@@ -27,13 +27,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, defineAsyncComponent, ref } from 'vue'
 import { Close, Delete } from '@element-plus/icons-vue'
-import EffectDialog from './EffectsDialog.vue'
 import { AnalogIndicator } from '../analog'
 import { useAudioStore } from '../../stores/audio'
 import type { EffectChainItem } from '../../assets/effects'
 import { EffectSettings } from '../../typings/effects'
+
+const EffectDialog = defineAsyncComponent(() => import('./EffectsDialog.vue'))
 
 interface Props {
   item: EffectChainItem

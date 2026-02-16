@@ -1,5 +1,4 @@
 import { invoke } from '@tauri-apps/api/core'
-import { assignIn, sample } from 'lodash'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type { ProjectSkeleton } from '../typings/proteus'
@@ -20,6 +19,12 @@ export const useTrackStore = defineStore('track', () => {
   const files = ref([] as DropFileSkeleton[])
   const possibleCombinations = ref('0')
   const startupSyncTraced = ref(false)
+
+  const sampleOne = <T>(items: T[]): T | undefined => {
+    if (items.length === 0) return undefined
+    const index = Math.floor(Math.random() * items.length)
+    return items[index]
+  }
 
   /////////////
   // GETTERS //
@@ -120,7 +125,7 @@ export const useTrackStore = defineStore('track', () => {
   const setTrackSelection = (trackId: number, index?: number): string | undefined => {
     index = index || tracks.value.findIndex((v) => v.id === trackId)
     const options = tracks.value[index].file_ids.map((id) => id)
-    const selection = sample(options)
+    const selection = sampleOne(options)
     tracks.value[index].selection = selection
     return selection
   }
@@ -131,9 +136,10 @@ export const useTrackStore = defineStore('track', () => {
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
-      const trackFile: TrackFile = assignIn(file, {
+      const trackFile: TrackFile = {
+        ...file,
         parentId: trackId,
-      })
+      }
       tracks.value[index].file_ids.push(trackFile.id)
     }
 

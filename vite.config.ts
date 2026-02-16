@@ -1,5 +1,5 @@
-import { defineConfig } from "vite";
-import vue from "@vitejs/plugin-vue";
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -15,13 +15,31 @@ export default defineConfig({
   },
   // to make use of `TAURI_DEBUG` and other env variables
   // https://tauri.studio/v1/api/config#buildconfig.beforedevcommand
-  envPrefix: ["VITE_", "TAURI_"],
+  envPrefix: ['VITE_', 'TAURI_'],
   build: {
     // Tauri supports es2021
-    target: ["es2021", "chrome100", "safari13"],
+    target: ['es2021', 'chrome100', 'safari13'],
     // don't minify for debug builds
-    minify: !process.env.TAURI_DEBUG ? "esbuild" : false,
+    minify: !process.env.TAURI_DEBUG ? 'esbuild' : false,
     // produce sourcemaps for debug builds
     sourcemap: !!process.env.TAURI_DEBUG,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return
+
+          // Keep major ecosystems isolated so the entry chunk stays small and
+          // hot-path parsing can start sooner.
+          if (id.includes('/node_modules/element-plus/')) return 'vendor-element-plus'
+          if (id.includes('/node_modules/@element-plus/')) return 'vendor-element-icons'
+          if (id.includes('/node_modules/vue/') || id.includes('/node_modules/@vue/')) {
+            return 'vendor-vue'
+          }
+          if (id.includes('/node_modules/@tauri-apps/')) return 'vendor-tauri'
+          if (id.includes('/node_modules/vuedraggable/')) return 'vendor-dnd'
+          return 'vendor-misc'
+        },
+      },
+    },
   },
-});
+})

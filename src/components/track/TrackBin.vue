@@ -71,14 +71,14 @@ import { Delete, Folder } from '@element-plus/icons-vue'
 import { invoke } from '@tauri-apps/api/core'
 import type { Event, UnlistenFn } from '@tauri-apps/api/event'
 import { type DragDropEvent, Window } from '@tauri-apps/api/window'
-import { open } from '@tauri-apps/plugin-dialog'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, defineAsyncComponent, onMounted, onUnmounted, ref } from 'vue'
 import { useAlertStore } from '../../stores/alerts'
 import { useTrackStore } from '../../stores/track'
 import type { DropFileSkeleton } from '../../typings/tracks'
 import BaseLoadingSpinner from '../base/BaseLoadingSpinner.vue'
 import InputAutoSizedText from '../input/InputAutoSizedText.vue'
-import TrackWaveform from './TrackWaveform.vue'
+
+const TrackWaveform = defineAsyncComponent(() => import('./TrackWaveform.vue'))
 
 // import Button from "element-plus";
 
@@ -171,6 +171,8 @@ const fresh = computed(() => {
 })
 
 const openFiles = async () => {
+  // Keep plugin-dialog in a lazy chunk so startup JS does not pay for file-picker code.
+  const { open } = await import('@tauri-apps/plugin-dialog')
   const files = await open({
     multiple: true,
     filters: [{ name: 'Audio Files', extensions: ['wav', 'mp3'] }],
