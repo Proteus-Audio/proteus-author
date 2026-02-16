@@ -2,10 +2,12 @@
   <UDropdownMenu
     id="effect-rack"
     :items="effectMenuItems"
-    :content="{ align: 'start', side: 'top' }"
+    class="z-20"
+    :content="{ align: 'center', side: 'top' }"
+    :ui="{ content: 'z-[70]' }"
   >
     <div
-      class="fixed right-[var(--meter-width)] bottom-0 left-0 z-20 h-[var(--effect-rack-height)] w-[calc(100%-var(--meter-width))] cursor-pointer border-t-2 border-zinc-500 bg-zinc-200 p-4 transition-[height] duration-300"
+      class="fixed right-0 bottom-0 left-0 z-20 h-[var(--effect-rack-height)] w-full cursor-pointer border-t-2 border-zinc-500 bg-zinc-200 p-4 transition-[height] duration-300"
       :class="noEffects ? 'grid place-items-center' : 'block'"
     >
       <div v-if="noEffects" class="text-center text-xs uppercase text-zinc-500">
@@ -57,6 +59,7 @@ const effectMenuItems = computed(() => {
   return [
     effectTypes.map((type) => ({
       label: effectTypeLabels[type],
+      class: 'cursor-pointer text-xs uppercase text-zinc-500 hover:bg-zinc-200',
       onSelect: () => addEffect(type),
     })),
   ]

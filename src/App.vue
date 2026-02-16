@@ -17,7 +17,7 @@
           <BaseAlertBox />
           <BaseTitle />
 
-          <div class="sticky top-0 z-30 bg-white/95 py-2 backdrop-blur-sm">
+          <div class="sticky top-0 z-30 bg-zinc-50 py-2 backdrop-blur-sm">
             <BaseTransport />
           </div>
 

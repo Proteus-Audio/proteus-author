@@ -120,7 +120,7 @@ const sizeClass = computed(() => {
       @apply bg-red-800;
     }
     &.frozen.on .light {
-        @apply bg-slate-400;
+      @apply bg-slate-400;
     }
   }
 

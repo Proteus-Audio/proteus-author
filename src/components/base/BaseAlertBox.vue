@@ -1,6 +1,6 @@
 <template>
   <div
-    class="fixed left-1/2 z-10 w-[calc(100%-2rem)] max-w-[600px] -translate-x-1/2 transition-[top] duration-300"
+    class="fixed left-1/2 z-[60] w-[calc(100%-2rem)] max-w-[600px] -translate-x-1/2 transition-[top] duration-300"
     :class="y > 150 ? 'top-20' : 'top-8'"
   >
     <div
@@ -12,8 +12,8 @@
       <UAlert
         :title="al.contents"
         :color="alertColor(al.type)"
-        variant="outline"
-        :close="{ color: 'neutral', variant: 'ghost' }"
+        variant="solid"
+        :close="{ color: 'white', variant: 'ghost' }"
         @update:open="(open: boolean) => !open && closeAlert(i)"
       />
     </div>
@@ -28,6 +28,7 @@ import type { AlertType, AlertView } from '../../typings/proteus'
 
 const alertStore = useAlertStore()
 const alerts = ref([] as AlertView[])
+// const alerts = ref([{ class: 'fresh', type: 'info', added: new Date(), contents: 'Success!' }] as AlertView[])
 
 const { y } = useWindowScroll()
 
