@@ -1,6 +1,6 @@
 {
   "name": "proteus-author",
-  "version": "0.10.4",
+  "version": "0.10.6",
   "description": "An authoring application for .prot files.",
   "type": "module",
   "scripts": {
@@ -20,18 +20,17 @@
     "url": "https://github.com/howardah"
   },
   "dependencies": {
+    "@nuxt/ui": "^4.4.0",
     "@tauri-apps/api": "^2.10.0",
     "@tauri-apps/cli": "^2.10.0",
     "@tauri-apps/plugin-dialog": "^2.0.0",
     "@vueuse/core": "^14.2.1",
-    "element-plus": "^2.13.2",
-    "lodash": "^4.17.21",
     "pinia": "^3.0.4",
+    "tailwindcss": "^4.1.18",
     "vue": "^3.5.28",
     "vuedraggable": "^4.1.0"
   },
   "devDependencies": {
-    "@types/lodash": "^4.14.184",
     "@types/node": "^25.2.3",
     "@typescript-eslint/eslint-plugin": "^8.55.0",
     "@typescript-eslint/parser": "^8.55.0",
@@ -47,7 +46,6 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-vue": "^10.7.0",
     "prettier": "^3.8.1",
-    "sass": "^1.55.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "vue-tsc": "^3.2.4"

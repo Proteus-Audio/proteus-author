@@ -2,8 +2,11 @@
   "compilerOptions": {
     "composite": true,
     "module": "ESNext",
-    "moduleResolution": "Node",
-    "allowSyntheticDefaultImports": true
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
+    "paths": {
+      "#build/ui": ["./node_modules/.nuxt-ui/ui"]
+    }
   },
   "include": ["vite.config.ts"]
 }

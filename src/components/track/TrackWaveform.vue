@@ -1,23 +1,26 @@
 <template>
-  <div class="track">
+  <div class="bg-black/10">
     <div
       ref="overviewContainerRef"
       :id="`overview-container-${identifier}`"
-      class="overview-container"
+      class="relative min-h-[150px] w-full overflow-hidden bg-white"
     >
       <canvas
         ref="canvasRef"
-        class="waveform-canvas"
+        class="block cursor-pointer"
         :class="{
-          'shuffle-point-tool-mode': audio.shufflePointToolMode,
-          'shuffle-point-remove-hover': audio.shufflePointToolMode && hoveringShufflePoint,
+          'cursor-copy': audio.shufflePointToolMode,
+          'cursor-not-allowed': audio.shufflePointToolMode && hoveringShufflePoint,
         }"
         @click="seek"
         @mousemove="onMouseMove"
         @mouseleave="onMouseLeave"
         @wheel.prevent="onWheel"
       ></canvas>
-      <div class="playhead"></div>
+      <div
+        class="pointer-events-none absolute top-0 h-full w-px bg-[#7474746e]"
+        :style="{ left: playheadPosition }"
+      ></div>
     </div>
   </div>
 </template>
@@ -122,7 +125,10 @@ const shufflePointSeconds = computed(() =>
     .filter((time): time is number => time !== null && Number.isFinite(time) && time >= 0),
 )
 
-const findNearestShufflePointSeconds = (seconds: number, toleranceSeconds: number): number | null => {
+const findNearestShufflePointSeconds = (
+  seconds: number,
+  toleranceSeconds: number,
+): number | null => {
   let nearest: number | null = null
   let nearestDistance = Number.POSITIVE_INFINITY
 
@@ -313,7 +319,6 @@ const drawWaveform = () => {
     ctx.textAlign = textAlign
     ctx.fillText(text, textX, textY)
   }
-
 }
 
 let updateTimer: number | null = null
@@ -496,40 +501,3 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', onResize)
 })
 </script>
-
-<style lang="scss" scoped>
-.track {
-  background-color: rgba(0, 0, 0, 0.1);
-
-  .overview-container {
-    position: relative;
-    min-height: 150px;
-    width: 100%;
-    overflow: hidden;
-    background: white;
-  }
-
-  .waveform-canvas {
-    display: block;
-    cursor: pointer;
-  }
-
-  .waveform-canvas.shuffle-point-tool-mode {
-    cursor: copy;
-  }
-
-  .waveform-canvas.shuffle-point-remove-hover {
-    cursor: not-allowed;
-  }
-
-  .playhead {
-    position: absolute;
-    pointer-events: none;
-    top: 0;
-    left: v-bind(playheadPosition);
-    height: 100%;
-    width: 1px;
-    background-color: #7474746e;
-  }
-}
-</style>

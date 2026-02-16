@@ -27,6 +27,7 @@ use tauri::State;
 use tauri::Window;
 
 use crate::project::*;
+use crate::startup::{log_rust, StartupTraceState};
 
 fn build_paths_tracks(project: &ProjectSkeleton) -> Vec<PathsTrack> {
     project
@@ -108,8 +109,8 @@ pub async fn init_player(window: Window) {
     new_player.set_start_buffer_ms(10.0);
     new_player.set_startup_fade_ms(5.0);
     new_player.set_max_sink_chunks(15);
-    // new_player.set_seek_fade_in_ms(200.0);
-    // new_player.set_seek_fade_out_ms(200.0);
+    new_player.set_seek_fade_in_ms(100.0);
+    new_player.set_seek_fade_out_ms(100.0);
 
     with_player_mut(&window, &player_state, |player| {
         player.replace(new_player);
@@ -448,6 +449,7 @@ pub fn set_effects_chain(
     effects: Vec<EffectSettings>,
     window: Window,
     project_state: State<WindowProjectState>,
+    startup_trace_state: State<StartupTraceState>,
 ) {
     with_project_mut(&window, &project_state, |project| {
         project.effects = effects.clone();
@@ -459,7 +461,15 @@ pub fn set_effects_chain(
             println!("Setting Effects: {:?}", effects);
             player.set_effects(effects);
         } else {
-            println!("No player found");
+            // Empty chain with no player is expected on startup and does not require work.
+            if effects.is_empty() {
+                return;
+            }
+            log_rust(
+                &startup_trace_state,
+                "player",
+                "set_effects_chain called before player init (No player found)",
+            );
         }
     });
 }

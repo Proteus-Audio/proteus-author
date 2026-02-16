@@ -1,13 +1,15 @@
 <template>
-  <div class="effects-dialog" v-if="effect">
-    <header class="dialog-header">
-      <h2>{{ label }}</h2>
+  <div v-if="effect" class="grid gap-5">
+    <header class="flex items-center justify-between gap-4">
+      <h2 class="m-0 text-[1.2rem] uppercase tracking-[0.12em]">{{ label }}</h2>
       <AnalogIndicator :state="enabledState" label="Active" color="green" />
     </header>
 
-    <section class="analog-panel dialog-panel">
+    <section class="analog-panel rounded-[18px] p-6">
       <template v-if="type === 'BasicReverb'">
-        <div class="control-grid">
+        <div
+          class="grid auto-rows-auto grid-cols-[repeat(auto-fit,minmax(140px,1fr))] items-start gap-6"
+        >
           <AnalogToggle v-model="basicEnabled" label="Enabled" />
           <AnalogKnob v-model="basicMix" label="Mix" :min="0" :max="1" :step="0.01" />
           <AnalogKnob
@@ -23,7 +25,9 @@
       </template>
 
       <template v-else-if="type === 'DiffusionReverb'">
-        <div class="control-grid">
+        <div
+          class="grid auto-rows-auto grid-cols-[repeat(auto-fit,minmax(140px,1fr))] items-start gap-6"
+        >
           <AnalogToggle v-model="diffusionEnabled" label="Enabled" />
           <AnalogKnob v-model="diffusionMix" label="Mix" :min="0" :max="1" :step="0.01" />
           <AnalogKnob
@@ -55,7 +59,9 @@
       </template>
 
       <template v-else-if="type === 'ConvolutionReverb'">
-        <div class="control-grid">
+        <div
+          class="grid auto-rows-auto grid-cols-[repeat(auto-fit,minmax(140px,1fr))] items-start gap-6"
+        >
           <AnalogToggle v-model="convolutionEnabled" label="Enabled" />
           <AnalogKnob v-model="convolutionMix" label="Dry/Wet" :min="0" :max="1" :step="0.01" />
           <AnalogKnob
@@ -66,23 +72,33 @@
             :step="1"
             units="dB"
           />
-          <div class="ir-picker">
+          <div class="grid content-start gap-2.5">
             <span class="analog-label">Impulse Response</span>
-            <input
-              class="ir-input"
+            <UInput
               v-model="convolutionImpulse"
+              color="neutral"
+              variant="outline"
+              :ui="{
+                base: 'font-[var(--font-analog)] text-[var(--color-analog-text)] bg-[#1f1b18] border-[#2a241d]',
+              }"
               placeholder="attachment:ir.wav or /path/to/ir.wav"
             />
-            <div class="ir-actions">
-              <el-button size="small" @click="pickImpulseResponse">Choose File</el-button>
-              <el-button size="small" @click="clearImpulseResponse">Clear</el-button>
+            <div class="grid grid-cols-[repeat(auto-fit,minmax(110px,1fr))] gap-2">
+              <UButton size="xs" variant="outline" color="neutral" @click="pickImpulseResponse"
+                >Choose File</UButton
+              >
+              <UButton size="xs" variant="outline" color="neutral" @click="clearImpulseResponse"
+                >Clear</UButton
+              >
             </div>
           </div>
         </div>
       </template>
 
       <template v-else-if="type === 'Compressor'">
-        <div class="control-grid">
+        <div
+          class="grid auto-rows-auto grid-cols-[repeat(auto-fit,minmax(140px,1fr))] items-start gap-6"
+        >
           <AnalogToggle v-model="compressorEnabled" label="Enabled" />
           <AnalogKnob
             v-model="compressorThreshold"
@@ -121,7 +137,9 @@
       </template>
 
       <template v-else-if="type === 'Limiter'">
-        <div class="control-grid">
+        <div
+          class="grid auto-rows-auto grid-cols-[repeat(auto-fit,minmax(140px,1fr))] items-start gap-6"
+        >
           <AnalogToggle v-model="limiterEnabled" label="Enabled" />
           <AnalogKnob
             v-model="limiterThreshold"
@@ -159,7 +177,9 @@
       </template>
 
       <template v-else-if="type === 'LowPassFilter'">
-        <div class="control-grid">
+        <div
+          class="grid auto-rows-auto grid-cols-[repeat(auto-fit,minmax(140px,1fr))] items-start gap-6"
+        >
           <AnalogToggle v-model="lowPassEnabled" label="Enabled" />
           <AnalogKnob
             v-model="lowPassFreq"
@@ -174,7 +194,9 @@
       </template>
 
       <template v-else-if="type === 'HighPassFilter'">
-        <div class="control-grid">
+        <div
+          class="grid auto-rows-auto grid-cols-[repeat(auto-fit,minmax(140px,1fr))] items-start gap-6"
+        >
           <AnalogToggle v-model="highPassEnabled" label="Enabled" />
           <AnalogKnob
             v-model="highPassFreq"
@@ -189,7 +211,9 @@
       </template>
 
       <template v-else-if="type === 'Distortion'">
-        <div class="control-grid">
+        <div
+          class="grid auto-rows-auto grid-cols-[repeat(auto-fit,minmax(140px,1fr))] items-start gap-6"
+        >
           <AnalogToggle v-model="distortionEnabled" label="Enabled" />
           <AnalogKnob
             v-model="distortionGain"
@@ -211,7 +235,9 @@
       </template>
 
       <template v-else-if="type === 'Gain'">
-        <div class="control-grid">
+        <div
+          class="grid auto-rows-auto grid-cols-[repeat(auto-fit,minmax(140px,1fr))] items-start gap-6"
+        >
           <AnalogToggle v-model="gainEnabled" label="Enabled" />
           <AnalogKnob
             v-model="gainAmount"
@@ -611,59 +637,3 @@ const enabledState = computed(() => {
   return false
 })
 </script>
-
-<style lang="scss" scoped>
-.effects-dialog {
-  display: grid;
-  gap: 1.25rem;
-}
-
-.dialog-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-}
-
-.dialog-header h2 {
-  margin: 0;
-  font-size: 1.2rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.dialog-panel {
-  padding: 1.5rem;
-  border-radius: 18px;
-}
-
-.control-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 1.5rem;
-  align-items: start;
-}
-
-.ir-picker {
-  display: grid;
-  gap: 0.6rem;
-  align-content: start;
-}
-
-.ir-input {
-  width: 100%;
-  padding: 0.4rem 0.6rem;
-  border-radius: 6px;
-  border: 1px solid #2a241d;
-  background: #1f1b18;
-  color: var(--analog-text);
-  font-family: var(--analog-font);
-  font-size: 0.85rem;
-}
-
-.ir-actions {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-  gap: 0.5rem;
-}
-</style>

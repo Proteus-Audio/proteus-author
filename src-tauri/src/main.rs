@@ -10,6 +10,7 @@ mod helpers;
 mod peaks;
 mod player;
 mod project;
+mod startup;
 mod windows;
 
 use std::sync::{Arc, Mutex};
@@ -22,6 +23,7 @@ use menu::{
 };
 use player::*;
 use project::*;
+use startup::*;
 use dotenv::dotenv;
 use tauri::{Manager, RunEvent, WindowEvent};
 
@@ -41,6 +43,7 @@ fn main() {
         .manage(project::create_project_state())
         .manage(project::create_player_state())
         .manage(project::create_unsaved_state())
+        .manage(startup::create_startup_trace_state())
         .manage(FollowModeState(Arc::new(Mutex::new(false))))
         .manage(ShufflePointToolModeState(Arc::new(Mutex::new(false))))
         .menu(|app_handle| menu::build_menu(app_handle))
@@ -88,6 +91,7 @@ fn main() {
             remove_shuffle_point,
             set_volume,
             set_effects_chain,
+            startup_trace,
             set_follow_mode_menu,
             set_shuffle_point_tool_mode_menu,
             alert_current_window,
@@ -96,7 +100,11 @@ fn main() {
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
 
+    let startup_trace_state: tauri::State<StartupTraceState> = app.state();
+    log_rust(&startup_trace_state, "app", "tauri builder initialized");
+
     let _main_window = windows::create_main_window(&app.handle());
+    log_rust(&startup_trace_state, "app", "main window requested");
     // windows::create_docs_window(&handle);
 
     app.run(|_app_handle, event| match event {

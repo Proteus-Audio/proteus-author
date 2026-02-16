@@ -1,86 +1,101 @@
 <template>
   <div
-    class="track-bin"
-    :class="{ drag: hovering, loading, clickable: fresh }"
+    ref="bin"
+    class="relative mb-2 w-full overflow-hidden bg-black/10 p-4"
+    :class="[
+      hovering ? 'bg-black/20' : '',
+      loading ? 'pointer-events-none' : '',
+      fresh ? 'cursor-pointer' : '',
+    ]"
     :style="padding"
     @click="
       () => {
         if (fresh) openFiles()
       }
     "
-    ref="bin"
   >
-    <div v-if="!fresh" class="bin">
-      <BaseLoadingSpinner :message="loadingMessage" v-if="loading" class="loader" />
-      <div class="bin-name">
+    <div v-if="!fresh" class="relative">
+      <BaseLoadingSpinner v-if="loading" :message="loadingMessage" class="loader" />
+
+      <div class="flex items-center gap-2">
         <InputAutoSizedText
-          class="track-name"
-          placeholder="Click to Add Name"
           v-model="trackName"
+          class="inline-block"
+          placeholder="Click to Add Name"
         />
 
-        <el-button
-          :icon="Folder"
-          class="folder-button"
-          @click="() => (folderOpen = !folderOpen)"
-          text
+        <UButton
+          icon="i-lucide-folder"
+          variant="ghost"
+          color="neutral"
+          class="mb-4"
+          @click.stop="toggleFolderOpen"
         />
       </div>
-      <div class="waveforms">
+
+      <div class="relative inline-block h-[150px] w-full">
         <TrackWaveform
           v-if="selectedFile"
-          :class="`waveform visible`"
           :key="selectedFile.id"
+          class="absolute top-0 block w-full"
           :track="selectedFile"
           :selected="selectedFile.id === track.selection"
           >{{ selectedFile.name }}</TrackWaveform
         >
       </div>
-      <el-drawer
-        ref="folderContents"
-        v-model="folderOpen"
-        :title="`Track Bin Contents`"
-        custom-class="drawer"
-      >
-        <div class="tracklist">
-          <div v-for="id in track.file_ids" :key="id">
-            {{ trackStore.getFileFromId(id)?.name }}
 
-            <el-button :icon="Delete" class="closeButton" @click="() => removeFile(id)" text />
+      <UDrawer
+        v-model:open="folderOpen"
+        title="Track Bin Contents"
+        direction="right"
+        :handle="false"
+      >
+        <template #content>
+          <div class="grid min-w-[300px] gap-2 p-4">
+            <div
+              v-for="id in track.file_ids"
+              :key="id"
+              class="grid grid-cols-[1fr_auto] items-center gap-2"
+            >
+              <span>{{ trackStore.getFileFromId(id)?.name }}</span>
+              <UButton
+                icon="i-lucide-trash-2"
+                variant="ghost"
+                color="error"
+                @click="() => removeFile(id)"
+              />
+            </div>
           </div>
-        </div>
-      </el-drawer>
+        </template>
+      </UDrawer>
     </div>
 
-    <span v-if="fresh" class="message clickable">
+    <span v-if="fresh">
       <BaseLoadingSpinner v-if="loading" class="loader" />
       <p v-if="hovering">Drop the files here ...</p>
       <p v-else>
         Drag 'n' drop some files here, or click to select files
-        <span class="error">{{ error }}</span>
+        <span class="text-red-700">{{ error }}</span>
       </p>
     </span>
     <span v-else>
-      <p class="error" v-if="!!error">{{ error }}</p>
+      <p v-if="!!error" class="text-red-700">{{ error }}</p>
     </span>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Delete, Folder } from '@element-plus/icons-vue'
 import { invoke } from '@tauri-apps/api/core'
 import type { Event, UnlistenFn } from '@tauri-apps/api/event'
 import { type DragDropEvent, Window } from '@tauri-apps/api/window'
-import { open } from '@tauri-apps/plugin-dialog'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, defineAsyncComponent, onMounted, onUnmounted, ref } from 'vue'
 import { useAlertStore } from '../../stores/alerts'
 import { useTrackStore } from '../../stores/track'
 import type { DropFileSkeleton } from '../../typings/tracks'
 import BaseLoadingSpinner from '../base/BaseLoadingSpinner.vue'
 import InputAutoSizedText from '../input/InputAutoSizedText.vue'
-import TrackWaveform from './TrackWaveform.vue'
 
-// import Button from "element-plus";
+const TrackWaveform = defineAsyncComponent(() => import('./TrackWaveform.vue'))
 
 interface Props {
   trackId: number
@@ -137,7 +152,6 @@ const loadFiles = async (files: string[]) => {
   }
 
   if (acceptableFiles.length > 0) {
-    // const fileData: DropFileSkeleton[] = []
     for (let i = 0; i < acceptableFiles.length; i++) {
       const filePath = acceptableFiles[i]
       console.log(filePath, /(?:.mp3|.wav)$/.test(filePath))
@@ -170,7 +184,12 @@ const fresh = computed(() => {
   return isFresh
 })
 
+const toggleFolderOpen = () => {
+  folderOpen.value = !folderOpen.value
+}
+
 const openFiles = async () => {
+  const { open } = await import('@tauri-apps/plugin-dialog')
   const files = await open({
     multiple: true,
     filters: [{ name: 'Audio Files', extensions: ['wav', 'mp3'] }],
@@ -208,7 +227,6 @@ onMounted(async () => {
   unlisten.push(
     await appWindow.onDragDropEvent((event: Event<DragDropEvent>) => {
       binBounds.value = calcBinBounds()
-      // console.log('drag event', isDragActive.value)
       if (event.payload.type === 'over' && checkBinHover(event.payload.position)) {
         binHover.value = true
       } else if (event.payload.type === 'drop' && binHover.value) {
@@ -229,84 +247,3 @@ onUnmounted(() => {
   })
 })
 </script>
-
-<style lang="scss" scoped>
-.clickable {
-  cursor: pointer;
-}
-
-.track-bin {
-  box-sizing: border-box;
-  width: 100%;
-  overflow: hidden;
-  background: rgba(0, 0, 0, 0.1);
-  padding: 1em;
-  margin-bottom: 0.5em;
-  position: relative;
-  // border-radius: 0.5em;
-  &.drag {
-    background: rgba(0, 0, 0, 0.2);
-  }
-
-  &.loading {
-    :deep(.channels .channel .annotation .timestamp) {
-      background: rgba(0, 0, 0, 0.2);
-    }
-  }
-  /* .loader {
-  }*/
-  .error {
-    color: rgb(189, 50, 50);
-  }
-
-  .bin {
-    .bin-name {
-      .track-name,
-      .selection-name {
-        display: inline-block;
-      }
-    }
-
-    .flex {
-      display: flex;
-      // grid-template-columns: 1fr 44px;
-    }
-
-    .waveforms {
-      display: inline-block;
-      position: relative;
-      width: 100%;
-      height: 150px;
-
-      .waveform {
-        position: absolute;
-        width: 100%;
-        display: block;
-        top: 0;
-        &.hidden {
-          pointer-events: none;
-          opacity: 0;
-        }
-      }
-    }
-
-    .folder-button {
-      margin: 0 0.5em;
-      margin-top: auto;
-    }
-
-    &:deep(.drawer) {
-      min-width: 300px;
-
-      .tracklist {
-        display: grid;
-        //   grid-template-columns: 1fr 45px;
-      }
-
-      //   .closeButton {
-      //     display: inline-block;
-      //   }
-    }
-  }
-}
-</style>

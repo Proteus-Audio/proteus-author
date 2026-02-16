@@ -21,17 +21,25 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
+      - name: Read package version
+        id: version
+        run: |
+          VERSION="$(grep -m1 '"version"' package.json | sed -E 's/.*"version": "([^"]+)".*/\1/')"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
-      - name: Install git-cliff
-        run: cargo install git-cliff --locked
+      - name: Generate release notes
+        id: git_cliff
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: cliff.toml
+          args: --unreleased --tag "${{ env.RELEASE_TAG_PREFIX }}${{ steps.version.outputs.version }}"
+        env:
+          OUTPUT: release-notes.md
+          GITHUB_REPO: ${{ github.repository }}
 
       - name: Build release notes
         id: build_notes
         run: |
-          VERSION="$(grep -m1 '"version"' package.json | sed -E 's/.*"version": "([^"]+)".*/\1/')"
-          git cliff --unreleased --tag "${RELEASE_TAG_PREFIX}${VERSION}" > release-notes.md
           if [ ! -s release-notes.md ]; then
             echo "No notable changes in this release." > release-notes.md
           fi
