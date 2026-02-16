@@ -79,10 +79,12 @@ const formattedPossibleCombinations = computed(() => {
 })
 
 const unlisteners = ref<UnlistenFn[]>([])
+const startupHydrating = ref(true)
 
 watch(
   [trackStore.tracks, audio.effects],
   async () => {
+    if (startupHydrating.value) return
     console.log(await head.logChanges())
   },
   { deep: true },
@@ -259,6 +261,7 @@ onMounted(async () => {
   startupMark('App.vue:before-track-sync')
   await trackStore.sync()
   startupMark('App.vue:after-track-sync')
+  startupHydrating.value = false
   requestAnimationFrame(() => {
     startupMark('App.vue:first-frame-after-mounted-work')
   })

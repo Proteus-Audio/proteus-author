@@ -461,6 +461,10 @@ pub fn set_effects_chain(
             println!("Setting Effects: {:?}", effects);
             player.set_effects(effects);
         } else {
+            // Empty chain with no player is expected on startup and does not require work.
+            if effects.is_empty() {
+                return;
+            }
             log_rust(
                 &startup_trace_state,
                 "player",

@@ -346,7 +346,9 @@ export const useAudioStore = defineStore('prot', () => {
     () => {
       scheduleSyncEffects()
     },
-    { deep: true, immediate: true },
+    // Avoid startup-time no-op sync when effect chain is still empty.
+    // Runtime edits and loaded-project replacements still sync via this watcher and explicit calls.
+    { deep: true },
   )
 
   return {
