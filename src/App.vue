@@ -128,8 +128,95 @@ const effectRackRef = ref<HTMLElement | null>(null)
 const effectRackHover = useElementHover(effectRackRef)
 const effectRackHeight = computed(() => (effectRackHover.value ? `7rem` : `5rem`))
 
-onMounted(async () => {
-  startupMark('App.vue:onMounted-start')
+const registerWindowListeners = async (appWindow: Window, runIfFocused: (action: () => void | Promise<void>) => Promise<void>) => {
+  const listeners = await Promise.all([
+    appWindow.listen('FILE_LOADED', (event) => {
+      console.log('file loaded', event)
+      const project = event?.payload as ProjectSkeleton
+      if (project.location) alerts.addAlert('Loading project…', 'info')
+      void head.load()
+    }),
+    appWindow.listen('SAVE_FILE', () => {
+      void runIfFocused(handleSaveFile)
+    }),
+    appWindow.listen('SAVE_FILE_AS', () => {
+      void runIfFocused(handleSaveFileAs)
+    }),
+    appWindow.listen('OPEN_FILE', () => {
+      void runIfFocused(async () => {
+        await invoke('open_file')
+      })
+    }),
+    appWindow.listen('START_EXPORT', () => {
+      void runIfFocused(handleStartExport)
+    }),
+    appWindow.listen('ALERT_CURRENT_WINDOW', (event) => {
+      const { message, type } = event.payload as {
+        message: string
+        type: AlertType
+      }
+      alerts.addAlert(message, type)
+    }),
+    appWindow.listen('ALERT_ALL_WINDOWS', (event) => {
+      const { message, type } = event.payload as {
+        message: string
+        type: AlertType
+      }
+      alerts.addAlert(message, type)
+    }),
+    appWindow.listen('UPDATE_PLAYHEAD', (event) => {
+      const time = event.payload as number
+      audio.setClock(time)
+    }),
+    appWindow.listen('MENU_ZOOM_IN', () => {
+      void runIfFocused(async () => {
+        audio.zoomIn('x')
+      })
+    }),
+    appWindow.listen('MENU_ZOOM_OUT', () => {
+      void runIfFocused(async () => {
+        audio.zoomOut('x')
+      })
+    }),
+    appWindow.listen('MENU_ZOOM_IN_VERTICAL', () => {
+      void runIfFocused(async () => {
+        audio.zoomIn('y')
+      })
+    }),
+    appWindow.listen('MENU_ZOOM_OUT_VERTICAL', () => {
+      void runIfFocused(async () => {
+        audio.zoomOut('y')
+      })
+    }),
+    appWindow.listen('MENU_PAN_LEFT', () => {
+      void runIfFocused(async () => {
+        audio.panViewLeft(0.2)
+      })
+    }),
+    appWindow.listen('MENU_PAN_RIGHT', () => {
+      void runIfFocused(async () => {
+        audio.panViewRight(0.2)
+      })
+    }),
+    appWindow.listen('MENU_FOLLOW_MODE', (event) => {
+      void runIfFocused(async () => {
+        const payload = event.payload as { enabled?: boolean }
+        audio.setFollowMode(!!payload.enabled)
+      })
+    }),
+    appWindow.listen('MENU_SHUFFLE_POINT_TOOL_MODE', (event) => {
+      void runIfFocused(async () => {
+        const payload = event.payload as { enabled?: boolean }
+        audio.setShufflePointToolMode(!!payload.enabled)
+      })
+    }),
+  ])
+
+  unlisteners.value.push(...listeners)
+}
+
+const runDeferredStartup = async () => {
+  startupMark('App.vue:deferred-startup-begin')
   registerShortcuts()
   const appWindow = Window.getCurrent()
   const runIfFocused = async (action: () => void | Promise<void>) => {
@@ -138,119 +225,8 @@ onMounted(async () => {
     await action()
   }
 
-  // listen to the `click` event and get a function to remove the event listener
-  // there's also a `once` function that subscribes to an event and automatically unsubscribes the listener on the first event
-  const fileLoaded = await appWindow.listen('FILE_LOADED', (event) => {
-    console.log('file loaded', event)
-    const project = event?.payload as ProjectSkeleton
-    if (project.location) alerts.addAlert('Loading project…', 'info')
-    void head.load()
-  })
-  unlisteners.value.push(fileLoaded)
-
-  const saveFile = await appWindow.listen('SAVE_FILE', () => {
-    void runIfFocused(handleSaveFile)
-  })
-  unlisteners.value.push(saveFile)
-
-  const saveFileAs = await appWindow.listen('SAVE_FILE_AS', () => {
-    void runIfFocused(handleSaveFileAs)
-  })
-  unlisteners.value.push(saveFileAs)
-
-  const openFile = await appWindow.listen('OPEN_FILE', () => {
-    void runIfFocused(async () => {
-      await invoke('open_file')
-    })
-  })
-  unlisteners.value.push(openFile)
-
-  const startExport = await appWindow.listen('START_EXPORT', () => {
-    void runIfFocused(handleStartExport)
-  })
-  unlisteners.value.push(startExport)
-
-  const alertCurrentWindow = await appWindow.listen('ALERT_CURRENT_WINDOW', (event) => {
-    const { message, type } = event.payload as {
-      message: string
-      type: AlertType
-    }
-    alerts.addAlert(message, type)
-  })
-  unlisteners.value.push(alertCurrentWindow)
-
-  const alertAllWindows = await appWindow.listen('ALERT_ALL_WINDOWS', (event) => {
-    const { message, type } = event.payload as {
-      message: string
-      type: AlertType
-    }
-    alerts.addAlert(message, type)
-  })
-  unlisteners.value.push(alertAllWindows)
-
-  const updatePlayhead = await appWindow.listen('UPDATE_PLAYHEAD', (event) => {
-    const time = event.payload as number
-    audio.setClock(time)
-  })
-  unlisteners.value.push(updatePlayhead)
-
-  const menuZoomIn = await appWindow.listen('MENU_ZOOM_IN', () => {
-    void runIfFocused(async () => {
-      audio.zoomIn('x')
-    })
-  })
-  unlisteners.value.push(menuZoomIn)
-
-  const menuZoomOut = await appWindow.listen('MENU_ZOOM_OUT', () => {
-    void runIfFocused(async () => {
-      audio.zoomOut('x')
-    })
-  })
-  unlisteners.value.push(menuZoomOut)
-
-  const menuZoomInVertical = await appWindow.listen('MENU_ZOOM_IN_VERTICAL', () => {
-    void runIfFocused(async () => {
-      audio.zoomIn('y')
-    })
-  })
-  unlisteners.value.push(menuZoomInVertical)
-
-  const menuZoomOutVertical = await appWindow.listen('MENU_ZOOM_OUT_VERTICAL', () => {
-    void runIfFocused(async () => {
-      audio.zoomOut('y')
-    })
-  })
-  unlisteners.value.push(menuZoomOutVertical)
-
-  const menuPanLeft = await appWindow.listen('MENU_PAN_LEFT', () => {
-    void runIfFocused(async () => {
-      audio.panViewLeft(0.2)
-    })
-  })
-  unlisteners.value.push(menuPanLeft)
-
-  const menuPanRight = await appWindow.listen('MENU_PAN_RIGHT', () => {
-    void runIfFocused(async () => {
-      audio.panViewRight(0.2)
-    })
-  })
-  unlisteners.value.push(menuPanRight)
-
-  const menuFollowMode = await appWindow.listen('MENU_FOLLOW_MODE', (event) => {
-    void runIfFocused(async () => {
-      const payload = event.payload as { enabled?: boolean }
-      audio.setFollowMode(!!payload.enabled)
-    })
-  })
-  unlisteners.value.push(menuFollowMode)
-
-  const menuShufflePointToolMode = await appWindow.listen('MENU_SHUFFLE_POINT_TOOL_MODE', (event) => {
-    void runIfFocused(async () => {
-      const payload = event.payload as { enabled?: boolean }
-      audio.setShufflePointToolMode(!!payload.enabled)
-    })
-  })
-  unlisteners.value.push(menuShufflePointToolMode)
+  await registerWindowListeners(appWindow, runIfFocused)
+  startupMark('App.vue:listeners-registered')
 
   trackStore.addEmptyTrackIfNone()
 
@@ -261,9 +237,19 @@ onMounted(async () => {
   startupMark('App.vue:before-track-sync')
   await trackStore.sync()
   startupMark('App.vue:after-track-sync')
+
   startupHydrating.value = false
+  startupMark('App.vue:startup-hydration-complete')
+
   requestAnimationFrame(() => {
     startupMark('App.vue:first-frame-after-mounted-work')
+  })
+}
+
+onMounted(async () => {
+  startupMark('App.vue:onMounted-start')
+  requestAnimationFrame(() => {
+    void runDeferredStartup()
   })
 })
 
