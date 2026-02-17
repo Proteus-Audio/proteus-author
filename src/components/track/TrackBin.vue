@@ -15,7 +15,7 @@
     "
   >
     <div v-if="!fresh" class="relative">
-      <BaseLoadingSpinner v-if="loading" :message="loadingMessage" class="loader" />
+      <BaseLoadingSpinner v-if="loading" :message="loadingMessage" class="loader" :inset="-4" />
 
       <div class="flex items-center gap-2">
         <InputAutoSizedText
@@ -71,7 +71,7 @@
     </div>
 
     <span v-if="fresh">
-      <BaseLoadingSpinner v-if="loading" class="loader" />
+      <BaseLoadingSpinner v-if="loading" class="loader" :inset="-4" />
       <p v-if="hovering">Drop the files here ...</p>
       <p v-else>
         Drag 'n' drop some files here, or click to select files
