@@ -18,7 +18,14 @@
 
     <div class="grid items-center whitespace-nowrap text-center font-semibold">{{ label }}</div>
 
-    <UModal v-model:open="editOpen" :ui="{ content: 'max-w-[calc(100%-4em)]' }">
+    <UModal
+      v-model:open="editOpen"
+      :ui="{
+        wrapper: 'z-[80]',
+        overlay: 'z-[80]',
+        content: 'z-[81] max-w-[calc(100%-4em)]',
+      }"
+    >
       <template #content>
         <div class="p-4" @click.stop>
           <EffectDialog :effectIndex="index" />
