@@ -108,9 +108,9 @@ pub async fn init_player(window: Window) {
     new_player.set_start_sink_chunks(1);
     new_player.set_start_buffer_ms(10.0);
     new_player.set_startup_fade_ms(5.0);
-    new_player.set_max_sink_chunks(15);
-    new_player.set_seek_fade_in_ms(100.0);
-    new_player.set_seek_fade_out_ms(100.0);
+    new_player.set_max_sink_chunks(2);
+    new_player.set_seek_fade_in_ms(50.0);
+    new_player.set_seek_fade_out_ms(30.0);
 
     with_player_mut(&window, &player_state, |player| {
         player.replace(new_player);
@@ -469,7 +469,7 @@ pub fn set_effects_chain(
     with_player_mut(&window, &player_state, |player| {
         if let Some(player) = player.as_mut() {
             println!("Setting Effects: {:?}", effects);
-            player.set_effects(effects);
+            player.set_effects_inline(effects);
         } else {
             // Empty chain with no player is expected on startup and does not require work.
             if effects.is_empty() {

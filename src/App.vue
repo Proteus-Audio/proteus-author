@@ -154,7 +154,14 @@ const registerWindowListeners = async (
       console.log('file loaded', event)
       const project = event?.payload as ProjectSkeleton
       if (project.location) alerts.addAlert('Loading project…', 'info')
-      void head.load()
+      void (async () => {
+        startupHydrating.value = true
+        try {
+          await head.load()
+        } finally {
+          startupHydrating.value = false
+        }
+      })()
     }),
     appWindow.listen('SAVE_FILE', () => {
       void runIfFocused(handleSaveFile)
