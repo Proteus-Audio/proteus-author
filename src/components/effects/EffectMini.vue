@@ -7,7 +7,11 @@
       class="effect-drag-handle absolute top-[0.65rem] right-[0.65rem] cursor-grab border-0 bg-transparent px-1 py-0.5 text-[0.8rem] leading-none tracking-[1px] text-white/75 active:cursor-grabbing"
       type="button"
       aria-label="Drag effect"
-      @click.stop
+      @click.stop="
+        () => {
+          console.log('Drag effect clicked')
+        }
+      "
     >
       |||
     </button>
@@ -40,7 +44,7 @@
 import { computed, defineAsyncComponent, ref } from 'vue'
 import type { EffectChainItem } from '../../assets/effects'
 import { useAudioStore } from '../../stores/audio'
-import { EffectSettings } from '../../typings/effects'
+import type { EffectSettings } from '../../typings/effects'
 import { AnalogIndicator } from '../analog'
 
 const EffectDialog = defineAsyncComponent(() => import('./EffectsDialog.vue'))

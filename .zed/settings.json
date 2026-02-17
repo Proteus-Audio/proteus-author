@@ -12,7 +12,7 @@
   },
   "languages": {
     "Vue.js": {
-      "format_on_save": "off",
+      "format_on_save": "on",
       "formatter": "prettier"
     },
     "Rust": {
