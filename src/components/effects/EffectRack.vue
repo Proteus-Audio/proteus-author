@@ -34,7 +34,7 @@
           @end="onDragEnd"
         >
           <template #item="{ element, index }">
-            <div class="w-max shrink-0 transition-transform duration-150 ease-out">
+            <div class="effect-rack-item w-max shrink-0 transition-transform duration-150 ease-out">
               <EffectMini class="effect" :item="element" :index="index" />
             </div>
           </template>
@@ -92,5 +92,9 @@ const onDragEnd = () => {
   opacity: 0.9;
   box-shadow: 0 12px 20px rgba(0, 0, 0, 0.35);
   @apply rounded-lg;
+}
+
+.effect-rack-item.effect-drag-active {
+  transition-property: none;
 }
 </style>
