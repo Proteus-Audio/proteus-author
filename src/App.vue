@@ -99,7 +99,7 @@ const unlisteners = ref<UnlistenFn[]>([])
 const startupHydrating = ref(true)
 
 watch(
-  [trackStore.tracks, audio.effects],
+  [() => trackStore.tracks, () => audio.effects],
   async () => {
     if (startupHydrating.value) return
     console.log(await head.logChanges())
