@@ -25,9 +25,9 @@
           :list="effects"
           item-key="id"
           handle=".effect-drag-handle"
-          ghost-class="opacity-40"
-          chosen-class="opacity-85 scale-[0.98]"
-          drag-class="opacity-90 shadow-[0_12px_20px_rgba(0,0,0,0.35)]"
+          ghost-class="effect-drag-ghost"
+          chosen-class="effect-drag-chosen"
+          drag-class="effect-drag-active"
           :force-fallback="true"
           :fallback-on-body="true"
           :animation="160"
@@ -75,3 +75,22 @@ const onDragEnd = () => {
   audio.scheduleSyncEffects()
 }
 </script>
+
+<style scoped>
+@reference "../../assets/index.css";
+
+.effect-drag-ghost {
+  opacity: 0.4;
+}
+
+.effect-drag-chosen {
+  opacity: 0.85;
+  transform: scale(0.98);
+}
+
+.effect-drag-active {
+  opacity: 0.9;
+  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.35);
+  @apply rounded-lg;
+}
+</style>

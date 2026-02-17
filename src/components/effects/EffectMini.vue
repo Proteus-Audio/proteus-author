@@ -1,17 +1,13 @@
 <template>
   <div
-    class="relative flex h-full min-w-max w-max cursor-grab flex-col items-center justify-center gap-2 overflow-hidden rounded-lg bg-zinc-700 px-8 py-3 text-white transition-[height,margin] duration-300 hover:opacity-85"
+    class="relative flex h-full min-w-max w-max cursor-grab flex-col items-center justify-center gap-2 overflow-hidden rounded-lg bg-zinc-700 px-8 pr-10 py-3 text-white transition-[height,margin] duration-300 hover:opacity-85"
     @click.stop="toggleEdit"
   >
     <button
       class="effect-drag-handle absolute top-[0.65rem] right-[0.65rem] cursor-grab border-0 bg-transparent px-1 py-0.5 text-[0.8rem] leading-none tracking-[1px] text-white/75 active:cursor-grabbing"
       type="button"
       aria-label="Drag effect"
-      @click.stop="
-        () => {
-          console.log('Drag effect clicked')
-        }
-      "
+      @click.stop
     >
       |||
     </button>
