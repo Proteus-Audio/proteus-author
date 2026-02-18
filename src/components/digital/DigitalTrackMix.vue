@@ -10,6 +10,7 @@
         class="relative size-[34px] rounded-full border-2 border-zinc-600 bg-zinc-100"
         aria-label="Track level"
         @pointerdown="onLevelPointerDown"
+        @wheel="onLevelWheel"
       >
         <span class="absolute inset-[4px] rounded-full border border-zinc-500 bg-zinc-200"></span>
         <span
@@ -32,6 +33,7 @@
         class="relative size-[34px] rounded-full border-2 border-zinc-600 bg-zinc-100"
         aria-label="Track pan"
         @pointerdown="onPanPointerDown"
+        @wheel="onPanWheel"
       >
         <span class="absolute inset-[4px] rounded-full border border-zinc-500 bg-zinc-200"></span>
         <span
@@ -54,9 +56,12 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 interface Props {
   level: number
   pan: number
+  dragAxis?: 'horizontal' | 'vertical'
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  dragAxis: 'horizontal',
+})
 
 const emit = defineEmits<{
   (event: 'update:level', value: number): void
@@ -72,10 +77,11 @@ const levelKnobRef = ref<HTMLElement | null>(null)
 const panKnobRef = ref<HTMLElement | null>(null)
 const levelDb = ref(0)
 const panValue = ref(0)
+const lastLevelPointer = ref<{ x: number; y: number } | null>(null)
+const lastPanPointer = ref<{ x: number; y: number } | null>(null)
 
 const clampDb = (db: number) => Math.min(maxDb, Math.max(minDb, db))
 const clampPan = (pan: number) => Math.min(1, Math.max(-1, pan))
-const clampAngle = (angle: number) => Math.min(knobMaxAngle, Math.max(knobMinAngle, angle))
 
 const dbToLinear = (db: number) => Math.pow(10, db / 20)
 const linearToDb = (linear: number) => {
@@ -119,34 +125,45 @@ const panReadout = computed(() => {
   return `${side}${Math.round(Math.abs(panValue.value) * 100)}`
 })
 
-const angleFromPointer = (element: HTMLElement, clientX: number, clientY: number) => {
-  const rect = element.getBoundingClientRect()
-  const centerX = rect.left + rect.width / 2
-  const centerY = rect.top + rect.height / 2
-  const degrees = (Math.atan2(clientY - centerY, clientX - centerX) * 180) / Math.PI
-  return clampAngle(degrees)
+const levelStepDb = 0.5
+const panStep = 0.02
+
+const emitLevelDb = (nextDb: number) => {
+  const clamped = clampDb(nextDb)
+  if (Math.abs(clamped - levelDb.value) < 0.01) return
+  levelDb.value = clamped
+  emit('update:level', dbToLinear(clamped))
+}
+
+const emitPanValue = (nextPan: number) => {
+  const clamped = clampPan(nextPan)
+  if (Math.abs(clamped - panValue.value) < 0.001) return
+  panValue.value = clamped
+  emit('update:pan', clamped)
 }
 
 const emitLevelFromPointer = (clientX: number, clientY: number) => {
-  const knob = levelKnobRef.value
-  if (!knob) return
-  const angle = angleFromPointer(knob, clientX, clientY)
-  const ratio = (angle - knobMinAngle) / (knobMaxAngle - knobMinAngle)
-  const nextDb = clampDb(minDb + ratio * (maxDb - minDb))
-  if (Math.abs(nextDb - levelDb.value) < 0.05) return
-  levelDb.value = nextDb
-  emit('update:level', dbToLinear(nextDb))
+  const previous = lastLevelPointer.value
+  if (!previous) {
+    lastLevelPointer.value = { x: clientX, y: clientY }
+    return
+  }
+  const delta = props.dragAxis === 'vertical' ? previous.y - clientY : clientX - previous.x
+  lastLevelPointer.value = { x: clientX, y: clientY }
+  const nextDb = levelDb.value + delta * 0.12
+  emitLevelDb(nextDb)
 }
 
 const emitPanFromPointer = (clientX: number, clientY: number) => {
-  const knob = panKnobRef.value
-  if (!knob) return
-  const angle = angleFromPointer(knob, clientX, clientY)
-  const ratio = (angle - knobMinAngle) / (knobMaxAngle - knobMinAngle)
-  const nextPan = clampPan(ratio * 2 - 1)
-  if (Math.abs(nextPan - panValue.value) < 0.01) return
-  panValue.value = nextPan
-  emit('update:pan', nextPan)
+  const previous = lastPanPointer.value
+  if (!previous) {
+    lastPanPointer.value = { x: clientX, y: clientY }
+    return
+  }
+  const delta = props.dragAxis === 'vertical' ? previous.y - clientY : clientX - previous.x
+  lastPanPointer.value = { x: clientX, y: clientY }
+  const nextPan = panValue.value + delta * 0.004
+  emitPanValue(nextPan)
 }
 
 const onLevelMove = (event: PointerEvent) => {
@@ -158,17 +175,20 @@ const onPanMove = (event: PointerEvent) => {
 }
 
 const clearLevelDrag = () => {
+  lastLevelPointer.value = null
   window.removeEventListener('pointermove', onLevelMove)
   window.removeEventListener('pointerup', clearLevelDrag)
 }
 
 const clearPanDrag = () => {
+  lastPanPointer.value = null
   window.removeEventListener('pointermove', onPanMove)
   window.removeEventListener('pointerup', clearPanDrag)
 }
 
 const onLevelPointerDown = (event: PointerEvent) => {
   event.preventDefault()
+  lastLevelPointer.value = { x: event.clientX, y: event.clientY }
   emitLevelFromPointer(event.clientX, event.clientY)
   window.addEventListener('pointermove', onLevelMove)
   window.addEventListener('pointerup', clearLevelDrag)
@@ -176,9 +196,22 @@ const onLevelPointerDown = (event: PointerEvent) => {
 
 const onPanPointerDown = (event: PointerEvent) => {
   event.preventDefault()
+  lastPanPointer.value = { x: event.clientX, y: event.clientY }
   emitPanFromPointer(event.clientX, event.clientY)
   window.addEventListener('pointermove', onPanMove)
   window.addEventListener('pointerup', clearPanDrag)
+}
+
+const onLevelWheel = (event: WheelEvent) => {
+  event.preventDefault()
+  const direction = event.deltaY < 0 ? 1 : -1
+  emitLevelDb(levelDb.value + direction * levelStepDb)
+}
+
+const onPanWheel = (event: WheelEvent) => {
+  event.preventDefault()
+  const direction = event.deltaY < 0 ? 1 : -1
+  emitPanValue(panValue.value + direction * panStep)
 }
 
 onBeforeUnmount(() => {
