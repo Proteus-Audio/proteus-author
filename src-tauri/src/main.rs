@@ -95,6 +95,7 @@ fn main() {
             add_shuffle_point,
             remove_shuffle_point,
             set_volume,
+            set_track_mix,
             set_effects_chain,
             startup_trace,
             set_follow_mode_menu,

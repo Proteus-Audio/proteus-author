@@ -30,6 +30,9 @@ use crate::project::*;
 use crate::startup::{log_rust, StartupTraceState};
 
 fn build_paths_tracks(project: &ProjectSkeleton) -> Vec<PathsTrack> {
+    let clamp_level = |value: f32| value.clamp(0.0, 2.0);
+    let clamp_pan = |value: f32| value.clamp(-1.0, 1.0);
+
     project
         .tracks
         .iter()
@@ -68,8 +71,8 @@ fn build_paths_tracks(project: &ProjectSkeleton) -> Vec<PathsTrack> {
 
             Some(PathsTrack {
                 file_paths,
-                level: 1.0,
-                pan: 0.0,
+                level: clamp_level(track.level),
+                pan: clamp_pan(track.pan),
                 selections_count: 1,
                 shuffle_points: track.shuffle_points.clone(),
             })
@@ -439,6 +442,43 @@ pub fn set_volume(volume: f32, window: Window) {
     with_player_mut(&window, &player_state, |player| {
         if let Some(player) = player.as_mut() {
             player.set_volume(volume);
+        }
+    });
+}
+
+#[tauri::command]
+pub async fn set_track_mix(track_id: u32, level: f32, pan: f32, window: Window) {
+    let clamped_level = level.clamp(0.0, 2.0);
+    let clamped_pan = pan.clamp(-1.0, 1.0);
+    let project_state: State<WindowProjectState> = window.state();
+
+    let mut slot_index: Option<usize> = None;
+    with_project_mut(&window, &project_state, |project| {
+        let mut playback_index = 0usize;
+        for track in project.tracks.iter_mut() {
+            let is_playback_track = !track.file_ids.is_empty();
+            if track.id == track_id {
+                track.level = clamped_level;
+                track.pan = clamped_pan;
+                if is_playback_track {
+                    slot_index = Some(playback_index);
+                }
+                break;
+            }
+            if is_playback_track {
+                playback_index += 1;
+            }
+        }
+    });
+
+    let Some(slot_index) = slot_index else {
+        return;
+    };
+
+    let player_state: State<WindowPlayerState> = window.state();
+    with_player_mut(&window, &player_state, |player| {
+        if let Some(player) = player.as_mut() {
+            player.set_track_mix_inline(slot_index, clamped_level, clamped_pan);
         }
     });
 }

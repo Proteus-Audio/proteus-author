@@ -171,6 +171,8 @@ pub fn push_file_id(
                     selection: Some(file_id.clone()),
                     file_ids: vec![file_id],
                     shuffle_points: Vec::new(),
+                    level: default_track_level(),
+                    pan: default_track_pan(),
                 };
 
                 project.tracks.push(track);
@@ -907,8 +909,8 @@ pub fn export_prot(window: Window, project_state: State<WindowProjectState>) {
 
         for track in project.tracks.iter() {
             let mut settings_track = SettingsTrack {
-                level: 1.0,
-                pan: 0.0,
+                level: track.level,
+                pan: track.pan,
                 ids: Vec::new(),
                 name: track.name.clone(),
                 safe_name: track.name.clone(),

@@ -33,15 +33,18 @@
         />
       </div>
 
-      <div class="relative inline-block h-[150px] w-full">
-        <TrackWaveform
-          v-if="selectedFile"
-          :key="selectedFile.id"
-          class="absolute top-0 block w-full"
-          :track="selectedFile"
-          :selected="selectedFile.id === track.selection"
-          >{{ selectedFile.name }}</TrackWaveform
-        >
+      <div class="grid h-[150px] w-full grid-cols-[minmax(0,1fr)_84px] gap-2">
+        <div class="relative min-w-0 h-full">
+          <TrackWaveform
+            v-if="selectedFile"
+            :key="selectedFile.id"
+            class="absolute top-0 block w-full"
+            :track="selectedFile"
+            :selected="selectedFile.id === track.selection"
+            >{{ selectedFile.name }}</TrackWaveform
+          >
+        </div>
+        <DigitalTrackMix v-model:level="trackLevel" v-model:pan="trackPan" />
       </div>
 
       <UDrawer
@@ -93,6 +96,7 @@ import { useAlertStore } from '../../stores/alerts'
 import { useTrackStore } from '../../stores/track'
 import type { DropFileSkeleton } from '../../typings/tracks'
 import BaseLoadingSpinner from '../base/BaseLoadingSpinner.vue'
+import { DigitalTrackMix } from '../digital'
 import InputAutoSizedText from '../input/InputAutoSizedText.vue'
 
 const TrackWaveform = defineAsyncComponent(() => import('./TrackWaveform.vue'))
@@ -133,6 +137,20 @@ const trackName = computed({
   },
   set: (name: string) => {
     return trackStore.setTrackName(props.trackId, name)
+  },
+})
+
+const trackLevel = computed({
+  get: () => track.value.level ?? 1,
+  set: (value: number) => {
+    trackStore.setTrackLevel(props.trackId, value)
+  },
+})
+
+const trackPan = computed({
+  get: () => track.value.pan ?? 0,
+  set: (value: number) => {
+    trackStore.setTrackPan(props.trackId, value)
   },
 })
 
@@ -221,6 +239,14 @@ const checkBinHover = (position: { x: number; y: number }) => {
 }
 
 onMounted(async () => {
+  console.log('secure?', window.isSecureContext)
+  console.log('webgpu?', !!(navigator as any)?.gpu)
+
+  if (!(navigator as any)?.gpu) {
+    console.log('fallback to WebGL2 or 2D canvas')
+    // fallback: WebGL2 or 2D canvas
+  }
+
   const appWindow = Window.getCurrent()
   binBounds.value = calcBinBounds()
 

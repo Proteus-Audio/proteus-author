@@ -39,6 +39,8 @@ export interface TrackSkeleton {
   selection?: string
   file_ids: string[]
   shuffle_points?: string[]
+  level?: number
+  pan?: number
 }
 
 export interface ProjectSkeleton {

@@ -10,6 +10,7 @@ import { useHeadStore } from './head'
 export const useTrackStore = defineStore('track', () => {
   const audio = useAudioStore()
   const head = useHeadStore()
+  const mixSyncTimers = new Map<number, ReturnType<typeof setTimeout>>()
 
   /////////////
   //  STORE  //
@@ -68,7 +69,10 @@ export const useTrackStore = defineStore('track', () => {
   }
 
   function getOrCreateTrackFromId(trackId: number): Track {
-    return getTrackFromId(trackId) || addTrack({ id: nextTrackId.value, name: '', file_ids: [] })
+    return (
+      getTrackFromId(trackId) ||
+      addTrack({ id: nextTrackId.value, name: '', file_ids: [], level: 1, pan: 0 })
+    )
   }
 
   function setTrackName(trackId: number, name: string) {
@@ -95,6 +99,9 @@ export const useTrackStore = defineStore('track', () => {
     if (tracks.value.some((t) => t.id === track.id)) {
       track.id = nextTrackId.value
     }
+    if (typeof track.level !== 'number') track.level = 1
+    if (typeof track.pan !== 'number') track.pan = 0
+    if (!track.shuffle_points) track.shuffle_points = []
 
     tracks.value.push(track)
 
@@ -105,8 +112,62 @@ export const useTrackStore = defineStore('track', () => {
 
   const addEmptyTrackIfNone = () => {
     if (!emptyTrackExists.value) {
-      addTrack({ id: nextTrackId.value, name: '', file_ids: [] })
+      addTrack({ id: nextTrackId.value, name: '', file_ids: [], level: 1, pan: 0 })
     }
+  }
+
+  const clampLevel = (level: number) => {
+    if (!Number.isFinite(level)) return 1
+    return Math.min(2, Math.max(0, level))
+  }
+
+  const clampPan = (pan: number) => {
+    if (!Number.isFinite(pan)) return 0
+    return Math.min(1, Math.max(-1, pan))
+  }
+
+  const scheduleTrackMixSync = (trackId: number) => {
+    const existing = mixSyncTimers.get(trackId)
+    if (existing) {
+      clearTimeout(existing)
+    }
+
+    const timer = setTimeout(() => {
+      const track = getTrackFromId(trackId)
+      if (!track) return
+      void invoke('set_track_mix', {
+        trackId,
+        level: track.level ?? 1,
+        pan: track.pan ?? 0,
+      })
+      mixSyncTimers.delete(trackId)
+    }, 120)
+
+    mixSyncTimers.set(trackId, timer)
+  }
+
+  const setTrackLevel = (trackId: number, level: number) => {
+    const track = getTrackFromId(trackId)
+    if (!track) return 1
+    const next = clampLevel(level)
+    const current = track.level ?? 1
+    if (Math.abs(next - current) < 0.0001) return current
+    track.level = next
+    void head.logChanges()
+    scheduleTrackMixSync(trackId)
+    return next
+  }
+
+  const setTrackPan = (trackId: number, pan: number) => {
+    const track = getTrackFromId(trackId)
+    if (!track) return 0
+    const next = clampPan(pan)
+    const current = track.pan ?? 0
+    if (Math.abs(next - current) < 0.0001) return current
+    track.pan = next
+    void head.logChanges()
+    scheduleTrackMixSync(trackId)
+    return next
   }
 
   const shuffle = async () => {
@@ -205,7 +266,12 @@ export const useTrackStore = defineStore('track', () => {
     console.log(projectState)
 
     files.value = projectState.files
-    tracks.value = projectState.tracks
+    tracks.value = projectState.tracks.map((track) => ({
+      ...track,
+      level: track.level ?? 1,
+      pan: track.pan ?? 0,
+      shuffle_points: track.shuffle_points || [],
+    }))
 
     addEmptyTrackIfNone()
     await refreshPossibleCombinations()
@@ -236,6 +302,8 @@ export const useTrackStore = defineStore('track', () => {
     shuffle,
     shuffleTrackBin,
     setTrackSelection,
+    setTrackLevel,
+    setTrackPan,
     addShufflePoint,
     removeShufflePoint,
     removeFileFromTrack,

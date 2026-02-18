@@ -485,6 +485,13 @@ watch(
 )
 
 onMounted(() => {
+  console.log('secure?', window.isSecureContext)
+  console.log('webgpu?', !!(navigator as any)?.gpu)
+
+  if (!(navigator as any)?.gpu) {
+    console.log('fallback to WebGL2 or 2D canvas')
+    // fallback: WebGL2 or 2D canvas
+  }
   queueWaveformUpdate(true)
   window.addEventListener('resize', onResize)
 })
