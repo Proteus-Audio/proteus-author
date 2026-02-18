@@ -11,6 +11,7 @@ export const useTrackStore = defineStore('track', () => {
   const audio = useAudioStore()
   const head = useHeadStore()
   const mixSyncTimers = new Map<number, ReturnType<typeof setTimeout>>()
+  const maxTrackLevel = 10 ** (10 / 20)
 
   /////////////
   //  STORE  //
@@ -118,7 +119,7 @@ export const useTrackStore = defineStore('track', () => {
 
   const clampLevel = (level: number) => {
     if (!Number.isFinite(level)) return 1
-    return Math.min(2, Math.max(0, level))
+    return Math.min(maxTrackLevel, Math.max(0, level))
   }
 
   const clampPan = (pan: number) => {

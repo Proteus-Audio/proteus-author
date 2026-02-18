@@ -6,6 +6,7 @@
     :aria-label="ariaLabel"
     @pointerdown="onPointerDown"
     @wheel="onWheel"
+    @dblclick="onDoubleClick"
   >
     <span
       class="absolute rounded-full border border-zinc-500 bg-zinc-200"
@@ -26,6 +27,7 @@ interface Props {
   modelValue: number
   min: number
   max: number
+  resetValue?: number
   dragAxis?: 'horizontal' | 'vertical'
   size?: 'small' | 'medium' | 'large' | number
   dragStep?: number
@@ -139,6 +141,12 @@ const onWheel = (event: WheelEvent) => {
   const direction = event.deltaY < 0 ? 1 : -1
   const step = typeof props.wheelStep === 'number' ? props.wheelStep : defaultWheelStep.value
   emitClamped(localValue.value + direction * step)
+}
+
+const onDoubleClick = (event: MouseEvent) => {
+  event.preventDefault()
+  if (typeof props.resetValue !== 'number') return
+  emitClamped(props.resetValue)
 }
 
 onBeforeUnmount(() => {

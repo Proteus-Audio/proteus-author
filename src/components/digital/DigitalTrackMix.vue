@@ -1,8 +1,8 @@
 <template>
   <div
-    class="grid h-full w-[84px] grid-rows-[1fr_1fr] gap-2 border-2 border-zinc-500 bg-zinc-200 p-1.5"
+    class="grid h-full w-[84px] grid-rows-[1fr_1fr] gap-2 border-2 border-zinc-400/50 bg-zinc-100/50 p-1.5"
   >
-    <div class="grid grid-rows-[12px_1fr_14px] justify-items-center">
+    <div class="flex flex-col items-center">
       <div class="text-[10px] tracking-[0.04em] text-zinc-600">LVL</div>
       <DigitalPot
         v-model="levelDb"
@@ -11,13 +11,14 @@
         :drag-axis="dragAxis"
         :drag-step="0.12"
         :wheel-step="0.5"
+        :reset-value="0"
         size="medium"
         aria-label="Track level"
       />
       <div class="text-[10px] tracking-[0.04em] text-zinc-600">{{ levelReadout }}</div>
     </div>
 
-    <div class="grid grid-rows-[12px_1fr_14px] justify-items-center">
+    <div class="flex flex-col items-center">
       <div class="text-[10px] tracking-[0.04em] text-zinc-600">PAN</div>
       <DigitalPot
         v-model="panModel"
@@ -26,6 +27,7 @@
         :drag-axis="dragAxis"
         :drag-step="0.004"
         :wheel-step="0.02"
+        :reset-value="0"
         size="medium"
         aria-label="Track pan"
       />

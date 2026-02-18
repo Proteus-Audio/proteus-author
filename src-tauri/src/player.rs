@@ -29,8 +29,11 @@ use tauri::Window;
 use crate::project::*;
 use crate::startup::{log_rust, StartupTraceState};
 
+const TRACK_LEVEL_MAX: f32 = 10f32;
+
 fn build_paths_tracks(project: &ProjectSkeleton) -> Vec<PathsTrack> {
-    let clamp_level = |value: f32| value.clamp(0.0, 2.0);
+    let max_track_level = TRACK_LEVEL_MAX.powf(10.0 / 20.0);
+    let clamp_level = |value: f32| value.clamp(0.0, max_track_level);
     let clamp_pan = |value: f32| value.clamp(-1.0, 1.0);
 
     project
@@ -448,7 +451,8 @@ pub fn set_volume(volume: f32, window: Window) {
 
 #[tauri::command]
 pub async fn set_track_mix(track_id: u32, level: f32, pan: f32, window: Window) {
-    let clamped_level = level.clamp(0.0, 2.0);
+    let max_track_level = TRACK_LEVEL_MAX.powf(10.0 / 20.0);
+    let clamped_level = level.clamp(0.0, max_track_level);
     let clamped_pan = pan.clamp(-1.0, 1.0);
     let project_state: State<WindowProjectState> = window.state();
 
