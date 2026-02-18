@@ -239,14 +239,6 @@ const checkBinHover = (position: { x: number; y: number }) => {
 }
 
 onMounted(async () => {
-  console.log('secure?', window.isSecureContext)
-  console.log('webgpu?', !!(navigator as any)?.gpu)
-
-  if (!(navigator as any)?.gpu) {
-    console.log('fallback to WebGL2 or 2D canvas')
-    // fallback: WebGL2 or 2D canvas
-  }
-
   const appWindow = Window.getCurrent()
   binBounds.value = calcBinBounds()
 
