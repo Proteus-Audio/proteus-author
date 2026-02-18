@@ -15,7 +15,7 @@
     "
   >
     <div v-if="!fresh" class="relative">
-      <BaseLoadingSpinner v-if="loading" :message="loadingMessage" class="loader" />
+      <BaseLoadingSpinner v-if="loading" :message="loadingMessage" class="loader" :inset="-4" />
 
       <div class="flex items-center gap-2">
         <InputAutoSizedText
@@ -33,15 +33,18 @@
         />
       </div>
 
-      <div class="relative inline-block h-[150px] w-full">
-        <TrackWaveform
-          v-if="selectedFile"
-          :key="selectedFile.id"
-          class="absolute top-0 block w-full"
-          :track="selectedFile"
-          :selected="selectedFile.id === track.selection"
-          >{{ selectedFile.name }}</TrackWaveform
-        >
+      <div class="grid h-[150px] w-full grid-cols-[minmax(0,1fr)_84px] gap-2">
+        <div class="relative min-w-0 h-full">
+          <TrackWaveform
+            v-if="selectedFile"
+            :key="selectedFile.id"
+            class="absolute top-0 block w-full"
+            :track="selectedFile"
+            :selected="selectedFile.id === track.selection"
+            >{{ selectedFile.name }}</TrackWaveform
+          >
+        </div>
+        <DigitalTrackMix v-model:level="trackLevel" v-model:pan="trackPan" />
       </div>
 
       <UDrawer
@@ -71,7 +74,7 @@
     </div>
 
     <span v-if="fresh">
-      <BaseLoadingSpinner v-if="loading" class="loader" />
+      <BaseLoadingSpinner v-if="loading" class="loader" :inset="-4" />
       <p v-if="hovering">Drop the files here ...</p>
       <p v-else>
         Drag 'n' drop some files here, or click to select files
@@ -93,6 +96,7 @@ import { useAlertStore } from '../../stores/alerts'
 import { useTrackStore } from '../../stores/track'
 import type { DropFileSkeleton } from '../../typings/tracks'
 import BaseLoadingSpinner from '../base/BaseLoadingSpinner.vue'
+import { DigitalTrackMix } from '../digital'
 import InputAutoSizedText from '../input/InputAutoSizedText.vue'
 
 const TrackWaveform = defineAsyncComponent(() => import('./TrackWaveform.vue'))
@@ -133,6 +137,20 @@ const trackName = computed({
   },
   set: (name: string) => {
     return trackStore.setTrackName(props.trackId, name)
+  },
+})
+
+const trackLevel = computed({
+  get: () => track.value.level ?? 1,
+  set: (value: number) => {
+    trackStore.setTrackLevel(props.trackId, value)
+  },
+})
+
+const trackPan = computed({
+  get: () => track.value.pan ?? 0,
+  set: (value: number) => {
+    trackStore.setTrackPan(props.trackId, value)
   },
 })
 

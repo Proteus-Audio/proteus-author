@@ -13,9 +13,9 @@
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use proteus_lib::container::play_settings::EffectSettings;
 use proteus_lib::container::prot::PathsTrack;
 use proteus_lib::container::prot::Prot;
-use proteus_lib::container::play_settings::EffectSettings;
 use proteus_lib::diagnostics::reporter::Report;
 use proteus_lib::playback::player::Player;
 use serde::Deserialize;
@@ -29,7 +29,13 @@ use tauri::Window;
 use crate::project::*;
 use crate::startup::{log_rust, StartupTraceState};
 
+const TRACK_LEVEL_MAX: f32 = 10f32;
+
 fn build_paths_tracks(project: &ProjectSkeleton) -> Vec<PathsTrack> {
+    let max_track_level = TRACK_LEVEL_MAX.powf(10.0 / 20.0);
+    let clamp_level = |value: f32| value.clamp(0.0, max_track_level);
+    let clamp_pan = |value: f32| value.clamp(-1.0, 1.0);
+
     project
         .tracks
         .iter()
@@ -68,8 +74,8 @@ fn build_paths_tracks(project: &ProjectSkeleton) -> Vec<PathsTrack> {
 
             Some(PathsTrack {
                 file_paths,
-                level: 1.0,
-                pan: 0.0,
+                level: clamp_level(track.level),
+                pan: clamp_pan(track.pan),
                 selections_count: 1,
                 shuffle_points: track.shuffle_points.clone(),
             })
@@ -108,9 +114,9 @@ pub async fn init_player(window: Window) {
     new_player.set_start_sink_chunks(1);
     new_player.set_start_buffer_ms(10.0);
     new_player.set_startup_fade_ms(5.0);
-    new_player.set_max_sink_chunks(15);
-    new_player.set_seek_fade_in_ms(100.0);
-    new_player.set_seek_fade_out_ms(100.0);
+    new_player.set_max_sink_chunks(2);
+    new_player.set_seek_fade_in_ms(50.0);
+    new_player.set_seek_fade_out_ms(30.0);
 
     with_player_mut(&window, &player_state, |player| {
         player.replace(new_player);
@@ -134,7 +140,8 @@ pub fn get_possible_combinations(window: Window) -> Option<String> {
     }
 
     let prot = Prot::new_from_file_paths(tracks_for_player);
-    prot.count_possible_combinations().map(|count| count.to_string())
+    prot.count_possible_combinations()
+        .map(|count| count.to_string())
 }
 
 #[tauri::command]
@@ -299,7 +306,10 @@ pub async fn play(window: Window) {
     let project_state: State<WindowProjectState> = window.state();
     let effects = read_project(&window, &project_state).effects;
     with_player_mut(&window, &player_state, |player| {
-        println!("playing ({})", if player.is_none() { "nope" } else { "yep" });
+        println!(
+            "playing ({})",
+            if player.is_none() { "nope" } else { "yep" }
+        );
         if let Some(player) = player.as_mut() {
             println!("Setting Effects: {:?}", effects);
             player.set_effects(effects);
@@ -362,7 +372,10 @@ pub async fn shuffle(window: Window) {
 pub async fn get_position(window: Window) -> f64 {
     let player_state: State<WindowPlayerState> = window.state();
     with_player(&window, &player_state, |player| {
-        player.as_ref().map(|player| player.get_time()).unwrap_or(0.0)
+        player
+            .as_ref()
+            .map(|player| player.get_time())
+            .unwrap_or(0.0)
     })
 }
 
@@ -437,10 +450,51 @@ pub fn set_volume(volume: f32, window: Window) {
 }
 
 #[tauri::command]
+pub async fn set_track_mix(track_id: u32, level: f32, pan: f32, window: Window) {
+    let max_track_level = TRACK_LEVEL_MAX.powf(10.0 / 20.0);
+    let clamped_level = level.clamp(0.0, max_track_level);
+    let clamped_pan = pan.clamp(-1.0, 1.0);
+    let project_state: State<WindowProjectState> = window.state();
+
+    let mut slot_index: Option<usize> = None;
+    with_project_mut(&window, &project_state, |project| {
+        let mut playback_index = 0usize;
+        for track in project.tracks.iter_mut() {
+            let is_playback_track = !track.file_ids.is_empty();
+            if track.id == track_id {
+                track.level = clamped_level;
+                track.pan = clamped_pan;
+                if is_playback_track {
+                    slot_index = Some(playback_index);
+                }
+                break;
+            }
+            if is_playback_track {
+                playback_index += 1;
+            }
+        }
+    });
+
+    let Some(slot_index) = slot_index else {
+        return;
+    };
+
+    let player_state: State<WindowPlayerState> = window.state();
+    with_player_mut(&window, &player_state, |player| {
+        if let Some(player) = player.as_mut() {
+            player.set_track_mix_inline(slot_index, clamped_level, clamped_pan);
+        }
+    });
+}
+
+#[tauri::command]
 pub fn get_volume(window: Window) -> f32 {
     let player_state: State<WindowPlayerState> = window.state();
     with_player(&window, &player_state, |player| {
-        player.as_ref().map(|player| player.get_volume()).unwrap_or(1.0)
+        player
+            .as_ref()
+            .map(|player| player.get_volume())
+            .unwrap_or(1.0)
     })
 }
 
@@ -459,7 +513,7 @@ pub fn set_effects_chain(
     with_player_mut(&window, &player_state, |player| {
         if let Some(player) = player.as_mut() {
             println!("Setting Effects: {:?}", effects);
-            player.set_effects(effects);
+            player.set_effects_inline(effects);
         } else {
             // Empty chain with no player is expected on startup and does not require work.
             if effects.is_empty() {

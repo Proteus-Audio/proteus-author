@@ -7,7 +7,11 @@ pub struct AlertPayload {
     pub r#type: String,
 }
 
-pub fn emit_alert_current_window(window: &Window, message: impl Into<String>, alert_type: impl Into<String>) {
+pub fn emit_alert_current_window(
+    window: &Window,
+    message: impl Into<String>,
+    alert_type: impl Into<String>,
+) {
     let payload = AlertPayload {
         message: message.into(),
         r#type: alert_type.into(),
@@ -29,7 +33,11 @@ pub fn emit_alert_all_windows<R: Runtime>(
 
 #[tauri::command]
 pub fn alert_current_window(window: Window, message: String, r#type: Option<String>) {
-    emit_alert_current_window(&window, message, r#type.unwrap_or_else(|| "info".to_string()));
+    emit_alert_current_window(
+        &window,
+        message,
+        r#type.unwrap_or_else(|| "info".to_string()),
+    );
 }
 
 #[tauri::command]

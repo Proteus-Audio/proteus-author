@@ -2883,7 +2883,7 @@ dependencies = [
 
 [[package]]
 name = "proteus-author-tauri"
-version = "0.10.6"
+version = "0.10.7"
 dependencies = [
  "dotenv",
  "log",
@@ -2904,9 +2904,9 @@ dependencies = [
 
 [[package]]
 name = "proteus-lib"
-version = "0.5.10"
+version = "0.5.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c0cea3f191c785bda22e2b31dea6a57e99acd8de8b66ab46bcfe72f0299a948"
+checksum = "3fb8d6e517f64bdc204db9390916599c1461e8787a0c624cb6a064ea8763d3e4"
 dependencies = [
  "dasp_ring_buffer",
  "log",

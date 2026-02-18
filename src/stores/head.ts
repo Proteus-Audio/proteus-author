@@ -23,14 +23,12 @@ export const useHeadStore = defineStore('head', () => {
     get: () => head.value.name,
     set: (name: string) => {
       head.value.name = name
-      void invoke('update_project_name', { name }) // Communicate change to backend
     },
   })
   const path = computed({
     get: () => head.value.path,
     set: (location: string | undefined) => {
       head.value.path = location
-      void invoke('update_project_path', { location }) // Communicate change to backend
     },
   })
 
@@ -41,16 +39,13 @@ export const useHeadStore = defineStore('head', () => {
   const setFileLocation = (location: string) => {
     head.value.name = (location.match(/[^/\\]*\.\w+$/) || ['.jpg'])[0].replace(/\.\w+$/, '')
     head.value.path = location
-    void invoke('update_project_location', { location }) // Communicate change to backend
   }
 
   const setName = (name: string) => {
     head.value.name = name
-    void invoke('update_project_name', { name }) // Communicate change to backend
   }
   const setPath = (location: string) => {
     head.value.path = location
-    void invoke('update_project_path', { location }) // Communicate change to backend
   }
 
   const load = async () => {
@@ -75,6 +70,8 @@ export const useHeadStore = defineStore('head', () => {
       selection: t.selection || undefined,
       file_ids: t.file_ids,
       shuffle_points: t.shuffle_points || [],
+      level: t.level ?? 1,
+      pan: t.pan ?? 0,
     })) as TrackSkeleton[]
 
     const project = {

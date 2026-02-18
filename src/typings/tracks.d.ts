@@ -4,6 +4,8 @@ interface Track {
   selection?: string
   file_ids: string[]
   shuffle_points?: string[]
+  level?: number
+  pan?: number
   // files: TrackFile[]
 }
 

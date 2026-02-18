@@ -35,10 +35,7 @@ pub fn log_rust(state: &StartupTraceState, source: &str, stage: &str) {
 
     println!(
         "[startup][rust][{}] +{:.1}ms{} {}",
-        source,
-        now_ms,
-        delta_part,
-        stage
+        source, now_ms, delta_part, stage
     );
 }
 

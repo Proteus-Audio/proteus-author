@@ -1,6 +1,6 @@
 [package]
 name = "proteus-author-tauri"
-version = "0.10.6"
+version = "0.10.7"
 description = "The Official Proteus Audio Authoring Tool"
 authors = ["Adam Thomas Howard"]
 license = ""
@@ -22,7 +22,7 @@ once_cell = "1.18.0"
 # proteus_audio = "0.2.6"
 # proteus_audio = { path = "/Users/innocentsmith/Dev/rust/proteus-cli" }
 # proteus-lib = { path = "../../../rust/proteus/proteus-lib", version = "0.5.9", features = ["output-meter"] }
-proteus-lib = { version = "0.5.9", features = ["output-meter"] }
+proteus-lib = { version = "0.5.11", features = ["output-meter"] }
 uuid = { version = "1.6.1", features = ["v4"] }
 regex = "1.5"
 # tauri-plugin-fs = "2"

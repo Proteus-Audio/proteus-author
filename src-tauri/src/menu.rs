@@ -34,7 +34,11 @@ struct ShufflePointToolModePayload {
     enabled: bool,
 }
 
-fn emit_to_active_window<R: Runtime, S: serde::Serialize>(app: &AppHandle<R>, event: &str, payload: S) {
+fn emit_to_active_window<R: Runtime, S: serde::Serialize>(
+    app: &AppHandle<R>,
+    event: &str,
+    payload: S,
+) {
     let focused_window = app
         .webview_windows()
         .values()
@@ -83,7 +87,9 @@ fn find_check_menu_item<R: Runtime>(menu: &Menu<R>, target_id: &str) -> Option<C
         None
     }
 
-    menu.items().ok().and_then(|items| find_in_items(items, target_id))
+    menu.items()
+        .ok()
+        .and_then(|items| find_in_items(items, target_id))
 }
 
 pub fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
@@ -113,23 +119,12 @@ pub fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     #[cfg(not(target_os = "macos"))]
     let prot_menu: Option<Submenu<R>> = None;
 
-    let new_window = MenuItem::with_id(
-        app,
-        ID_NEW_WINDOW,
-        "New Window",
-        true,
-        Some("CmdOrCtrl+N"),
-    )?;
+    let new_window =
+        MenuItem::with_id(app, ID_NEW_WINDOW, "New Window", true, Some("CmdOrCtrl+N"))?;
 
     let save = MenuItem::with_id(app, ID_SAVE, "Save", true, Some("CmdOrCtrl+S"))?;
 
-    let save_as = MenuItem::with_id(
-        app,
-        ID_SAVE_AS,
-        "Save As",
-        true,
-        Some("CmdOrCtrl+Shift+S"),
-    )?;
+    let save_as = MenuItem::with_id(app, ID_SAVE_AS, "Save As", true, Some("CmdOrCtrl+Shift+S"))?;
 
     let open = MenuItem::with_id(app, ID_OPEN, "Open", true, Some("CmdOrCtrl+O"))?;
 
@@ -146,7 +141,15 @@ pub fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         "file",
         "File",
         true,
-        &[&new_window, &separator, &save, &save_as, &open, &separator, &export_prot],
+        &[
+            &new_window,
+            &separator,
+            &save,
+            &save_as,
+            &open,
+            &separator,
+            &export_prot,
+        ],
     )?;
 
     let edit_menu = Submenu::with_id_and_items(
@@ -180,10 +183,14 @@ pub fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         true,
         Some("CmdOrCtrl+Shift+-"),
     )?;
-    let pan_left =
-        MenuItem::with_id(app, ID_SCROLL_LEFT, "Scroll Left", true, Some("Alt+Left"))?;
-    let pan_right =
-        MenuItem::with_id(app, ID_SCROLL_RIGHT, "Scroll Right", true, Some("Alt+Right"))?;
+    let pan_left = MenuItem::with_id(app, ID_SCROLL_LEFT, "Scroll Left", true, Some("Alt+Left"))?;
+    let pan_right = MenuItem::with_id(
+        app,
+        ID_SCROLL_RIGHT,
+        "Scroll Right",
+        true,
+        Some("Alt+Right"),
+    )?;
     let follow_mode = CheckMenuItem::with_id(
         app,
         ID_FOLLOW_MODE,
@@ -219,13 +226,8 @@ pub fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         ],
     )?;
 
-    let tools_menu = Submenu::with_id_and_items(
-        app,
-        "tools",
-        "Tools",
-        true,
-        &[&shuffle_point_tool_mode],
-    )?;
+    let tools_menu =
+        Submenu::with_id_and_items(app, "tools", "Tools", true, &[&shuffle_point_tool_mode])?;
 
     let window_menu = Submenu::with_id_and_items(
         app,
@@ -261,16 +263,16 @@ pub fn handle_menu_event<R: Runtime>(
     let id = event.id();
 
     if id == ID_ABOUT {
-            let app_name = app.package_info().name.clone();
-            let version = app.package_info().version.to_string();
-            emit_to_active_window(
-                app,
-                "ALERT_CURRENT_WINDOW",
-                AlertPayload {
-                    message: format!("{} v{}\\n©Adam Thomas Howard 2024", app_name, version),
-                    r#type: "info".to_string(),
-                },
-            );
+        let app_name = app.package_info().name.clone();
+        let version = app.package_info().version.to_string();
+        emit_to_active_window(
+            app,
+            "ALERT_CURRENT_WINDOW",
+            AlertPayload {
+                message: format!("{} v{}\\n©Adam Thomas Howard 2024", app_name, version),
+                r#type: "info".to_string(),
+            },
+        );
     } else if id == ID_NEW_WINDOW {
         create_new_window(app)
     } else if id == ID_SAVE {

@@ -8,6 +8,14 @@ use tauri::Manager;
 use tauri::State;
 use tauri::Window;
 
+pub fn default_track_level() -> f32 {
+    1.0
+}
+
+pub fn default_track_pan() -> f32 {
+    0.0
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TrackSkeleton {
     pub id: u32,
@@ -16,6 +24,10 @@ pub struct TrackSkeleton {
     pub file_ids: Vec<String>,
     #[serde(default)]
     pub shuffle_points: Vec<String>,
+    #[serde(default = "default_track_level")]
+    pub level: f32,
+    #[serde(default = "default_track_pan")]
+    pub pan: f32,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -62,6 +74,8 @@ pub fn empty_project() -> ProjectSkeleton {
             selection: None,
             file_ids: Vec::new(),
             shuffle_points: Vec::new(),
+            level: default_track_level(),
+            pan: default_track_pan(),
         }],
         effects: Vec::new(),
         files: Vec::new(),
@@ -71,6 +85,7 @@ pub fn empty_project() -> ProjectSkeleton {
 pub struct WindowProjectState(pub Arc<Mutex<HashMap<String, ProjectSkeleton>>>);
 pub struct WindowPlayerState(pub Arc<Mutex<HashMap<String, Option<Player>>>>);
 pub struct WindowUnsavedState(pub Arc<Mutex<HashMap<String, bool>>>);
+pub struct WindowSavedSnapshotState(pub Arc<Mutex<HashMap<String, String>>>);
 
 pub fn create_project_state() -> WindowProjectState {
     WindowProjectState(Arc::new(Mutex::new(HashMap::new())))
@@ -82,6 +97,10 @@ pub fn create_player_state() -> WindowPlayerState {
 
 pub fn create_unsaved_state() -> WindowUnsavedState {
     WindowUnsavedState(Arc::new(Mutex::new(HashMap::new())))
+}
+
+pub fn create_saved_snapshot_state() -> WindowSavedSnapshotState {
+    WindowSavedSnapshotState(Arc::new(Mutex::new(HashMap::new())))
 }
 
 fn window_key(window: &Window) -> String {
@@ -102,11 +121,7 @@ pub fn read_project(window: &Window, project_state: &State<WindowProjectState>) 
     read_project_by_label(&window_key(window), project_state)
 }
 
-pub fn with_project_mut<R, F>(
-    window: &Window,
-    project_state: &State<WindowProjectState>,
-    f: F,
-) -> R
+pub fn with_project_mut<R, F>(window: &Window, project_state: &State<WindowProjectState>, f: F) -> R
 where
     F: FnOnce(&mut ProjectSkeleton) -> R,
 {
@@ -126,7 +141,11 @@ where
     f(project)
 }
 
-pub fn set_project(window: &Window, project_state: &State<WindowProjectState>, project: ProjectSkeleton) {
+pub fn set_project(
+    window: &Window,
+    project_state: &State<WindowProjectState>,
+    project: ProjectSkeleton,
+) {
     set_project_by_label(&window_key(window), project_state, project);
 }
 
@@ -139,11 +158,7 @@ pub fn set_project_by_label(
     map.insert(label.to_string(), project);
 }
 
-pub fn with_player_mut<R, F>(
-    window: &Window,
-    player_state: &State<WindowPlayerState>,
-    f: F,
-) -> R
+pub fn with_player_mut<R, F>(window: &Window, player_state: &State<WindowPlayerState>, f: F) -> R
 where
     F: FnOnce(&mut Option<Player>) -> R,
 {
@@ -170,11 +185,7 @@ where
     with_player_by_label(&window_key(window), player_state, f)
 }
 
-pub fn with_player_by_label<R, F>(
-    label: &str,
-    player_state: &State<WindowPlayerState>,
-    f: F,
-) -> R
+pub fn with_player_by_label<R, F>(label: &str, player_state: &State<WindowPlayerState>, f: F) -> R
 where
     F: FnOnce(&Option<Player>) -> R,
 {
@@ -206,6 +217,7 @@ pub fn clear_window_state_by_label(
     project_state: &State<WindowProjectState>,
     player_state: &State<WindowPlayerState>,
     unsaved_state: &State<WindowUnsavedState>,
+    saved_snapshot_state: &State<WindowSavedSnapshotState>,
 ) {
     {
         let mut map = project_state.0.lock().unwrap();
@@ -221,6 +233,11 @@ pub fn clear_window_state_by_label(
 
     {
         let mut map = unsaved_state.0.lock().unwrap();
+        map.remove(label);
+    }
+
+    {
+        let mut map = saved_snapshot_state.0.lock().unwrap();
         map.remove(label);
     }
 }

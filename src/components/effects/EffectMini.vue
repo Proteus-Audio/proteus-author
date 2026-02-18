@@ -1,6 +1,6 @@
 <template>
   <div
-    class="relative flex h-full min-w-max w-max cursor-grab flex-col items-center justify-center gap-2 overflow-hidden rounded-lg bg-zinc-700 px-8 py-3 text-white transition-[height,margin] duration-300 hover:opacity-85"
+    class="relative flex h-full min-w-max w-max cursor-grab flex-col items-center justify-center gap-2 overflow-hidden rounded-lg bg-zinc-700 px-8 pr-10 py-3 text-white transition-[height,margin] duration-300 hover:opacity-85"
     @click.stop="toggleEdit"
   >
     <button
@@ -18,7 +18,14 @@
 
     <div class="grid items-center whitespace-nowrap text-center font-semibold">{{ label }}</div>
 
-    <UModal v-model:open="editOpen" :ui="{ content: 'max-w-[calc(100%-4em)]' }">
+    <UModal
+      v-model:open="editOpen"
+      :ui="{
+        wrapper: 'z-[80]',
+        overlay: 'z-[80]',
+        content: 'z-[81] max-w-[calc(100%-4em)]',
+      }"
+    >
       <template #content>
         <div class="p-4" @click.stop>
           <EffectDialog :effectIndex="index" />
@@ -40,7 +47,7 @@
 import { computed, defineAsyncComponent, ref } from 'vue'
 import type { EffectChainItem } from '../../assets/effects'
 import { useAudioStore } from '../../stores/audio'
-import { EffectSettings } from '../../typings/effects'
+import type { EffectSettings } from '../../typings/effects'
 import { AnalogIndicator } from '../analog'
 
 const EffectDialog = defineAsyncComponent(() => import('./EffectsDialog.vue'))

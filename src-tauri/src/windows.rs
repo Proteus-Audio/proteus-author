@@ -1,8 +1,8 @@
+use crate::startup::{log_rust, StartupTraceState};
 use tauri::{
     AppHandle, LogicalPosition, Manager, Runtime, TitleBarStyle, WebviewWindow,
     WebviewWindowBuilder,
 };
-use crate::startup::{log_rust, StartupTraceState};
 
 const MAIN_WINDOW_LABEL: &str = "main-window-1";
 
@@ -56,18 +56,23 @@ fn compute_main_window_geometry<R: Runtime>(
     let fallback_width = 1240.0;
     let fallback_height = 775.0;
 
-    let monitor = app_handle
-        .primary_monitor()
-        .ok()
-        .flatten()
-        .or_else(|| app_handle.available_monitors().ok().and_then(|mut m| m.pop()));
+    let monitor = app_handle.primary_monitor().ok().flatten().or_else(|| {
+        app_handle
+            .available_monitors()
+            .ok()
+            .and_then(|mut m| m.pop())
+    });
 
     if let Some(monitor) = monitor {
         let monitor_size = monitor.size().to_logical::<f64>(monitor.scale_factor());
         let width = (monitor_size.width - 150.0).min(fallback_width).max(600.0);
-        let height = (monitor_size.height - 150.0).min(fallback_height).max(600.0);
-        let position =
-            LogicalPosition::new((monitor_size.width - width) / 2.0, (monitor_size.height - height) / 2.0);
+        let height = (monitor_size.height - 150.0)
+            .min(fallback_height)
+            .max(600.0);
+        let position = LogicalPosition::new(
+            (monitor_size.width - width) / 2.0,
+            (monitor_size.height - height) / 2.0,
+        );
         return (width, height, position);
     }
 

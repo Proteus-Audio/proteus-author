@@ -99,7 +99,7 @@ const unlisteners = ref<UnlistenFn[]>([])
 const startupHydrating = ref(true)
 
 watch(
-  [trackStore.tracks, audio.effects],
+  [() => trackStore.tracks, () => audio.effects],
   async () => {
     if (startupHydrating.value) return
     console.log(await head.logChanges())
@@ -154,7 +154,14 @@ const registerWindowListeners = async (
       console.log('file loaded', event)
       const project = event?.payload as ProjectSkeleton
       if (project.location) alerts.addAlert('Loading project…', 'info')
-      void head.load()
+      void (async () => {
+        startupHydrating.value = true
+        try {
+          await head.load()
+        } finally {
+          startupHydrating.value = false
+        }
+      })()
     }),
     appWindow.listen('SAVE_FILE', () => {
       void runIfFocused(handleSaveFile)

@@ -1,6 +1,7 @@
 <template>
   <div
-    class="absolute inset-0 z-20 flex h-full w-full flex-col items-center justify-center gap-2 bg-zinc-500/60"
+    class="absolute z-20 flex flex-col items-center justify-center gap-2 bg-zinc-500/60"
+    :class="inset === -4 ? '-inset-4' : 'inset-0'"
   >
     <div class="grid grid-cols-3 gap-1">
       <span
@@ -20,9 +21,12 @@ import { computed } from 'vue'
 
 interface Props {
   message?: string
+  inset?: 0 | -4
 }
 
-defineProps<Props>()
+withDefaults(defineProps<Props>(), {
+  inset: 0,
+})
 
 const cells = computed(() => {
   return Array.from({ length: 9 }, (_, i) => ({

@@ -3,10 +3,10 @@
     windows_subsystem = "windows"
 )]
 
-mod file;
-mod menu;
 mod alerts;
+mod file;
 mod helpers;
+mod menu;
 mod peaks;
 mod player;
 mod project;
@@ -15,8 +15,9 @@ mod windows;
 
 use std::sync::{Arc, Mutex};
 
-use file::*;
 use alerts::*;
+use dotenv::dotenv;
+use file::*;
 use menu::{
     set_follow_mode_menu, set_shuffle_point_tool_mode_menu, FollowModeState,
     ShufflePointToolModeState,
@@ -24,7 +25,6 @@ use menu::{
 use player::*;
 use project::*;
 use startup::*;
-use dotenv::dotenv;
 use tauri::{Manager, RunEvent, WindowEvent};
 
 fn main() {
@@ -34,7 +34,11 @@ fn main() {
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_log::Builder::new().level(log::LevelFilter::Info).build())
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .level(log::LevelFilter::Info)
+                .build(),
+        )
         // .plugin(tauri_plugin_clipboard_manager::init())
         // .plugin(tauri_plugin_http::init())
         // .plugin(tauri_plugin_notification::init())
@@ -43,6 +47,7 @@ fn main() {
         .manage(project::create_project_state())
         .manage(project::create_player_state())
         .manage(project::create_unsaved_state())
+        .manage(project::create_saved_snapshot_state())
         .manage(startup::create_startup_trace_state())
         .manage(FollowModeState(Arc::new(Mutex::new(false))))
         .manage(ShufflePointToolModeState(Arc::new(Mutex::new(false))))
@@ -90,6 +95,7 @@ fn main() {
             add_shuffle_point,
             remove_shuffle_point,
             set_volume,
+            set_track_mix,
             set_effects_chain,
             startup_trace,
             set_follow_mode_menu,
@@ -116,11 +122,13 @@ fn main() {
             let project_state: tauri::State<WindowProjectState> = _app_handle.state();
             let player_state: tauri::State<WindowPlayerState> = _app_handle.state();
             let unsaved_state: tauri::State<WindowUnsavedState> = _app_handle.state();
+            let saved_snapshot_state: tauri::State<WindowSavedSnapshotState> = _app_handle.state();
             clear_window_state_by_label(
                 &label,
                 &project_state,
                 &player_state,
                 &unsaved_state,
+                &saved_snapshot_state,
             );
         }
         #[cfg(target_os = "macos")]
@@ -128,7 +136,7 @@ fn main() {
             println!("exit requested");
             api.prevent_exit();
         }
-         #[cfg(any(target_os = "macos", target_os = "ios"))]
+        #[cfg(any(target_os = "macos", target_os = "ios"))]
         RunEvent::Reopen {
             has_visible_windows,
             ..
@@ -145,7 +153,7 @@ fn main() {
             }
         }
 
-         #[cfg(any(target_os = "macos", target_os = "ios"))]
+        #[cfg(any(target_os = "macos", target_os = "ios"))]
         RunEvent::Opened { urls, .. } => {
             println!("opened: {:?}", urls);
         }
