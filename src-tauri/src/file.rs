@@ -364,6 +364,7 @@ pub async fn get_track_waveform_peaks(
             player.as_ref().map(|player| player.get_shuffle_schedule())
         })
     };
+
     let resolve_file_from_schedule = |segment_time: f64| -> Option<String> {
         let track_index = playable_track_index?;
         let schedule = shuffle_schedule.as_ref()?;
@@ -380,7 +381,8 @@ pub async fn get_track_waveform_peaks(
             }
         }
 
-        let path = current_sources.get(track_index)?;
+        let track = current_sources.get(track_index)?;
+        let path = track.first()?;
         let file_id = path_to_file_id.get(path.as_str())?;
         if allowed_file_ids.contains(*file_id) {
             Some((*file_id).to_string())
