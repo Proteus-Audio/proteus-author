@@ -2904,9 +2904,9 @@ dependencies = [
 
 [[package]]
 name = "proteus-lib"
-version = "0.6.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "364f7134f3607673c457fb740dc2ebfcf175dad9bef80e7b45fd6b80ce681c40"
+checksum = "0741b87745a77e12e65e62cc997f580d6aa8e807e894b57a0b3b56f5344f2221"
 dependencies = [
  "dasp_ring_buffer",
  "log",
