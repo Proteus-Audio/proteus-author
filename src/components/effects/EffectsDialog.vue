@@ -71,6 +71,7 @@
             :max="0"
             :step="1"
             units="dB"
+            disabled
           />
           <div class="grid content-start gap-2.5">
             <span class="analog-label">Impulse Response</span>

@@ -4,11 +4,14 @@
 
     <div
       class="relative h-[var(--knob-size)] w-[var(--knob-size)] rounded-[var(--knob-size)] border-2 border-[#151311] bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.15),transparent_55%),radial-gradient(circle_at_70%_70%,rgba(0,0,0,0.5),transparent_50%),linear-gradient(145deg,#3a3530,#1e1b18)] shadow-[inset_0_2px_4px_rgba(255,255,255,0.08),inset_0_-6px_10px_rgba(0,0,0,0.6),0_6px_14px_rgba(0,0,0,0.5)]"
+      :class="props.disabled ? 'opacity-60' : ''"
     >
       <button
         type="button"
-        class="relative size-full cursor-pointer touch-none"
+        class="relative size-full touch-none"
+        :class="props.disabled ? 'cursor-not-allowed' : 'cursor-pointer'"
         :style="{ transform: `rotate(${rotation}deg)` }"
+        :disabled="props.disabled"
         @pointerdown="onKnobPointerDown"
       >
         <span
@@ -29,6 +32,7 @@
         :max="max"
         :step="step"
         :value="inputValue"
+        :disabled="props.disabled"
         @focus="onValueFocus"
         @input="onValueInput"
         @blur="commitTypedValue"
@@ -54,6 +58,7 @@ interface Props {
   showValue?: boolean
   allowNumericInput?: boolean
   dragPixelsPerStep?: number
+  disabled?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -66,6 +71,7 @@ const props = withDefaults(defineProps<Props>(), {
   showValue: true,
   allowNumericInput: true,
   dragPixelsPerStep: 2,
+  disabled: false,
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -113,6 +119,7 @@ const stopDragging = () => {
 }
 
 const onKnobPointerDown = (event: PointerEvent) => {
+  if (props.disabled) return
   event.preventDefault()
   dragStartY.value = event.clientY
   dragStartValue.value = props.modelValue
@@ -123,14 +130,17 @@ const onKnobPointerDown = (event: PointerEvent) => {
 }
 
 const onValueFocus = () => {
+  if (props.disabled) return
   isEditing.value = true
 }
 
 const onValueInput = (event: Event) => {
+  if (props.disabled) return
   inputValue.value = (event.target as HTMLInputElement).value
 }
 
 const commitTypedValue = () => {
+  if (props.disabled) return
   isEditing.value = false
   const parsed = Number(inputValue.value)
   if (Number.isNaN(parsed)) {
