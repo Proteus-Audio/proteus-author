@@ -1,4 +1,4 @@
-use crate::alerts::emit_alert_current_window;
+use crate::alerts::{emit_alert_current_window, emit_alert_current_window_keyed};
 use crate::peaks::*;
 use crate::player_runtime::*;
 use crate::project::*;
@@ -856,7 +856,13 @@ pub fn export_prot(window: Window, project_state: State<WindowProjectState>) {
         };
         let file_name = file_path.file_name().unwrap().to_str().unwrap();
 
-        emit_alert_current_window(&alert_window, format!("Exporting {}", file_name), "info");
+        emit_alert_current_window_keyed(
+            &alert_window,
+            "export_prot",
+            format!("Exporting {}", file_name),
+            "info",
+            true,
+        );
         // `new_sidecar()` expects just the filename, NOT the whole path like in JavaScript
         let mut reduced_file_list = Vec::new();
 
@@ -1044,7 +1050,13 @@ pub fn export_prot(window: Window, project_state: State<WindowProjectState>) {
                 std::fs::rename(output_file.clone(), output_file.replace(".mka", ".prot")).unwrap();
             }
 
-            emit_alert_current_window(&alert_window_for_task, "Export Finished", "info");
+            emit_alert_current_window_keyed(
+                &alert_window_for_task,
+                "export_prot",
+                "Export Finished",
+                "success",
+                false,
+            );
         });
     });
 }

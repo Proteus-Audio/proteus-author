@@ -7,6 +7,9 @@ export interface Alert {
   contents: string
   type: AlertType
   autoClose: boolean
+  id?: string
+  loading?: boolean
+  upsert?: boolean
 }
 
 export type AlertClass = 'fresh' | 'stale'

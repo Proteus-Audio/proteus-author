@@ -178,18 +178,32 @@ const registerWindowListeners = async (
       void runIfFocused(handleStartExport)
     }),
     appWindow.listen('ALERT_CURRENT_WINDOW', (event) => {
-      const { message, type } = event.payload as {
+      const { message, type, id, loading, replace } = event.payload as {
         message: string
         type: AlertType
+        id?: string
+        loading?: boolean
+        replace?: boolean
       }
-      alerts.addAlert(message, type)
+      if (replace && id) {
+        alerts.upsertAlert(id, message, type, { loading })
+      } else {
+        alerts.addAlert(message, type, { id, loading })
+      }
     }),
     appWindow.listen('ALERT_ALL_WINDOWS', (event) => {
-      const { message, type } = event.payload as {
+      const { message, type, id, loading, replace } = event.payload as {
         message: string
         type: AlertType
+        id?: string
+        loading?: boolean
+        replace?: boolean
       }
-      alerts.addAlert(message, type)
+      if (replace && id) {
+        alerts.upsertAlert(id, message, type, { loading })
+      } else {
+        alerts.addAlert(message, type, { id, loading })
+      }
     }),
     appWindow.listen('UPDATE_PLAYHEAD', (event) => {
       const time = event.payload as number

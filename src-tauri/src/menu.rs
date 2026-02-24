@@ -271,6 +271,9 @@ pub fn handle_menu_event<R: Runtime>(
             AlertPayload {
                 message: format!("{} v{}\\n©Adam Thomas Howard 2024", app_name, version),
                 r#type: "info".to_string(),
+                id: None,
+                loading: None,
+                replace: None,
             },
         );
     } else if id == ID_NEW_WINDOW {

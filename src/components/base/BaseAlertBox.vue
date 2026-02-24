@@ -5,17 +5,31 @@
   >
     <div
       v-for="(al, i) in alerts"
-      :key="i"
-      class="mb-4 transition-opacity duration-500 bg-white rounded-lg"
+      :key="al.id || `${al.added.getTime()}-${i}`"
+      class="mb-4 rounded-lg bg-white transition-opacity duration-500"
       :class="al.class === 'stale' ? 'opacity-0' : 'opacity-100'"
     >
-      <UAlert
-        :title="al.contents"
-        :color="alertColor(al.type)"
-        variant="subtle"
-        :close="{ color: 'white', variant: 'ghost' }"
-        @update:open="(open: boolean) => !open && closeAlert(i)"
-      />
+      <div
+        class="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-lg border px-4 py-3"
+        :class="alertClasses(al.type)"
+      >
+        <span
+          v-if="al.loading"
+          class="inline-block size-4 animate-spin rounded-full border-2 border-current border-r-transparent opacity-90"
+          aria-hidden="true"
+        ></span>
+        <span v-else class="inline-block size-4 rounded-full opacity-80" :class="alertDot(al.type)"></span>
+
+        <div class="min-w-0 text-sm leading-snug">{{ al.contents }}</div>
+
+        <button
+          type="button"
+          class="rounded px-2 py-1 text-xs opacity-70 transition-opacity hover:opacity-100"
+          @click="closeAlert(i)"
+        >
+          Close
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -37,12 +51,35 @@ const alerts = ref([] as AlertView[])
 
 const { y } = useWindowScroll()
 
-const alertColor = (type: AlertType): 'success' | 'warning' | 'info' | 'error' => {
-  return type
+const alertClasses = (type: AlertType): string => {
+  switch (type) {
+    case 'success':
+      return 'border-green-300 bg-green-50 text-green-900'
+    case 'warning':
+      return 'border-amber-300 bg-amber-50 text-amber-900'
+    case 'error':
+      return 'border-red-300 bg-red-50 text-red-900'
+    default:
+      return 'border-sky-300 bg-sky-50 text-sky-900'
+  }
+}
+
+const alertDot = (type: AlertType): string => {
+  switch (type) {
+    case 'success':
+      return 'bg-green-500'
+    case 'warning':
+      return 'bg-amber-500'
+    case 'error':
+      return 'bg-red-500'
+    default:
+      return 'bg-sky-500'
+  }
 }
 
 const closeAlert = (index: number) => {
   alerts.value[index].autoClose = true
+  alerts.value[index].loading = false
 }
 
 const checkAlerts = (time?: Date) => {
@@ -62,7 +99,22 @@ const processAlerts = () => {
   const now = new Date()
   while (alertStore.alerts.length > 0) {
     const alert = alertStore.alerts.shift()
-    if (alert) alerts.value.push({ ...alert, class: 'fresh', added: now })
+    if (!alert) continue
+
+    if (alert.upsert && alert.id) {
+      const existing = alerts.value.find((item) => item.id === alert.id)
+      if (existing) {
+        existing.contents = alert.contents
+        existing.type = alert.type
+        existing.autoClose = alert.autoClose
+        existing.loading = alert.loading ?? false
+        existing.class = 'fresh'
+        existing.added = now
+        continue
+      }
+    }
+
+    alerts.value.push({ ...alert, class: 'fresh', added: now })
   }
 
   checkAlerts(now)
