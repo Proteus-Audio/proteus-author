@@ -1,5 +1,4 @@
 use proteus_lib::container::play_settings::EffectSettings;
-use proteus_lib::playback::player::Player;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
@@ -83,16 +82,11 @@ pub fn empty_project() -> ProjectSkeleton {
 }
 
 pub struct WindowProjectState(pub Arc<Mutex<HashMap<String, ProjectSkeleton>>>);
-pub struct WindowPlayerState(pub Arc<Mutex<HashMap<String, Option<Player>>>>);
 pub struct WindowUnsavedState(pub Arc<Mutex<HashMap<String, bool>>>);
 pub struct WindowSavedSnapshotState(pub Arc<Mutex<HashMap<String, String>>>);
 
 pub fn create_project_state() -> WindowProjectState {
     WindowProjectState(Arc::new(Mutex::new(HashMap::new())))
-}
-
-pub fn create_player_state() -> WindowPlayerState {
-    WindowPlayerState(Arc::new(Mutex::new(HashMap::new())))
 }
 
 pub fn create_unsaved_state() -> WindowUnsavedState {
@@ -158,42 +152,6 @@ pub fn set_project_by_label(
     map.insert(label.to_string(), project);
 }
 
-pub fn with_player_mut<R, F>(window: &Window, player_state: &State<WindowPlayerState>, f: F) -> R
-where
-    F: FnOnce(&mut Option<Player>) -> R,
-{
-    with_player_mut_by_label(&window_key(window), player_state, f)
-}
-
-pub fn with_player_mut_by_label<R, F>(
-    label: &str,
-    player_state: &State<WindowPlayerState>,
-    f: F,
-) -> R
-where
-    F: FnOnce(&mut Option<Player>) -> R,
-{
-    let mut map = player_state.0.lock().unwrap();
-    let player = map.entry(label.to_string()).or_insert(None);
-    f(player)
-}
-
-pub fn with_player<R, F>(window: &Window, player_state: &State<WindowPlayerState>, f: F) -> R
-where
-    F: FnOnce(&Option<Player>) -> R,
-{
-    with_player_by_label(&window_key(window), player_state, f)
-}
-
-pub fn with_player_by_label<R, F>(label: &str, player_state: &State<WindowPlayerState>, f: F) -> R
-where
-    F: FnOnce(&Option<Player>) -> R,
-{
-    let mut map = player_state.0.lock().unwrap();
-    let player = map.entry(label.to_string()).or_insert(None);
-    f(player)
-}
-
 pub fn set_unsaved(window: &Window, unsaved_state: &State<WindowUnsavedState>, unsaved: bool) {
     set_unsaved_by_label(&window_key(window), unsaved_state, unsaved);
 }
@@ -215,20 +173,12 @@ pub fn get_unsaved_by_label(label: &str, unsaved_state: &State<WindowUnsavedStat
 pub fn clear_window_state_by_label(
     label: &str,
     project_state: &State<WindowProjectState>,
-    player_state: &State<WindowPlayerState>,
     unsaved_state: &State<WindowUnsavedState>,
     saved_snapshot_state: &State<WindowSavedSnapshotState>,
 ) {
     {
         let mut map = project_state.0.lock().unwrap();
         map.remove(label);
-    }
-
-    {
-        let mut map = player_state.0.lock().unwrap();
-        if let Some(Some(player)) = map.remove(label) {
-            player.stop();
-        }
     }
 
     {

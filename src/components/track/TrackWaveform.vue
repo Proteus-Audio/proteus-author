@@ -8,10 +8,7 @@
       <canvas
         ref="canvasRef"
         class="block cursor-pointer"
-        :class="{
-          'cursor-copy': audio.shufflePointToolMode,
-          'cursor-not-allowed': audio.shufflePointToolMode && hoveringShufflePoint,
-        }"
+        :class="shufflePointCursorClass"
         @click="seek"
         @mousemove="onMouseMove"
         @mouseleave="onMouseLeave"
@@ -124,6 +121,11 @@ const shufflePointSeconds = computed(() =>
     .map(parseShufflePointSeconds)
     .filter((time): time is number => time !== null && Number.isFinite(time) && time >= 0),
 )
+
+const shufflePointCursorClass = computed(() => {
+  if (!audio.shufflePointToolMode) return ''
+  return hoveringShufflePoint.value ? 'shuffle-point-cursor-remove' : 'shuffle-point-cursor-add'
+})
 
 const findNearestShufflePointSeconds = (
   seconds: number,
@@ -501,3 +503,19 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', onResize)
 })
 </script>
+
+<style scoped>
+.shuffle-point-cursor-add {
+  cursor:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M3.5 3.5v12.2l3.4-3.1 1.8 4.3 2.1-.9-1.8-4.3 4.6.1z' fill='%23fff' stroke='%23000' stroke-width='1.2' stroke-linejoin='round'/%3E%3Ccircle cx='17.5' cy='17.5' r='5.5' fill='%2322c55e' stroke='%23000' stroke-width='1.2'/%3E%3Cpath d='M17.5 14.8v5.4M14.8 17.5h5.4' stroke='%23fff' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E")
+      2 2,
+    copy !important;
+}
+
+.shuffle-point-cursor-remove {
+  cursor:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M3.5 3.5v12.2l3.4-3.1 1.8 4.3 2.1-.9-1.8-4.3 4.6.1z' fill='%23fff' stroke='%23000' stroke-width='1.2' stroke-linejoin='round'/%3E%3Ccircle cx='17.5' cy='17.5' r='5.5' fill='%23ef4444' stroke='%23000' stroke-width='1.2'/%3E%3Cpath d='M14.8 17.5h5.4' stroke='%23fff' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E")
+      2 2,
+    not-allowed !important;
+}
+</style>
