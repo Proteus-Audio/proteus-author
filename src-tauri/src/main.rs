@@ -9,6 +9,7 @@ mod helpers;
 mod menu;
 mod peaks;
 mod player;
+mod player_runtime;
 mod project;
 mod startup;
 mod windows;
@@ -23,6 +24,7 @@ use menu::{
     ShufflePointToolModeState,
 };
 use player::*;
+use player_runtime::*;
 use project::*;
 use startup::*;
 use tauri::{Manager, RunEvent, WindowEvent};
@@ -45,7 +47,7 @@ fn main() {
         // .plugin(tauri_plugin_process::init())
         // .plugin(tauri_plugin_fs::init())
         .manage(project::create_project_state())
-        .manage(project::create_player_state())
+        .manage(player_runtime::create_player_actor_state())
         .manage(project::create_unsaved_state())
         .manage(project::create_saved_snapshot_state())
         .manage(startup::create_startup_trace_state())
@@ -120,16 +122,16 @@ fn main() {
             ..
         } => {
             let project_state: tauri::State<WindowProjectState> = _app_handle.state();
-            let player_state: tauri::State<WindowPlayerState> = _app_handle.state();
             let unsaved_state: tauri::State<WindowUnsavedState> = _app_handle.state();
             let saved_snapshot_state: tauri::State<WindowSavedSnapshotState> = _app_handle.state();
             clear_window_state_by_label(
                 &label,
                 &project_state,
-                &player_state,
                 &unsaved_state,
                 &saved_snapshot_state,
             );
+            let player_state: tauri::State<PlayerActorState> = _app_handle.state();
+            clear_window_player_by_label(&label, &player_state);
         }
         #[cfg(target_os = "macos")]
         RunEvent::ExitRequested { api, .. } => {

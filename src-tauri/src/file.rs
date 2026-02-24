@@ -1,5 +1,6 @@
 use crate::alerts::emit_alert_current_window;
 use crate::peaks::*;
+use crate::player_runtime::*;
 use crate::project::*;
 use proteus_lib::container::play_settings::PlaySettingsContainer;
 use proteus_lib::container::play_settings::{
@@ -359,10 +360,8 @@ pub async fn get_track_waveform_peaks(
         .map(|file| (file.path.as_str(), file.id.as_str()))
         .collect();
     let shuffle_schedule = {
-        let player_state: State<WindowPlayerState> = window.state();
-        with_player(&window, &player_state, |player| {
-            player.as_ref().map(|player| player.get_shuffle_schedule())
-        })
+        let player_state: State<PlayerActorState> = window.state();
+        player_shuffle_schedule(&window, &player_state)
     };
 
     let resolve_file_from_schedule = |segment_time: f64| -> Option<String> {
