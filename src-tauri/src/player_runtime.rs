@@ -165,7 +165,7 @@ fn player_worker(rx: Receiver<PlayerCommand>) {
                 new_player.set_start_sink_chunks(1);
                 new_player.set_start_buffer_ms(10.0);
                 new_player.set_startup_fade_ms(5.0);
-                new_player.set_max_sink_chunks(2);
+                new_player.set_max_sink_chunks(20);
                 new_player.set_seek_fade_in_ms(50.0);
                 new_player.set_seek_fade_out_ms(30.0);
 
