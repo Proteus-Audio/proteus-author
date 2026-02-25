@@ -319,7 +319,12 @@ const drawWaveform = () => {
 
     ctx.fillStyle = 'rgba(0, 0, 0, 0.78)'
     ctx.textAlign = textAlign
+    ctx.save()
+    ctx.beginPath()
+    ctx.rect(xStart + 1, 0, Math.max(sectionWidth - 2, 0), height)
+    ctx.clip()
     ctx.fillText(text, textX, textY)
+    ctx.restore()
   }
 }
 
