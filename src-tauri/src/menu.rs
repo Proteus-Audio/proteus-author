@@ -269,7 +269,7 @@ pub fn handle_menu_event<R: Runtime>(
             app,
             "ALERT_CURRENT_WINDOW",
             AlertPayload {
-                message: format!("{} v{}\\n©Adam Thomas Howard 2024", app_name, version),
+                message: format!("{} v{}\n©Adam Thomas Howard 2024", app_name, version),
                 r#type: "info".to_string(),
                 id: None,
                 loading: None,

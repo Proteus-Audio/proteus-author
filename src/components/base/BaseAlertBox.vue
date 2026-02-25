@@ -20,7 +20,7 @@
         ></span>
         <span v-else class="inline-block size-4 rounded-full opacity-80" :class="alertDot(al.type)"></span>
 
-        <div class="min-w-0 text-sm leading-snug">{{ al.contents }}</div>
+        <div class="min-w-0 whitespace-pre-line text-sm leading-snug">{{ al.contents }}</div>
 
         <button
           type="button"
