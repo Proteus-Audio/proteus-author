@@ -57,7 +57,7 @@
         {
           "args": false,
           "cmd": "",
-          "name": "/Users/innocentsmith/Dev/tauri/proteus-author/ffmpeg/ffmpeg",
+          "name": "/Users/innocentsmith/Dev/tauri/proteus-author/ffmpeg/proteus-author-ffmpeg",
           "sidecar": true
         }
       ]

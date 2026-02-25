@@ -20,19 +20,19 @@ jobs:
         include:
           - os: macos-14
             target: aarch64-apple-darwin
-            output: ffmpeg-aarch64-apple-darwin
+            output: proteus-author-ffmpeg-aarch64-apple-darwin
           - os: macos-15-intel
             target: x86_64-apple-darwin
-            output: ffmpeg-x86_64-apple-darwin
+            output: proteus-author-ffmpeg-x86_64-apple-darwin
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
-            output: ffmpeg-x86_64-unknown-linux-gnu
+            output: proteus-author-ffmpeg-x86_64-unknown-linux-gnu
           - os: ubuntu-24.04-arm
             target: aarch64-unknown-linux-gnu
-            output: ffmpeg-aarch64-unknown-linux-gnu
+            output: proteus-author-ffmpeg-aarch64-unknown-linux-gnu
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            output: ffmpeg-x86_64-pc-windows-msvc.exe
+            output: proteus-author-ffmpeg-x86_64-pc-windows-msvc.exe
             msystem: MINGW64
             cc: gcc
             host_cc: gcc
@@ -48,7 +48,7 @@ jobs:
               mingw-w64-x86_64-libvorbis
           - os: windows-11-arm
             target: aarch64-pc-windows-msvc
-            output: ffmpeg-aarch64-pc-windows-msvc.exe
+            output: proteus-author-ffmpeg-aarch64-pc-windows-msvc.exe
             msystem: CLANGARM64
             cc: clang
             host_cc: clang
