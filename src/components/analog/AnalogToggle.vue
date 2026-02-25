@@ -12,11 +12,10 @@
     >
       <span
         class="absolute top-[2px] left-1 size-[22px] rounded-full bg-[linear-gradient(160deg,#d5cbbd,#a89f94)] shadow-[0_2px_6px_rgba(0,0,0,0.4)] transition-all duration-150"
-        :class="
-          modelValue
-            ? 'translate-x-[26px] shadow-[0_0_8px_rgba(224,194,92,0.6),0_2px_6px_rgba(0,0,0,0.4)]'
-            : ''
-        "
+        :class="{
+          'translate-x-[26px] shadow-[0_0_8px_rgba(224,194,92,0.6),0_2px_6px_rgba(0,0,0,0.4)]':
+            modelValue,
+        }"
       ></span>
     </span>
     <span v-if="label" class="analog-label">{{ label }}</span>
