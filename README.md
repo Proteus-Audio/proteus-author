@@ -2,6 +2,8 @@
 
 Proteus (`.prot`) file authoring application built with **Vue 3**, **TypeScript**, and [**Tauri**](https://tauri.app/). This project is a continuation of the [Multiplay Mixer](https://github.com/howardah/multiplay_mixer) Flutter application.
 
+![Screenshot](screenshot.webp)
+
 ## Project Status
 
 This project is currently in the early stages of development. Despite being in development for several years at this point as I have not had vast amounts of time to dedicate to it.
