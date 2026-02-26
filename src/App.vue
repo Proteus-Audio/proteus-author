@@ -1,58 +1,60 @@
 <template>
-  <div
-    id="proteus-author"
-    class="min-h-screen"
-    :style="{
-      '--meter-width': '154px',
-      '--effect-rack-height': effectRackHeight,
-    }"
-  >
-    <Teleport to="head">
-      <title>Proteus Author - {{ windowTitle }}</title>
-    </Teleport>
+  <UApp>
+    <div
+      id="proteus-author"
+      class="min-h-screen"
+      :style="{
+        '--meter-width': '154px',
+        '--effect-rack-height': effectRackHeight,
+      }"
+    >
+      <Teleport to="head">
+        <title>Proteus Author - {{ windowTitle }}</title>
+      </Teleport>
 
-    <div class="min-h-screen">
-      <div class="pr-[var(--meter-width)]">
-        <BaseContainer>
-          <BaseAlertBox />
-          <BaseTitle />
+      <div class="min-h-screen">
+        <div class="pr-[var(--meter-width)]">
+          <BaseContainer>
+            <BaseAlertBox />
+            <BaseTitle />
 
-          <div class="sticky top-0 z-30 bg-zinc-50 py-2 backdrop-blur-sm">
-            <BaseTransport />
+            <div class="sticky top-0 z-30 bg-zinc-50 py-2 backdrop-blur-sm">
+              <BaseTransport />
+            </div>
+
+            <div class="w-full overflow-hidden rounded-lg">
+              <TrackBin v-for="track in trackStore.tracks" :key="track.id" :track-id="track.id" />
+            </div>
+
+            <div class="mt-3 text-[0.95rem] opacity-85">
+              Unique playback combinations: {{ formattedPossibleCombinations }}
+            </div>
+
+            <div class="inline-block size-4"></div>
+          </BaseContainer>
+
+          <div ref="effectRackRef">
+            <EffectRack />
           </div>
-
-          <div class="w-full overflow-hidden rounded-lg">
-            <TrackBin v-for="track in trackStore.tracks" :key="track.id" :track-id="track.id" />
-          </div>
-
-          <div class="mt-3 text-[0.95rem] opacity-85">
-            Unique playback combinations: {{ formattedPossibleCombinations }}
-          </div>
-
-          <div class="inline-block size-4"></div>
-        </BaseContainer>
-
-        <div ref="effectRackRef">
-          <EffectRack />
         </div>
+
+        <aside
+          class="fixed top-0 right-0 w-[var(--meter-width)] border-l border-zinc-300 bg-zinc-100 transition-[bottom] duration-300"
+          :style="{ bottom: 'var(--effect-rack-height)' }"
+        >
+          <div class="grid h-full grid-cols-[1fr_54px]">
+            <BaseLevelMeter vertical />
+            <DigitalFader />
+          </div>
+        </aside>
       </div>
-
-      <aside
-        class="fixed top-0 right-0 w-[var(--meter-width)] border-l border-zinc-300 bg-zinc-100 transition-[bottom] duration-300"
-        :style="{ bottom: 'var(--effect-rack-height)' }"
-      >
-        <div class="grid h-full grid-cols-[1fr_54px]">
-          <BaseLevelMeter vertical />
-          <DigitalFader />
-        </div>
-      </aside>
     </div>
-  </div>
+  </UApp>
 </template>
 
 <script setup lang="ts">
 import { invoke } from '@tauri-apps/api/core'
-import { type UnlistenFn } from '@tauri-apps/api/event'
+import type { UnlistenFn } from '@tauri-apps/api/event'
 import { Window } from '@tauri-apps/api/window'
 import { useElementHover } from '@vueuse/core'
 import { computed, defineAsyncComponent, onMounted, onUnmounted, ref, watch } from 'vue'
