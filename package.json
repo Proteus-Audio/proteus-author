@@ -20,6 +20,10 @@
     "url": "https://github.com/howardah"
   },
   "dependencies": {
+    "@iconify-json/dinkie-icons": "^1.2.0",
+    "@iconify-json/lucide": "^1.2.94",
+    "@iconify-vue/dinkie-icons": "^1.0.1",
+    "@iconify/vue": "^5.0.0",
     "@nuxt/ui": "^4.4.0",
     "@tauri-apps/api": "^2.10.0",
     "@tauri-apps/cli": "^2.10.0",

@@ -2,19 +2,25 @@
   <div class="grid grid-cols-[100px_100px_100px_110px_50px_50px_70px_70px] gap-4 text-right">
     <UButton
       v-if="!audio.isPlaying"
-      icon="i-lucide-play"
+      icon="dinkie-icons:right-black-triangle"
       variant="ghost"
       color="neutral"
       @click="play"
     >
       play
     </UButton>
-    <UButton v-else icon="i-lucide-pause" variant="ghost" color="neutral" @click="pause">
+    <UButton
+      v-else
+      icon="dinkie-icons:double-vertical-bar"
+      variant="ghost"
+      color="neutral"
+      @click="pause"
+    >
       pause
     </UButton>
     <UButton
       id="BaseTransportStop"
-      icon="i-lucide-square"
+      icon="dinkie-icons:black-square-for-stop"
       variant="ghost"
       color="neutral"
       @click="stop"
@@ -23,7 +29,7 @@
     </UButton>
     <UButton
       id="BaseTransportShuffle"
-      icon="i-lucide-shuffle"
+      icon="dinkie-icons:shuffle-arrows"
       variant="ghost"
       color="neutral"
       @click="shuffle"
@@ -33,29 +39,38 @@
     <UButton
       id="BaseTransportFollowMode"
       :color="audio.followMode ? 'primary' : 'neutral'"
-      :variant="audio.followMode ? 'outline' : 'ghost'"
+      class="text-center"
+      variant="outline"
       @click="toggleFollowMode"
     >
-      follow {{ audio.followMode ? 'on' : 'off' }}
+      <div class="w-full text-center">follow {{ audio.followMode ? 'on' : 'off' }}</div>
     </UButton>
     <UButton
-      icon="i-lucide-zoom-in"
+      icon="dinkie-icons:zoom-out"
+      variant="ghost"
+      color="neutral"
+      :disabled="zoomOutDisabled"
+      @click="zoomOut"
+    />
+    <UButton
+      icon="dinkie-icons:zoom-in"
       variant="ghost"
       color="neutral"
       :disabled="zoomInDisabled"
       @click="zoomIn"
     />
     <UButton
-      icon="i-lucide-zoom-out"
+      icon="dinkie-icons:left-arrow-circled-filled"
       variant="ghost"
       color="neutral"
-      :disabled="zoomOutDisabled"
-      @click="zoomOut"
-    />
-    <UButton icon="i-lucide-arrow-left" variant="ghost" color="neutral" @click="panLeft"
+      @click="panLeft"
       >left</UButton
     >
-    <UButton icon="i-lucide-arrow-right" variant="ghost" color="neutral" @click="panRight"
+    <UButton
+      trailing-icon="dinkie-icons:right-arrow-circled-filled"
+      variant="ghost"
+      color="neutral"
+      @click="panRight"
       >right</UButton
     >
   </div>
