@@ -143,3 +143,5 @@ ffmpeg-playground/
 # Nuxt UI auto-generated type declarations
 auto-imports.d.ts
 components.d.ts
+
+nuxtui*
