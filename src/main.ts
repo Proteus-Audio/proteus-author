@@ -1,4 +1,6 @@
 import { createApp } from 'vue'
+import { addCollection } from '@iconify/vue'
+import { icons as lucideIcons } from '@iconify-json/lucide'
 import './assets/index.css'
 import './assets/fonts.css'
 import ui from '@nuxt/ui/vue-plugin'
@@ -7,6 +9,10 @@ import App from './App.vue'
 import { startupMark } from './utils/startup-trace'
 
 startupMark('main.ts:start')
+
+// Bundle the Lucide icon set locally so packaged Tauri builds do not need
+// runtime network fetches for `i-lucide-*` icons used by Nuxt UI buttons.
+addCollection(lucideIcons)
 
 const app = createApp(App)
 const pinia = createPinia()
