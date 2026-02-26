@@ -117,6 +117,25 @@ export const useTrackStore = defineStore('track', () => {
     }
   }
 
+  const removeTrack = async (trackId: number) => {
+    const index = tracks.value.findIndex((t) => t.id === trackId)
+    if (index === -1) return false
+
+    const existing = mixSyncTimers.get(trackId)
+    if (existing) {
+      clearTimeout(existing)
+      mixSyncTimers.delete(trackId)
+    }
+
+    tracks.value.splice(index, 1)
+    addEmptyTrackIfNone()
+
+    await refreshPossibleCombinations()
+    await head.logChanges()
+    void audio.setDuration()
+    return true
+  }
+
   const clampLevel = (level: number) => {
     if (!Number.isFinite(level)) return 1
     return Math.min(maxTrackLevel, Math.max(0, level))
@@ -299,6 +318,7 @@ export const useTrackStore = defineStore('track', () => {
     clearTracks,
     addTrack,
     addEmptyTrackIfNone,
+    removeTrack,
     addFileToTrackBinary,
     shuffle,
     shuffleTrackBin,
