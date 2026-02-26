@@ -46,28 +46,28 @@
       <div class="w-full text-center">follow {{ audio.followMode ? 'on' : 'off' }}</div>
     </UButton>
     <UButton
-      icon="dinkie-icons:right-magnifying-glass-filled"
+      icon="dinkie-icons:zoom-out"
       variant="ghost"
       color="neutral"
       :disabled="zoomOutDisabled"
       @click="zoomOut"
     />
     <UButton
-      icon="dinkie-icons:right-magnifying-glass"
+      icon="dinkie-icons:zoom-in"
       variant="ghost"
       color="neutral"
       :disabled="zoomInDisabled"
       @click="zoomIn"
     />
     <UButton
-      icon="dinkie-icons:black-left-double-triangle-with-vertical-bar"
+      icon="dinkie-icons:left-arrow-circled-filled"
       variant="ghost"
       color="neutral"
       @click="panLeft"
       >left</UButton
     >
     <UButton
-      icon="dinkie-icons:black-right-double-triangle-with-vertical-bar"
+      trailing-icon="dinkie-icons:right-arrow-circled-filled"
       variant="ghost"
       color="neutral"
       @click="panRight"
