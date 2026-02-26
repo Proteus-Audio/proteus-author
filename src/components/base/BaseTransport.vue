@@ -9,7 +9,13 @@
     >
       play
     </UButton>
-    <UButton v-else icon="i-dinkie-pause" variant="ghost" color="neutral" @click="pause">
+    <UButton
+      v-else
+      icon="dinkie-icons:double-vertical-bar"
+      variant="ghost"
+      color="neutral"
+      @click="pause"
+    >
       pause
     </UButton>
     <UButton
