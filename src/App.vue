@@ -354,3 +354,9 @@ watch(
   },
 )
 </script>
+
+<style>
+button {
+  cursor: pointer;
+}
+</style>
