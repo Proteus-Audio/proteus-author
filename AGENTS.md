@@ -23,6 +23,7 @@ Use Bun (preferred) or npm.
 - TypeScript + Vue SFCs (`.vue`) are the primary source files.
 - Indentation follows Prettier defaults (2 spaces) and is enforced via ESLint + Prettier.
 - Use `PascalCase` for Vue components and classes, `camelCase` for functions/variables, and `kebab-case` for file names where appropriate.
+- Use Nuxt UI for frontend components. When needed, reference Nuxt UI docs in `nuxtui-docs/content`.
 - Run `bun run lint` before submitting changes.
 
 ## Testing Guidelines

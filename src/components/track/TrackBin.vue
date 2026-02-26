@@ -31,6 +31,13 @@
           class="mb-4"
           @click.stop="toggleFolderOpen"
         />
+        <UButton
+          icon="i-lucide-trash-2"
+          variant="ghost"
+          color="error"
+          class="mb-4"
+          @click.stop="openDeleteConfirm"
+        />
       </div>
 
       <div class="grid h-[150px] w-full grid-cols-[minmax(0,1fr)_84px] gap-2">
@@ -51,10 +58,13 @@
         v-model:open="folderOpen"
         title="Track Bin Contents"
         direction="right"
+        class="z-30"
         :handle="false"
       >
         <template #content>
-          <div class="grid min-w-[300px] gap-2 p-4">
+          <div class="p-4">
+            {{ track.name || `Track ${track.id}` }}
+            <hr class="py-2" />
             <div
               v-for="id in track.file_ids"
               :key="id"
@@ -71,6 +81,40 @@
           </div>
         </template>
       </UDrawer>
+
+      <UModal
+        v-model:open="deleteConfirmOpen"
+        title="Delete Track"
+        :description="`Are you sure? This will remove ${deleteTrackLabel} and associated files from the project.`"
+        :dismissible="!loading"
+        :ui="{ wrapper: 'z-[80]', overlay: 'z-[80]', content: 'z-[81] max-w-md' }"
+      >
+        <!-- <template #body>
+          <p class="m-0 text-sm text-zinc-300">This action cannot be undone.</p>
+        </template> -->
+        <template #footer>
+          <div class="flex w-full justify-end gap-2">
+            <UButton
+              icon="i-lucide-x"
+              variant="outline"
+              color="neutral"
+              :disabled="loading"
+              @click="deleteConfirmOpen = false"
+            >
+              Cancel
+            </UButton>
+            <UButton
+              icon="i-lucide-trash-2"
+              variant="solid"
+              color="error"
+              :loading="loading"
+              @click="() => void deleteTrackConfirmed()"
+            >
+              Delete Track
+            </UButton>
+          </div>
+        </template>
+      </UModal>
     </div>
 
     <span v-if="fresh">
@@ -124,6 +168,7 @@ const error = ref('')
 const binHover = ref(false)
 const loading = ref(false)
 const loadingMessage = ref('')
+const deleteConfirmOpen = ref(false)
 const binBounds = ref({ left: 0, top: 0, right: 0, bottom: 0 })
 
 const hovering = computed(() => {
@@ -196,6 +241,30 @@ const loadFiles = async (files: string[]) => {
 }
 
 const removeFile = (id: string) => trackStore.removeFileFromTrack(id, props.trackId)
+
+const deleteTrackLabel = computed(() => track.value.name?.trim() || `Track ${props.trackId}`)
+
+const openDeleteConfirm = () => {
+  deleteConfirmOpen.value = true
+}
+
+const deleteTrackConfirmed = async () => {
+  const name = deleteTrackLabel.value
+  loading.value = true
+  loadingMessage.value = `Deleting ${name}`
+
+  try {
+    const removed = await trackStore.removeTrack(props.trackId)
+    if (!removed) return
+    deleteConfirmOpen.value = false
+    await invoke('init_player')
+    await invoke('set_selections')
+    await trackStore.sync()
+  } finally {
+    loading.value = false
+    loadingMessage.value = ''
+  }
+}
 
 const fresh = computed(() => {
   const isFresh = track.value.file_ids.length === 0
