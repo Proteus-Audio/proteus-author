@@ -9,10 +9,13 @@ use crate::project::{
 };
 use std::fs::File;
 use std::io::prelude::*;
+use std::path::{Path, PathBuf};
 use tauri::Emitter;
 use tauri::Manager;
+use tauri::Runtime;
 use tauri::State;
 use tauri::Window;
+use tauri::WebviewWindow;
 use tauri_plugin_dialog::DialogExt;
 
 #[tauri::command]
@@ -213,45 +216,89 @@ pub async fn open_file(window: Window) {
                     return;
                 }
             };
-            if path_buff.extension().unwrap() != "protproject" {
-                println!("File extension is not .protproject");
-                ()
-            }
-
-            let file_name = path_buff.file_name().unwrap().to_str().unwrap();
-            let project_location = path_buff.to_str().unwrap().to_string();
-
-            let file_contents = std::fs::read_to_string(path_buff.clone()).unwrap();
-            let project_result: Result<ProjectSkeleton, serde_json::Error> =
-                serde_json::from_str(&file_contents);
-            let project_state: State<WindowProjectState> = app.state();
-            let unsaved_state: State<WindowUnsavedState> = app.state();
-            let saved_snapshot_state: State<WindowSavedSnapshotState> = app.state();
-
-            match project_result {
-                Ok(mut new_project) => {
-                    let project_name = file_name.to_string().replace(".protproject", "");
-                    new_project.name = Some(project_name);
-                    new_project.location = Some(project_location.to_string());
-                    set_project_by_label(&label, &project_state, new_project.clone());
-                    set_unsaved_by_label(&label, &unsaved_state, false);
-                    set_saved_snapshot_by_label(
-                        &label,
-                        &saved_snapshot_state,
-                        canonical_project_json(&new_project),
-                    );
-                    let title = new_project.name.clone().unwrap_or("Untitled".to_string());
-                    if let Err(err) = window.set_title(&title) {
-                        println!("Failed to set title: {:?}", err);
-                    }
-                    app.emit_to(label.as_str(), "FILE_LOADED", new_project)
-                        .expect("failed to emit event");
-                }
-                Err(e) => {
-                    println!("Error: {:?}", e);
-                }
-            }
+            open_project_file_at_path_and_emit(&window, path_buff);
         });
+}
+
+pub fn is_project_file_path(path: &Path) -> bool {
+    path.extension()
+        .and_then(|ext| ext.to_str())
+        .map(|ext| ext.eq_ignore_ascii_case("protproject"))
+        .unwrap_or(false)
+}
+
+pub fn open_project_file_at_path<R: Runtime>(
+    window: &WebviewWindow<R>,
+    path: PathBuf,
+) -> Option<ProjectSkeleton> {
+    if !is_project_file_path(&path) {
+        println!("File extension is not .protproject: {:?}", path);
+        return None;
+    }
+
+    let file_name = match path.file_name().and_then(|name| name.to_str()) {
+        Some(name) => name.to_string(),
+        None => {
+            println!("Unable to read file name: {:?}", path);
+            return None;
+        }
+    };
+
+    let project_location = match path.to_str() {
+        Some(location) => location.to_string(),
+        None => {
+            println!("Unable to read file path: {:?}", path);
+            return None;
+        }
+    };
+
+    let file_contents = match std::fs::read_to_string(&path) {
+        Ok(contents) => contents,
+        Err(err) => {
+            println!("Failed to read project file: {:?}", err);
+            return None;
+        }
+    };
+
+    let mut new_project: ProjectSkeleton = match serde_json::from_str(&file_contents) {
+        Ok(project) => project,
+        Err(err) => {
+            println!("Failed to parse project file: {:?}", err);
+            return None;
+        }
+    };
+
+    let label = window.label().to_string();
+    let project_state: State<WindowProjectState> = window.state();
+    let unsaved_state: State<WindowUnsavedState> = window.state();
+    let saved_snapshot_state: State<WindowSavedSnapshotState> = window.state();
+
+    let project_name = file_name.replace(".protproject", "");
+    new_project.name = Some(project_name);
+    new_project.location = Some(project_location);
+
+    set_project_by_label(&label, &project_state, new_project.clone());
+    set_unsaved_by_label(&label, &unsaved_state, false);
+    set_saved_snapshot_by_label(
+        &label,
+        &saved_snapshot_state,
+        canonical_project_json(&new_project),
+    );
+
+    let title = new_project.name.clone().unwrap_or("Untitled".to_string());
+    if let Err(err) = window.set_title(&title) {
+        println!("Failed to set title: {:?}", err);
+    }
+
+    Some(new_project)
+}
+
+pub fn open_project_file_at_path_and_emit<R: Runtime>(window: &WebviewWindow<R>, path: PathBuf) {
+    if let Some(project) = open_project_file_at_path(window, path) {
+        if let Err(err) = window.app_handle().emit_to(window.label(), "FILE_LOADED", project) {
+            println!("Failed to emit FILE_LOADED event: {:?}", err);
+        }
+    }
 }
 
 #[tauri::command]

@@ -15,6 +15,7 @@ mod startup;
 mod windows;
 
 use std::sync::{Arc, Mutex};
+use std::{env, path::PathBuf};
 
 use alerts::*;
 use dotenv::dotenv;
@@ -114,8 +115,18 @@ fn main() {
     let startup_trace_state: tauri::State<StartupTraceState> = app.state();
     log_rust(&startup_trace_state, "app", "tauri builder initialized");
 
-    let _main_window = windows::create_main_window(&app.handle());
+    let main_window = windows::create_main_window(&app.handle());
     log_rust(&startup_trace_state, "app", "main window requested");
+    if let Some(project_path) = env::args().skip(1).find_map(|arg| {
+        let path = PathBuf::from(arg);
+        if is_project_file_path(&path) {
+            Some(path)
+        } else {
+            None
+        }
+    }) {
+        open_project_file_at_path(&main_window, project_path);
+    }
     // windows::create_docs_window(&handle);
 
     app.run(|_app_handle, event| match event {
@@ -161,6 +172,22 @@ fn main() {
         #[cfg(any(target_os = "macos", target_os = "ios"))]
         RunEvent::Opened { urls, .. } => {
             println!("opened: {:?}", urls);
+            let window = windows::get_or_create_main_window(&_app_handle);
+            let project_path = urls.into_iter().find_map(|url| {
+                url.to_file_path().ok().and_then(|path| {
+                    if is_project_file_path(&path) {
+                        Some(path)
+                    } else {
+                        None
+                    }
+                })
+            });
+
+            if let Some(path) = project_path {
+                open_project_file_at_path_and_emit(&window, path);
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
         }
         _ => {}
     });

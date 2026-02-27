@@ -440,7 +440,7 @@ const runDeferredStartup = async () => {
   startupMark('App.vue:after-get-play-state')
 
   startupMark('App.vue:before-track-sync')
-  await trackStore.sync()
+  await head.load()
   startupMark('App.vue:after-track-sync')
   await refreshMissingFiles()
 
