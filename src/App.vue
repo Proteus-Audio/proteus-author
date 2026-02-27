@@ -433,14 +433,12 @@ const runDeferredStartup = async () => {
   await registerWindowListeners(appWindow, runIfFocused)
   startupMark('App.vue:listeners-registered')
 
-  trackStore.addEmptyTrackIfNone()
-
   startupMark('App.vue:before-get-play-state')
   console.log(await invoke('get_play_state'))
   startupMark('App.vue:after-get-play-state')
 
   startupMark('App.vue:before-track-sync')
-  await trackStore.sync()
+  await head.load()
   startupMark('App.vue:after-track-sync')
   await refreshMissingFiles()
 

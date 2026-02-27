@@ -20,6 +20,17 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "fileAssociations": [
+      {
+        "ext": [
+          "protproject"
+        ],
+        "name": "Proteus Author Project",
+        "description": "Proteus Author Project File",
+        "role": "Editor",
+        "mimeType": "application/x-proteus-project"
+      }
+    ],
     "windows": {
       "certificateThumbprint": null,
       "digestAlgorithm": "sha256",
@@ -42,7 +53,7 @@
     }
   },
   "productName": "Proteus Author",
-  "version": "0.10.15",
+  "version": "0.10.16",
   "identifier": "com.proteus.author",
   "plugins": {},
   "app": {
