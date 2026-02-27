@@ -15,6 +15,7 @@ use proteus_lib::container::prot::PathsTrack;
 use proteus_lib::container::prot::Prot;
 use serde::Deserialize;
 use serde::Serialize;
+use std::path::Path;
 // }
 use tauri::Emitter;
 use tauri::Manager;
@@ -45,6 +46,7 @@ fn build_paths_tracks(project: &ProjectSkeleton) -> Vec<PathsTrack> {
                         .iter()
                         .find(|f| f.id == *id)
                         .map(|f| f.path.clone())
+                        .filter(|path| Path::new(path).exists())
                 })
                 .collect();
 
@@ -59,6 +61,7 @@ fn build_paths_tracks(project: &ProjectSkeleton) -> Vec<PathsTrack> {
                     .iter()
                     .find(|f| f.id == *selection_id)
                     .map(|f| f.path.clone())
+                    .filter(|path| Path::new(path).exists())
                 {
                     if let Some(index) = file_paths.iter().position(|path| path == &selected_path) {
                         if index > 0 {

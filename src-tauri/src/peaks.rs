@@ -74,45 +74,56 @@ fn peaks_duration_seconds(peaks_data: &proteus_lib::peaks::PeaksData) -> f64 {
 }
 
 pub fn get_cached_peak_duration_seconds(window: &Window, file_id: &str) -> f64 {
-    let peaks_file_path = ensure_peaks_file(window, file_id);
-    let peaks_data = proteus_lib::peaks::get_peaks(&peaks_file_path, Default::default())
-        .expect("failed to read .peaks");
+    let Some(peaks_file_path) = ensure_peaks_file(window, file_id) else {
+        return 0.0;
+    };
+    let Ok(peaks_data) = proteus_lib::peaks::get_peaks(&peaks_file_path, Default::default()) else {
+        return 0.0;
+    };
     peaks_duration_seconds(&peaks_data).max(0.0)
 }
 
-fn get_peaks_file_path(window: &Window, file_id: &str) -> String {
-    let app_cache = get_cache_dir(window).unwrap();
-    format!("{}/{}.peaks", app_cache, file_id)
+fn get_peaks_file_path(window: &Window, file_id: &str) -> Option<String> {
+    let app_cache = get_cache_dir(window).ok()?;
+    Some(format!("{}/{}.peaks", app_cache, file_id))
 }
 
-fn ensure_peaks_file(window: &Window, file_id: &str) -> String {
-    let peaks_file_path = get_peaks_file_path(window, file_id);
+fn ensure_peaks_file(window: &Window, file_id: &str) -> Option<String> {
+    let peaks_file_path = get_peaks_file_path(window, file_id)?;
 
     if Path::new(&peaks_file_path).exists() {
-        return peaks_file_path;
+        return Some(peaks_file_path);
     }
 
     let project_state: State<WindowProjectState> = window.state();
     let project = read_project(window, &project_state);
-    let file_path = project
+    let Some(file_path) = project
         .files
         .iter()
         .find(|f| f.id == file_id)
-        .unwrap()
-        .path
-        .clone();
+        .map(|file| file.path.clone())
+        .filter(|path| !path.is_empty() && Path::new(path).exists())
+    else {
+        return None;
+    };
 
-    proteus_lib::peaks::write_peaks(&file_path, &peaks_file_path)
-        .expect("failed to write .peaks file");
+    if proteus_lib::peaks::write_peaks(&file_path, &peaks_file_path).is_err() {
+        return None;
+    }
 
-    let peaks_data = proteus_lib::peaks::get_peaks(&peaks_file_path, Default::default())
-        .expect("failed to read .peaks file after writing");
+    let Ok(peaks_data) = proteus_lib::peaks::get_peaks(&peaks_file_path, Default::default()) else {
+        return None;
+    };
     let peaks = to_legacy_peaks(peaks_data);
 
-    let app_cache = get_cache_dir(window).unwrap();
-    save_svgs_in_new_thread_for_each_zoom_level(peaks, format!("{}/{}.svg", app_cache, file_id));
+    if let Ok(app_cache) = get_cache_dir(window) {
+        save_svgs_in_new_thread_for_each_zoom_level(
+            peaks,
+            format!("{}/{}.svg", app_cache, file_id),
+        );
+    }
 
-    peaks_file_path
+    Some(peaks_file_path)
 }
 
 pub fn simplify_peaks(peaks: Vec<Vec<(f32, f32)>>, zoom: usize) -> Vec<SimplifiedPeaks> {
@@ -165,9 +176,12 @@ pub fn simplify_peaks(peaks: Vec<Vec<(f32, f32)>>, zoom: usize) -> Vec<Simplifie
 }
 
 pub fn get_cached_peaks(window: &Window, file_id: &str) -> Vec<Vec<(f32, f32)>> {
-    let peaks_file_path = ensure_peaks_file(window, file_id);
-    let peaks_data = proteus_lib::peaks::get_peaks(&peaks_file_path, Default::default())
-        .expect("failed to read .peaks");
+    let Some(peaks_file_path) = ensure_peaks_file(window, file_id) else {
+        return vec![Vec::new()];
+    };
+    let Ok(peaks_data) = proteus_lib::peaks::get_peaks(&peaks_file_path, Default::default()) else {
+        return vec![Vec::new()];
+    };
     to_legacy_peaks(peaks_data)
 }
 
@@ -177,17 +191,24 @@ pub fn get_cached_peaks_in_range(
     start_seconds: f64,
     end_seconds: f64,
 ) -> Vec<Vec<(f32, f32)>> {
-    let peaks_file_path = ensure_peaks_file(window, file_id);
-    let peaks_data =
+    let Some(peaks_file_path) = ensure_peaks_file(window, file_id) else {
+        return vec![Vec::new()];
+    };
+    let Ok(peaks_data) =
         proteus_lib::peaks::get_peaks_in_range(&peaks_file_path, start_seconds, end_seconds)
-            .expect("failed to read .peaks range");
+    else {
+        return vec![Vec::new()];
+    };
     to_legacy_peaks(peaks_data)
 }
 
 pub fn get_cached_peaks_for_full_duration(window: &Window, file_id: &str) -> Vec<Vec<(f32, f32)>> {
-    let peaks_file_path = ensure_peaks_file(window, file_id);
-    let full_peaks = proteus_lib::peaks::get_peaks(&peaks_file_path, Default::default())
-        .expect("failed to read .peaks");
+    let Some(peaks_file_path) = ensure_peaks_file(window, file_id) else {
+        return vec![Vec::new()];
+    };
+    let Ok(full_peaks) = proteus_lib::peaks::get_peaks(&peaks_file_path, Default::default()) else {
+        return vec![Vec::new()];
+    };
     let end_seconds = peaks_duration_seconds(&full_peaks);
 
     if end_seconds <= 0.0 {
@@ -204,7 +225,9 @@ pub fn get_cached_peak_amplitudes_in_range(
     end_seconds: f64,
     target_peaks: usize,
 ) -> Vec<Vec<f32>> {
-    let peaks_file_path = ensure_peaks_file(window, file_id);
+    let Some(peaks_file_path) = ensure_peaks_file(window, file_id) else {
+        return vec![Vec::new()];
+    };
     let clamped_start = start_seconds.max(0.0);
     let clamped_end = end_seconds.max(clamped_start + 0.001);
     let options = proteus_lib::peaks::GetPeaksOptions {
@@ -214,8 +237,9 @@ pub fn get_cached_peak_amplitudes_in_range(
         channels: None,
     };
 
-    let peaks_data =
-        proteus_lib::peaks::get_peaks(&peaks_file_path, options).expect("failed to read .peaks");
+    let Ok(peaks_data) = proteus_lib::peaks::get_peaks(&peaks_file_path, options) else {
+        return vec![Vec::new()];
+    };
 
     peaks_data
         .channels
