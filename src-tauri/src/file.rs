@@ -826,6 +826,87 @@ pub async fn load_empty_project(window: Window) {
 }
 
 #[tauri::command]
+pub fn get_missing_project_files(
+    window: Window,
+    project_state: State<WindowProjectState>,
+) -> Vec<FileInfoSkeleton> {
+    let project = read_project(&window, &project_state);
+
+    project
+        .files
+        .iter()
+        .filter(|file| file.path.is_empty() || !Path::new(&file.path).exists())
+        .map(|file| FileInfoSkeleton {
+            id: file.id.clone(),
+            path: file.path.clone(),
+            name: file.name.clone(),
+            extension: file.extension.clone(),
+        })
+        .collect()
+}
+
+#[tauri::command]
+pub async fn locate_project_file(
+    file_id: String,
+    window: Window,
+)
+    -> Result<Option<FileInfoSkeleton>, String>
+{
+    let project_state: State<WindowProjectState> = window.state();
+    let project = read_project(&window, &project_state);
+    let Some(existing) = project.files.iter().find(|file| file.id == file_id) else {
+        return Ok(None);
+    };
+    let existing_name = existing.name.clone();
+
+    let (tx, rx) = std::sync::mpsc::channel();
+    window
+        .dialog()
+        .file()
+        .add_filter("Audio Files", &["wav", "mp3", "aif", "aiff", "flac", "ogg"])
+        .set_title(format!("Locate {}", existing_name))
+        .pick_file(move |file_path| {
+            let _ = tx.send(file_path);
+        });
+
+    let Some(picked) = rx.recv().ok().flatten() else {
+        return Ok(None);
+    };
+
+    let path_buff = match picked.into_path() {
+        Ok(path) => path,
+        Err(err) => {
+            return Err(format!("Invalid file path: {:?}", err));
+        }
+    };
+    let path = path_buff.to_string_lossy().to_string();
+    let name = path_buff
+        .file_name()
+        .and_then(|f| f.to_str())
+        .unwrap_or(existing_name.as_str())
+        .to_string();
+    let extension = path_buff
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .map(|ext| ext.to_string());
+
+    with_project_mut(&window, &project_state, |project| {
+        if let Some(file) = project.files.iter_mut().find(|file| file.id == file_id) {
+            file.path = path.clone();
+            file.name = name.clone();
+            file.extension = extension.clone();
+        }
+    });
+
+    Ok(Some(FileInfoSkeleton {
+        id: file_id,
+        path,
+        name,
+        extension,
+    }))
+}
+
+#[tauri::command]
 pub fn export_prot(window: Window, project_state: State<WindowProjectState>) {
     let project = read_project(&window, &project_state);
     let file_name = project.name.clone().unwrap_or("export".to_string()) + ".prot";

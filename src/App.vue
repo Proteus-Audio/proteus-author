@@ -18,6 +18,44 @@
             <BaseAlertBox />
             <BaseTitle />
 
+            <UModal
+              v-model:open="missingFilesModalOpen"
+              title="Can't Find Referenced Files"
+              :description="`This project has ${missingFiles.length} missing file${missingFiles.length === 1 ? '' : 's'}. Locate them to restore playback.`"
+              :ui="{ wrapper: 'z-[80]', overlay: 'z-[80]', content: 'z-[81] max-w-2xl' }"
+            >
+              <template #body>
+                <div class="grid gap-3">
+                  <div
+                    v-for="file in missingFiles"
+                    :key="file.id"
+                    class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-md border border-zinc-300 bg-zinc-100/80 p-3"
+                  >
+                    <div class="min-w-0">
+                      <div class="truncate font-medium text-zinc-900">{{ file.name }}</div>
+                      <div class="truncate text-xs text-zinc-600">{{ file.path }}</div>
+                    </div>
+                    <UButton
+                      icon="i-lucide-search"
+                      color="neutral"
+                      variant="outline"
+                      :loading="locatingFileIds.includes(file.id)"
+                      @click="() => void locateMissingFile(file.id)"
+                    >
+                      Locate File
+                    </UButton>
+                  </div>
+                </div>
+              </template>
+              <template #footer>
+                <div class="flex w-full justify-end">
+                  <UButton variant="ghost" color="neutral" @click="missingFilesModalOpen = false">
+                    Close
+                  </UButton>
+                </div>
+              </template>
+            </UModal>
+
             <div class="sticky top-0 z-30 bg-zinc-50 py-2 backdrop-blur-sm">
               <BaseTransport />
             </div>
@@ -99,6 +137,47 @@ const formattedPossibleCombinations = computed(() => {
 
 const unlisteners = ref<UnlistenFn[]>([])
 const startupHydrating = ref(true)
+const missingFilesModalOpen = ref(false)
+const missingFiles = ref<MissingFile[]>([])
+const locatingFileIds = ref<string[]>([])
+
+interface MissingFile {
+  id: string
+  name: string
+  path: string
+  extension?: string | null
+}
+
+const refreshMissingFiles = async () => {
+  const missing = await invoke<MissingFile[]>('get_missing_project_files')
+  missingFiles.value = missing
+  missingFilesModalOpen.value = missing.length > 0
+  if (missing.length === 0) return
+  const suffix = missing.length === 1 ? '' : 's'
+  alerts.upsertAlert(
+    'missing-files',
+    `Can't find ${missing.length} project file${suffix}. Use "Locate File" to relink.`,
+    'warning',
+  )
+}
+
+const locateMissingFile = async (fileId: string) => {
+  if (locatingFileIds.value.includes(fileId)) return
+  locatingFileIds.value.push(fileId)
+
+  try {
+    const linked = await invoke<MissingFile | null>('locate_project_file', { fileId })
+    if (!linked) return
+    await trackStore.sync()
+    await invoke('init_player')
+    await invoke('set_selections')
+    await trackStore.sync()
+    await audio.setDuration()
+    await refreshMissingFiles()
+  } finally {
+    locatingFileIds.value = locatingFileIds.value.filter((id) => id !== fileId)
+  }
+}
 
 watch(
   [() => trackStore.tracks, () => audio.effects],
@@ -160,6 +239,7 @@ const registerWindowListeners = async (
         startupHydrating.value = true
         try {
           await head.load()
+          await refreshMissingFiles()
         } finally {
           startupHydrating.value = false
         }
@@ -280,6 +360,7 @@ const runDeferredStartup = async () => {
   startupMark('App.vue:before-track-sync')
   await trackStore.sync()
   startupMark('App.vue:after-track-sync')
+  await refreshMissingFiles()
 
   startupHydrating.value = false
   startupMark('App.vue:startup-hydration-complete')
