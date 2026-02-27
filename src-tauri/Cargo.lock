@@ -2883,7 +2883,7 @@ dependencies = [
 
 [[package]]
 name = "proteus-author-tauri"
-version = "0.10.14"
+version = "0.10.15"
 dependencies = [
  "dotenv",
  "log",

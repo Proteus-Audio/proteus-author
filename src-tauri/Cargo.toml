@@ -1,6 +1,6 @@
 [package]
 name = "proteus-author-tauri"
-version = "0.10.14"
+version = "0.10.15"
 description = "The Official Proteus Audio Authoring Tool"
 authors = ["Adam Thomas Howard"]
 license = ""
