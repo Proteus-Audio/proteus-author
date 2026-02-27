@@ -1,10 +1,10 @@
+use crate::file::types::{TrackWaveformView, WaveformSegment};
 use crate::peaks::{
     get_cached_peak_amplitudes_in_range, get_cached_peak_duration_seconds,
     get_cached_peaks_for_full_duration, simplify_peaks, SimplifiedPeaks,
 };
 use crate::player_runtime::{player_shuffle_schedule, PlayerActorState};
 use crate::project::{read_project, WindowProjectState};
-use crate::file::types::{TrackWaveformView, WaveformSegment};
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use tauri::Manager;
@@ -160,7 +160,9 @@ pub async fn get_track_waveform_peaks(
         if remaining_segments == 1 {
             segment_target = remaining_budget.max(1);
         } else {
-            let max_for_segment = remaining_budget.saturating_sub(remaining_segments - 1).max(1);
+            let max_for_segment = remaining_budget
+                .saturating_sub(remaining_segments - 1)
+                .max(1);
             segment_target = segment_target.min(max_for_segment);
         }
         allocated += segment_target;

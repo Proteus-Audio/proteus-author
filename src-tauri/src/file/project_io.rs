@@ -1,11 +1,11 @@
+use crate::file::utils::{
+    canonical_project_json, ensure_saved_snapshot_baseline, get_saved_snapshot_by_label,
+    set_saved_snapshot_by_label, update_window_title,
+};
 use crate::project::{
     empty_project, get_unsaved, read_project, set_project, set_project_by_label, set_unsaved,
     set_unsaved_by_label, ProjectSkeleton, WindowProjectState, WindowSavedSnapshotState,
     WindowUnsavedState,
-};
-use crate::file::utils::{
-    canonical_project_json, ensure_saved_snapshot_baseline, get_saved_snapshot_by_label,
-    set_saved_snapshot_by_label, update_window_title,
 };
 use std::fs::File;
 use std::io::prelude::*;

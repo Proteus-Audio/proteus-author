@@ -74,6 +74,7 @@ fn main() {
             load_empty_project,
             get_missing_project_files,
             locate_project_file,
+            apply_found_files,
             check_status,
             export_prot,
             get_peaks,

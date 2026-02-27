@@ -1,6 +1,6 @@
 use crate::alerts::{emit_alert_current_window, emit_alert_current_window_keyed};
-use crate::project::{read_project, WindowProjectState};
 use crate::file::utils::{attachment_mime_for_path, split_arguments, unique_attachment_name};
+use crate::project::{read_project, WindowProjectState};
 use proteus_lib::container::play_settings::PlaySettingsContainer;
 use proteus_lib::container::play_settings::{
     PlaySettingsFile, PlaySettingsV2, PlaySettingsV2File, SettingsTrack,

@@ -1,4 +1,6 @@
-use crate::project::{read_project_by_label, ProjectSkeleton, WindowProjectState, WindowSavedSnapshotState};
+use crate::project::{
+    read_project_by_label, ProjectSkeleton, WindowProjectState, WindowSavedSnapshotState,
+};
 use regex::Regex;
 use std::collections::HashSet;
 use std::path::Path;
@@ -38,7 +40,11 @@ pub(super) fn ensure_saved_snapshot_baseline(
     }
 
     let project = read_project_by_label(label, project_state);
-    set_saved_snapshot_by_label(label, saved_snapshot_state, canonical_project_json(&project));
+    set_saved_snapshot_by_label(
+        label,
+        saved_snapshot_state,
+        canonical_project_json(&project),
+    );
 }
 
 pub(super) fn update_window_title(window: &Window, project: &ProjectSkeleton, is_unsaved: bool) {

@@ -3,6 +3,7 @@ use crate::project::{
     default_track_level, default_track_pan, read_project, with_project_mut, FileInfo,
     FileInfoSkeleton, TrackSkeleton, WindowProjectState,
 };
+use serde::Serialize;
 use std::path::Path;
 use tauri::Manager;
 use tauri::State;
@@ -51,7 +52,11 @@ pub async fn register_file(
     let project_state: State<WindowProjectState> = window.state();
     let project_clone = read_project(&window, &project_state);
 
-    if let Some(existing_file) = project_clone.files.iter().find(|file| file.path == file_path) {
+    if let Some(existing_file) = project_clone
+        .files
+        .iter()
+        .find(|file| file.path == file_path)
+    {
         push_file_id(
             track_id,
             existing_file.id.clone(),
@@ -127,13 +132,14 @@ pub fn get_missing_project_files(
 pub async fn locate_project_file(
     file_id: String,
     window: Window,
-) -> Result<Option<FileInfoSkeleton>, String> {
+) -> Result<Option<LocateProjectFileResult>, String> {
     let project_state: State<WindowProjectState> = window.state();
     let project = read_project(&window, &project_state);
     let Some(existing) = project.files.iter().find(|file| file.id == file_id) else {
         return Ok(None);
     };
     let existing_name = existing.name.clone();
+    let missing_path = existing.path.clone();
 
     let (tx, rx) = std::sync::mpsc::channel();
     window
@@ -174,10 +180,140 @@ pub async fn locate_project_file(
         }
     });
 
-    Ok(Some(FileInfoSkeleton {
-        id: file_id,
-        path,
-        name,
-        extension,
+    let other_files = locate_missing_files_from_example(missing_path, path.to_string(), window)
+        .await
+        .unwrap_or_default();
+
+    Ok(Some(LocateProjectFileResult {
+        linked_file: FileInfoSkeleton {
+            id: file_id,
+            path,
+            name,
+            extension,
+        },
+        found_files: other_files,
     }))
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct LocateProjectFileResult {
+    pub linked_file: FileInfoSkeleton,
+    pub found_files: Vec<FileInfoSkeleton>,
+}
+
+pub async fn locate_missing_files_from_example(
+    missing_path: String,
+    found_path: String,
+    window: Window,
+) -> Result<Vec<FileInfoSkeleton>, String> {
+    let missing = Path::new(&missing_path);
+    let found = Path::new(&found_path);
+    let Some((old_base, new_base)) = infer_path_mapping(missing, found) else {
+        return Ok(Vec::new());
+    };
+
+    let project_state: State<WindowProjectState> = window.state();
+    let project = read_project(&window, &project_state);
+
+    let resolved = project
+        .files
+        .iter()
+        .filter(|file| {
+            file.path != missing_path && !file.path.is_empty() && !Path::new(&file.path).exists()
+        })
+        .filter_map(|file| {
+            let relative = Path::new(&file.path).strip_prefix(&old_base).ok()?;
+            let candidate = new_base.join(relative);
+            if !candidate.is_file() {
+                return None;
+            }
+
+            let candidate_path = candidate.to_string_lossy().to_string();
+            let name = candidate
+                .file_name()
+                .and_then(|value| value.to_str())
+                .unwrap_or(file.name.as_str())
+                .to_string();
+            let extension = candidate
+                .extension()
+                .and_then(|value| value.to_str())
+                .map(|value| value.to_string());
+
+            Some(FileInfoSkeleton {
+                id: file.id.clone(),
+                path: candidate_path,
+                name,
+                extension,
+            })
+        })
+        .collect();
+
+    Ok(resolved)
+}
+
+#[tauri::command]
+pub async fn apply_found_files(
+    found_files: Vec<FileInfoSkeleton>,
+    window: Window,
+) -> Result<Vec<FileInfoSkeleton>, String> {
+    let project_state: State<WindowProjectState> = window.state();
+    let mut applied_files = Vec::new();
+
+    with_project_mut(&window, &project_state, |project| {
+        for found_file in found_files {
+            if !Path::new(&found_file.path).is_file() {
+                continue;
+            }
+
+            if let Some(existing) = project
+                .files
+                .iter_mut()
+                .find(|file| file.id == found_file.id)
+            {
+                existing.path = found_file.path.clone();
+                existing.name = found_file.name.clone();
+                existing.extension = found_file.extension.clone();
+                applied_files.push(found_file);
+            }
+        }
+    });
+
+    Ok(applied_files)
+}
+
+fn infer_path_mapping(
+    missing: &Path,
+    found: &Path,
+) -> Option<(std::path::PathBuf, std::path::PathBuf)> {
+    let mut best_match: Option<(usize, std::path::PathBuf, std::path::PathBuf)> = None;
+
+    for old_base in missing.ancestors() {
+        let Ok(old_suffix) = missing.strip_prefix(old_base) else {
+            continue;
+        };
+        let suffix_len = old_suffix.components().count();
+        if suffix_len == 0 {
+            continue;
+        }
+
+        for new_base in found.ancestors() {
+            let Ok(new_suffix) = found.strip_prefix(new_base) else {
+                continue;
+            };
+
+            if old_suffix != new_suffix {
+                continue;
+            }
+
+            let should_replace = best_match
+                .as_ref()
+                .map(|(best_len, _, _)| suffix_len > *best_len)
+                .unwrap_or(true);
+            if should_replace {
+                best_match = Some((suffix_len, old_base.to_path_buf(), new_base.to_path_buf()));
+            }
+        }
+    }
+
+    best_match.map(|(_, old_base, new_base)| (old_base, new_base))
 }

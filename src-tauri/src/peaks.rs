@@ -117,7 +117,10 @@ fn ensure_peaks_file(window: &Window, file_id: &str) -> Option<String> {
     let peaks = to_legacy_peaks(peaks_data);
 
     if let Ok(app_cache) = get_cache_dir(window) {
-        save_svgs_in_new_thread_for_each_zoom_level(peaks, format!("{}/{}.svg", app_cache, file_id));
+        save_svgs_in_new_thread_for_each_zoom_level(
+            peaks,
+            format!("{}/{}.svg", app_cache, file_id),
+        );
     }
 
     Some(peaks_file_path)

@@ -56,6 +56,43 @@
               </template>
             </UModal>
 
+            <UModal
+              v-model:open="applyFoundFilesModalOpen"
+              title="Use Auto-Located Files?"
+              :description="`Found ${foundFilesToApply.length} additional file${foundFilesToApply.length === 1 ? '' : 's'} based on the file you selected.`"
+              :ui="{ wrapper: 'z-[82]', overlay: 'z-[82]', content: 'z-[83] max-w-xl' }"
+            >
+              <template #body>
+                <div class="grid gap-2">
+                  <div class="text-sm text-zinc-700">Apply these suggested file paths?</div>
+                  <div
+                    v-for="file in foundFilesToApply.slice(0, 6)"
+                    :key="file.id"
+                    class="truncate rounded-md border border-zinc-300 bg-zinc-100/80 px-3 py-2 text-xs text-zinc-700"
+                  >
+                    {{ file.path }}
+                  </div>
+                  <div v-if="foundFilesToApply.length > 6" class="text-xs text-zinc-600">
+                    and {{ foundFilesToApply.length - 6 }} more
+                  </div>
+                </div>
+              </template>
+              <template #footer>
+                <div class="flex w-full justify-end gap-2">
+                  <UButton variant="ghost" color="neutral" @click="dismissFoundFilesModal">
+                    Not Now
+                  </UButton>
+                  <UButton
+                    color="primary"
+                    :loading="applyingFoundFiles"
+                    @click="() => void confirmApplyFoundFiles()"
+                  >
+                    Apply Files
+                  </UButton>
+                </div>
+              </template>
+            </UModal>
+
             <div class="sticky top-0 z-30 bg-zinc-50 py-2 backdrop-blur-sm">
               <BaseTransport />
             </div>
@@ -140,12 +177,28 @@ const startupHydrating = ref(true)
 const missingFilesModalOpen = ref(false)
 const missingFiles = ref<MissingFile[]>([])
 const locatingFileIds = ref<string[]>([])
+const applyFoundFilesModalOpen = ref(false)
+const foundFilesToApply = ref<MissingFile[]>([])
+const applyingFoundFiles = ref(false)
 
 interface MissingFile {
   id: string
   name: string
   path: string
   extension?: string | null
+}
+
+interface LocateProjectFileResult {
+  linked_file: MissingFile
+  found_files: MissingFile[]
+}
+
+const reinitializeLinkedFiles = async () => {
+  await trackStore.sync()
+  await invoke('init_player')
+  await invoke('set_selections')
+  await trackStore.sync()
+  await audio.setDuration()
 }
 
 const refreshMissingFiles = async () => {
@@ -166,16 +219,45 @@ const locateMissingFile = async (fileId: string) => {
   locatingFileIds.value.push(fileId)
 
   try {
-    const linked = await invoke<MissingFile | null>('locate_project_file', { fileId })
+    const linked = await invoke<LocateProjectFileResult | null>('locate_project_file', { fileId })
     if (!linked) return
-    await trackStore.sync()
-    await invoke('init_player')
-    await invoke('set_selections')
-    await trackStore.sync()
-    await audio.setDuration()
+    await reinitializeLinkedFiles()
+    if (linked.found_files.length > 0) {
+      foundFilesToApply.value = linked.found_files
+      applyFoundFilesModalOpen.value = true
+    }
     await refreshMissingFiles()
   } finally {
     locatingFileIds.value = locatingFileIds.value.filter((id) => id !== fileId)
+  }
+}
+
+const dismissFoundFilesModal = () => {
+  applyFoundFilesModalOpen.value = false
+  foundFilesToApply.value = []
+}
+
+const confirmApplyFoundFiles = async () => {
+  if (applyingFoundFiles.value || foundFilesToApply.value.length === 0) {
+    dismissFoundFilesModal()
+    return
+  }
+
+  applyingFoundFiles.value = true
+  try {
+    const applied = await invoke<MissingFile[]>('apply_found_files', {
+      foundFiles: foundFilesToApply.value,
+    })
+    dismissFoundFilesModal()
+    if (applied.length === 0) {
+      return
+    }
+    const suffix = applied.length === 1 ? '' : 's'
+    alerts.addAlert(`Linked ${applied.length} additional file${suffix}.`, 'success')
+    await reinitializeLinkedFiles()
+    await refreshMissingFiles()
+  } finally {
+    applyingFoundFiles.value = false
   }
 }
 
