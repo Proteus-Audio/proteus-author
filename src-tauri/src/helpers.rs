@@ -2,7 +2,6 @@ use tauri::Manager;
 use tauri::Window;
 
 use std::fs;
-use std::fs::File;
 
 pub fn get_cache_dir(window: &Window) -> Result<String, String> {
     let app_cache = match window.path().app_cache_dir() {

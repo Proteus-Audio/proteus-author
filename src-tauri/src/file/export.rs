@@ -1,9 +1,10 @@
 use crate::alerts::{emit_alert_current_window, emit_alert_current_window_keyed};
+use crate::effects::decode_effects;
 use crate::file::utils::{attachment_mime_for_path, split_arguments, unique_attachment_name};
 use crate::project::{read_project, WindowProjectState};
 use proteus_lib::container::play_settings::PlaySettingsContainer;
 use proteus_lib::container::play_settings::{
-    PlaySettingsFile, PlaySettingsV2, PlaySettingsV2File, SettingsTrack,
+    EffectSettings, PlaySettingsFile, PlaySettingsV2, PlaySettingsV2File, SettingsTrack,
 };
 use proteus_lib::dsp::effects::AudioEffect;
 use std::collections::HashSet;
@@ -57,7 +58,7 @@ pub fn export_prot(window: Window, project_state: State<WindowProjectState>) {
         );
         let mut reduced_file_list = Vec::new();
 
-        let mut effects = project.effects.clone();
+        let mut effects = decode_effects(&project.effects);
         let mut ir_attachments: Vec<(String, String, String)> = Vec::new();
         let mut used_attachment_names = HashSet::new();
 
@@ -99,8 +100,19 @@ pub fn export_prot(window: Window, project_state: State<WindowProjectState>) {
             }
         }
 
+        let encoded_effects: Vec<EffectSettings> = effects
+            .into_iter()
+            .filter_map(|effect| match serde_json::to_value(effect) {
+                Ok(value) => Some(value),
+                Err(err) => {
+                    log::warn!("failed to serialize effect entry: {}", err);
+                    None
+                }
+            })
+            .collect();
+
         let mut play_settings = PlaySettingsV2 {
-            effects,
+            effects: encoded_effects,
             tracks: Vec::new(),
         };
 

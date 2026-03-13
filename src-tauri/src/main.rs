@@ -4,6 +4,7 @@
 )]
 
 mod alerts;
+mod effects;
 mod file;
 mod helpers;
 mod menu;
