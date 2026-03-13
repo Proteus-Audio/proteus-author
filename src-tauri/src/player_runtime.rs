@@ -3,6 +3,7 @@ use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread;
 use std::time::Duration;
 
+use crate::effects::decode_effects;
 use proteus_lib::container::play_settings::EffectSettings;
 use proteus_lib::container::prot::PathsTrack;
 use proteus_lib::diagnostics::reporter::Report;
@@ -150,7 +151,7 @@ fn player_worker(rx: Receiver<PlayerCommand>) {
                 }
 
                 let mut new_player = Player::new_from_file_paths(tracks);
-                new_player.set_effects(effects);
+                new_player.set_effects(decode_effects(&effects));
 
                 let label_for_reporter = label.clone();
                 let reporter = move |Report { time, .. }| {
@@ -194,7 +195,7 @@ fn player_worker(rx: Receiver<PlayerCommand>) {
                 reply,
             } => {
                 if let Some(Some(player)) = players.get_mut(&label) {
-                    player.set_effects(effects);
+                    player.set_effects(decode_effects(&effects));
                     player.play();
                 }
                 let _ = reply.send(());
@@ -289,7 +290,7 @@ fn player_worker(rx: Receiver<PlayerCommand>) {
                 reply,
             } => {
                 let result = if let Some(Some(player)) = players.get_mut(&label) {
-                    player.set_effects_inline(effects);
+                    player.set_effects_inline(decode_effects(&effects));
                     InlineEffectsResult::Applied
                 } else {
                     InlineEffectsResult::NoPlayer
