@@ -14,8 +14,8 @@ use tauri::Emitter;
 use tauri::Manager;
 use tauri::Runtime;
 use tauri::State;
-use tauri::Window;
 use tauri::WebviewWindow;
+use tauri::Window;
 use tauri_plugin_dialog::DialogExt;
 
 #[tauri::command]
@@ -295,7 +295,10 @@ pub fn open_project_file_at_path<R: Runtime>(
 
 pub fn open_project_file_at_path_and_emit<R: Runtime>(window: &WebviewWindow<R>, path: PathBuf) {
     if let Some(project) = open_project_file_at_path(window, path) {
-        if let Err(err) = window.app_handle().emit_to(window.label(), "FILE_LOADED", project) {
+        if let Err(err) = window
+            .app_handle()
+            .emit_to(window.label(), "FILE_LOADED", project)
+        {
             println!("Failed to emit FILE_LOADED event: {:?}", err);
         }
     }

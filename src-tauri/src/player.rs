@@ -9,7 +9,6 @@
 
 // impl AuthorPlayer {
 //     pub fn new(files_)
-
 use proteus_lib::container::play_settings::EffectSettings;
 use proteus_lib::container::prot::PathsTrack;
 use proteus_lib::container::prot::Prot;

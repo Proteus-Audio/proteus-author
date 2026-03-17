@@ -2,11 +2,9 @@ use crate::alerts::{emit_alert_current_window, emit_alert_current_window_keyed};
 use crate::effects::decode_effects;
 use crate::file::utils::{attachment_mime_for_path, split_arguments, unique_attachment_name};
 use crate::project::{read_project, WindowProjectState};
-use proteus_lib::container::play_settings::PlaySettingsContainer;
-use proteus_lib::container::play_settings::{
-    EffectSettings, PlaySettingsFile, PlaySettingsV2, PlaySettingsV2File, SettingsTrack,
-};
+use proteus_lib::container::play_settings::{EffectSettings, PlaySettingsPayload, SettingsTrack};
 use proteus_lib::dsp::effects::AudioEffect;
+use serde::Serialize;
 use std::collections::HashSet;
 use std::fs::File;
 use std::io::prelude::*;
@@ -17,6 +15,21 @@ use tauri::Window;
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_shell::process::CommandEvent;
 use tauri_plugin_shell::ShellExt;
+
+#[derive(Debug, Serialize)]
+struct ExportPlaySettingsV2File {
+    encoder_version: String,
+    play_settings: PlaySettingsPayload,
+}
+
+impl From<PlaySettingsPayload> for ExportPlaySettingsV2File {
+    fn from(play_settings: PlaySettingsPayload) -> Self {
+        Self {
+            encoder_version: "2".to_string(),
+            play_settings,
+        }
+    }
+}
 
 #[tauri::command]
 pub fn export_prot(window: Window, project_state: State<WindowProjectState>) {
@@ -100,18 +113,10 @@ pub fn export_prot(window: Window, project_state: State<WindowProjectState>) {
             }
         }
 
-        let encoded_effects: Vec<EffectSettings> = effects
-            .into_iter()
-            .filter_map(|effect| match serde_json::to_value(effect) {
-                Ok(value) => Some(value),
-                Err(err) => {
-                    log::warn!("failed to serialize effect entry: {}", err);
-                    None
-                }
-            })
-            .collect();
+        let encoded_effects: Vec<EffectSettings> =
+            effects.into_iter().map(EffectSettings::from).collect();
 
-        let mut play_settings = PlaySettingsV2 {
+        let mut play_settings = PlaySettingsPayload {
             effects: encoded_effects,
             tracks: Vec::new(),
         };
@@ -154,13 +159,7 @@ pub fn export_prot(window: Window, project_state: State<WindowProjectState>) {
             metadata_list.push_str(&format!("-metadata:s:a:{} title=\"{}\" ", index, file));
         }
 
-        let settings_file = PlaySettingsV2File {
-            settings: PlaySettingsContainer::Nested {
-                play_settings: play_settings,
-            },
-        };
-
-        let settings_encoder = PlaySettingsFile::V2(settings_file);
+        let settings_encoder = ExportPlaySettingsV2File::from(play_settings);
 
         let json_settings = serde_json::to_string(&settings_encoder).unwrap();
 
