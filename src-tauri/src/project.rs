@@ -1,7 +1,7 @@
-use proteus_lib::container::play_settings::EffectSettings;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
+use proteus_lib::container::play_settings::EffectSettings;
 use serde::{Deserialize, Serialize};
 use tauri::Manager;
 use tauri::State;

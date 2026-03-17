@@ -6,7 +6,7 @@ pub fn decode_effects(raw_effects: &[EffectSettings]) -> Vec<AudioEffect> {
     let mut decoded = Vec::with_capacity(raw_effects.len());
 
     for effect in raw_effects {
-        match serde_json::from_value::<AudioEffect>(effect.clone()) {
+        match effect.decode_audio_effect() {
             Ok(effect) => decoded.push(effect),
             Err(err) => warn!("failed to parse effect entry: {}", err),
         }
