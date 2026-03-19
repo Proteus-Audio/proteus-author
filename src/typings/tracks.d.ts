@@ -6,6 +6,8 @@ interface Track {
   shuffle_points?: string[]
   level?: number
   pan?: number
+  muted?: boolean
+  soloed?: boolean
   // files: TrackFile[]
 }
 

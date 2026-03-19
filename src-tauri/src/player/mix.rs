@@ -2,35 +2,71 @@ use std::path::Path;
 
 use proteus_lib::container::prot::PathsTrack;
 
-use crate::project::ProjectSkeleton;
+use crate::project::{ProjectSkeleton, TrackSkeleton};
 
 const TRACK_LEVEL_MAX: f32 = 10f32;
 
-pub(super) fn build_paths_tracks(project: &ProjectSkeleton) -> Vec<PathsTrack> {
-    let max_track_level = TRACK_LEVEL_MAX.powf(10.0 / 20.0);
-    let clamp_level = |value: f32| value.clamp(0.0, max_track_level);
-    let clamp_pan = |value: f32| value.clamp(-1.0, 1.0);
+#[derive(Clone, Copy)]
+pub(super) struct InlineTrackMix {
+    pub slot_index: usize,
+    pub level: f32,
+    pub pan: f32,
+}
 
+fn existing_track_file_paths(project: &ProjectSkeleton, track: &TrackSkeleton) -> Vec<String> {
+    track
+        .file_ids
+        .iter()
+        .filter_map(|id| {
+            project
+                .files
+                .iter()
+                .find(|f| f.id == *id)
+                .map(|f| f.path.clone())
+                .filter(|path| Path::new(path).exists())
+        })
+        .collect()
+}
+
+fn collect_playable_tracks(project: &ProjectSkeleton) -> Vec<(usize, Vec<String>)> {
     project
         .tracks
         .iter()
-        .filter_map(|track| {
-            let mut file_paths: Vec<String> = track
-                .file_ids
-                .iter()
-                .filter_map(|id| {
-                    project
-                        .files
-                        .iter()
-                        .find(|f| f.id == *id)
-                        .map(|f| f.path.clone())
-                        .filter(|path| Path::new(path).exists())
-                })
-                .collect();
-
+        .enumerate()
+        .filter_map(|(index, track)| {
+            let file_paths = existing_track_file_paths(project, track);
             if file_paths.is_empty() {
-                return None;
+                None
+            } else {
+                Some((index, file_paths))
             }
+        })
+        .collect()
+}
+
+pub(crate) fn any_playable_track_soloed(project: &ProjectSkeleton) -> bool {
+    collect_playable_tracks(project)
+        .iter()
+        .any(|(index, _)| project.tracks[*index].soloed)
+}
+
+pub(crate) fn effective_track_level(track: &TrackSkeleton, any_soloed: bool) -> f32 {
+    if track.muted {
+        return 0.0;
+    }
+    if any_soloed && !track.soloed {
+        return 0.0;
+    }
+    clamp_track_level(track.level)
+}
+
+pub(super) fn build_paths_tracks(project: &ProjectSkeleton) -> Vec<PathsTrack> {
+    let any_soloed = any_playable_track_soloed(project);
+
+    collect_playable_tracks(project)
+        .into_iter()
+        .map(|(track_index, mut file_paths)| {
+            let track = &project.tracks[track_index];
 
             // Keep the selected file first so the active take remains stable at init time.
             if let Some(selection_id) = &track.selection {
@@ -49,13 +85,30 @@ pub(super) fn build_paths_tracks(project: &ProjectSkeleton) -> Vec<PathsTrack> {
                 }
             }
 
-            Some(PathsTrack {
+            PathsTrack {
                 file_paths,
-                level: clamp_level(track.level),
+                level: effective_track_level(track, any_soloed),
                 pan: clamp_pan(track.pan),
                 selections_count: 1,
                 shuffle_points: track.shuffle_points.clone(),
-            })
+            }
+        })
+        .collect()
+}
+
+pub(super) fn build_inline_track_mixes(project: &ProjectSkeleton) -> Vec<InlineTrackMix> {
+    let any_soloed = any_playable_track_soloed(project);
+
+    collect_playable_tracks(project)
+        .into_iter()
+        .enumerate()
+        .map(|(slot_index, (track_index, _))| {
+            let track = &project.tracks[track_index];
+            InlineTrackMix {
+                slot_index,
+                level: effective_track_level(track, any_soloed),
+                pan: clamp_pan(track.pan),
+            }
         })
         .collect()
 }

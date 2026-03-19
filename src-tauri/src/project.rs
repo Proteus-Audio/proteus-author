@@ -15,6 +15,14 @@ pub fn default_track_pan() -> f32 {
     0.0
 }
 
+pub fn default_track_muted() -> bool {
+    false
+}
+
+pub fn default_track_soloed() -> bool {
+    false
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TrackSkeleton {
     pub id: u32,
@@ -27,6 +35,10 @@ pub struct TrackSkeleton {
     pub level: f32,
     #[serde(default = "default_track_pan")]
     pub pan: f32,
+    #[serde(default = "default_track_muted")]
+    pub muted: bool,
+    #[serde(default = "default_track_soloed")]
+    pub soloed: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -75,6 +87,8 @@ pub fn empty_project() -> ProjectSkeleton {
             shuffle_points: Vec::new(),
             level: default_track_level(),
             pan: default_track_pan(),
+            muted: default_track_muted(),
+            soloed: default_track_soloed(),
         }],
         effects: Vec::new(),
         files: Vec::new(),

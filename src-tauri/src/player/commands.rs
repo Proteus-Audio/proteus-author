@@ -9,12 +9,29 @@ use super::api::{
     replace_window_player,
 };
 use super::mix::{
-    build_paths_tracks, clamp_pan, clamp_track_level, format_shuffle_point_timestamp,
-    parse_shuffle_point_seconds,
+    build_inline_track_mixes, build_paths_tracks, clamp_pan, clamp_track_level,
+    format_shuffle_point_timestamp, parse_shuffle_point_seconds,
 };
 use super::types::{InlineEffectsResult, PlayerActorState, PlayerState};
 use crate::project::{read_project, with_project_mut, WindowProjectState};
 use crate::startup::{log_rust, StartupTraceState};
+
+fn sync_effective_track_mix_state(window: &Window) {
+    let project_state: State<WindowProjectState> = window.state();
+    let mixes = {
+        let project = read_project(window, &project_state);
+        build_inline_track_mixes(&project)
+    };
+
+    if mixes.is_empty() {
+        return;
+    }
+
+    let player_state: State<PlayerActorState> = window.state();
+    for mix in mixes {
+        player_set_track_mix(window, &player_state, mix.slot_index, mix.level, mix.pan);
+    }
+}
 
 #[tauri::command]
 pub async fn init_player(window: Window) {
@@ -271,37 +288,61 @@ pub async fn set_track_mix(track_id: u32, level: f32, pan: f32, window: Window) 
     let clamped_pan = clamp_pan(pan);
     let project_state: State<WindowProjectState> = window.state();
 
-    let mut slot_index: Option<usize> = None;
+    let mut updated = false;
     with_project_mut(&window, &project_state, |project| {
-        let mut playback_index = 0usize;
         for track in project.tracks.iter_mut() {
-            let is_playback_track = !track.file_ids.is_empty();
             if track.id == track_id {
                 track.level = clamped_level;
                 track.pan = clamped_pan;
-                if is_playback_track {
-                    slot_index = Some(playback_index);
-                }
+                updated = true;
                 break;
-            }
-            if is_playback_track {
-                playback_index += 1;
             }
         }
     });
 
-    let Some(slot_index) = slot_index else {
+    if !updated {
         return;
-    };
+    }
 
-    let player_state: State<PlayerActorState> = window.state();
-    player_set_track_mix(
-        &window,
-        &player_state,
-        slot_index,
-        clamped_level,
-        clamped_pan,
-    );
+    sync_effective_track_mix_state(&window);
+}
+
+#[tauri::command]
+pub async fn set_track_mute(track_id: u32, muted: bool, window: Window) {
+    let project_state: State<WindowProjectState> = window.state();
+
+    let mut updated = false;
+    with_project_mut(&window, &project_state, |project| {
+        if let Some(track) = project.tracks.iter_mut().find(|track| track.id == track_id) {
+            track.muted = muted;
+            updated = true;
+        }
+    });
+
+    if !updated {
+        return;
+    }
+
+    sync_effective_track_mix_state(&window);
+}
+
+#[tauri::command]
+pub async fn set_track_solo(track_id: u32, soloed: bool, window: Window) {
+    let project_state: State<WindowProjectState> = window.state();
+
+    let mut updated = false;
+    with_project_mut(&window, &project_state, |project| {
+        if let Some(track) = project.tracks.iter_mut().find(|track| track.id == track_id) {
+            track.soloed = soloed;
+            updated = true;
+        }
+    });
+
+    if !updated {
+        return;
+    }
+
+    sync_effective_track_mix_state(&window);
 }
 
 #[tauri::command]

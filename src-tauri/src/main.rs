@@ -100,6 +100,8 @@ fn main() {
             remove_shuffle_point,
             set_volume,
             set_track_mix,
+            set_track_mute,
+            set_track_solo,
             set_effects_chain,
             startup_trace,
             set_follow_mode_menu,

@@ -44,6 +44,8 @@ export interface TrackSkeleton {
   shuffle_points?: string[]
   level?: number
   pan?: number
+  muted?: boolean
+  soloed?: boolean
 }
 
 export interface ProjectSkeleton {

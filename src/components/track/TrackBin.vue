@@ -6,6 +6,9 @@
       hovering ? 'bg-black/20' : '',
       loading ? 'pointer-events-none' : '',
       fresh ? 'cursor-pointer' : '',
+      !fresh && trackMuted ? 'ring-1 ring-red-500/40 bg-red-950/10' : '',
+      !fresh && trackSoloed ? 'ring-1 ring-amber-400/50 bg-amber-950/10' : '',
+      !fresh && !trackAudible ? 'opacity-70' : '',
     ]"
     :style="padding"
     @click="
@@ -17,27 +20,48 @@
     <div v-if="!fresh" class="relative">
       <BaseLoadingSpinner v-if="loading" :message="loadingMessage" class="loader" :inset="-4" />
 
-      <div class="flex items-center gap-2">
+      <div class="flex flex-wrap items-center gap-2">
         <InputAutoSizedText
           v-model="trackName"
           class="inline-block"
           placeholder="Click to Add Name"
         />
 
-        <UButton
-          icon="i-lucide-folder"
-          variant="ghost"
-          color="neutral"
-          class="mb-4"
-          @click.stop="toggleFolderOpen"
-        />
-        <UButton
-          icon="i-lucide-trash-2"
-          variant="ghost"
-          color="error"
-          class="mb-4"
-          @click.stop="openDeleteConfirm"
-        />
+        <div class="mb-4 ml-auto flex items-center gap-1">
+          <UButton
+            icon="i-lucide-folder"
+            variant="ghost"
+            color="neutral"
+            @click.stop="toggleFolderOpen"
+          />
+          <UButton
+            icon="i-lucide-trash-2"
+            variant="ghost"
+            color="error"
+            @click.stop="openDeleteConfirm"
+          />
+        </div>
+
+        <div
+          class="mb-4 w-[84px] flex justify-center items-center gap-1 border-l-2 border-r-2 border-zinc-400/50"
+        >
+          <UButton
+            size="xs"
+            :variant="trackMuted ? 'solid' : 'outline'"
+            :color="trackMuted ? 'error' : 'neutral'"
+            @click.stop="trackMuted = !trackMuted"
+          >
+            M
+          </UButton>
+          <UButton
+            size="xs"
+            :variant="trackSoloed ? 'solid' : 'outline'"
+            :color="trackSoloed ? 'warning' : 'neutral'"
+            @click.stop="trackSoloed = !trackSoloed"
+          >
+            S
+          </UButton>
+        </div>
       </div>
 
       <div class="grid h-[150px] w-full grid-cols-[minmax(0,1fr)_84px] gap-2">
@@ -198,6 +222,22 @@ const trackPan = computed({
     trackStore.setTrackPan(props.trackId, value)
   },
 })
+
+const trackMuted = computed({
+  get: () => track.value.muted ?? false,
+  set: (value: boolean) => {
+    trackStore.setTrackMuted(props.trackId, value)
+  },
+})
+
+const trackSoloed = computed({
+  get: () => track.value.soloed ?? false,
+  set: (value: boolean) => {
+    trackStore.setTrackSoloed(props.trackId, value)
+  },
+})
+
+const trackAudible = computed(() => trackStore.effectiveTrackLevel(props.trackId) > 0.0001)
 
 const selectedFile = computed(() => {
   if (!track.value.selection) return undefined
