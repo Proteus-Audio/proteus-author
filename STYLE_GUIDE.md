@@ -39,9 +39,10 @@ src/
 ├── composables/               # Vue composables (useXxx pattern)
 ├── stores/                    # Pinia stores
 ├── typings/                   # TypeScript type declarations (.d.ts)
-├── assets/                    # Static assets, CSS, and shared logic
-│   └── effects.ts             # Effect factories and serialization
+├── assets/                    # Static assets (CSS, fonts, images)
 ├── utils/                     # Pure utility functions
+│   ├── effects.ts             # Effect factories and serialization
+│   └── startup-trace.ts       # Startup performance tracing
 └── classes/                   # Domain model classes (if needed)
 ```
 
@@ -58,8 +59,6 @@ src/
 ```
 src-tauri/src/
 ├── main.rs                    # Tauri bootstrap and invoke handler registration
-├── player.rs                  # Tauri command handlers for player operations
-├── player_runtime.rs          # Player actor and worker thread
 ├── project.rs                 # Project data structures and state helpers
 ├── effects.rs                 # Effect decoding
 ├── peaks.rs                   # Waveform peak extraction
@@ -67,14 +66,20 @@ src-tauri/src/
 ├── windows.rs                 # Window creation
 ├── startup.rs                 # Startup tracing
 ├── alerts.rs                  # Alert emission helpers
-├── helpers.rs                 # Small shared utilities
-└── file/                      # File I/O submodule
-    ├── mod.rs
+├── player.rs                  # Player submodule root (re-exports)
+├── player/
+│   ├── commands.rs            # Tauri command handlers for player operations
+│   ├── runtime.rs             # Player actor and worker thread
+│   ├── api.rs                 # Channel-based API for sending commands to the worker
+│   ├── types.rs               # PlayerCommand enum and shared types
+│   └── mix.rs                 # Track building and shuffle-point helpers
+├── file.rs                    # File submodule root (re-exports)
+└── file/
     ├── export.rs              # .prot export pipeline
     ├── project_io.rs          # Project load/save
     ├── registry.rs            # File registry and missing-file recovery
     ├── waveform.rs            # Waveform peak calculation
-    ├── utils.rs               # File utility functions
+    ├── utils.rs               # File and cache utility functions
     └── types.rs               # Shared file types
 ```
 
@@ -104,8 +109,6 @@ When a file approaches the soft limit, plan to refactor. When it hits the hard l
 - `src/components/track/TrackWaveform.vue` (~527 lines) — extract canvas drawing logic into a utility.
 - `src/App.vue` (~517 lines) — extract window listener registration and missing-file logic into composables.
 - `src/stores/audio.ts` (~407 lines) — split view/zoom logic from playback/effects.
-- `src-tauri/src/player_runtime.rs` (~518 lines) — the worker match arms are repetitive; consider a macro or trait-based dispatch.
-- `src-tauri/src/player.rs` (~470 lines) — extract `build_paths_tracks` and shuffle-point helpers into separate modules.
 
 ---
 
@@ -142,7 +145,7 @@ When a file approaches the soft limit, plan to refactor. When it hits the hard l
 
 - Group imports in this order, separated by blank lines:
   1. External libraries (`vue`, `@tauri-apps/*`, `pinia`, etc.)
-  2. Internal modules (`../stores/`, `../typings/`, `../assets/`)
+  2. Internal modules (`../stores/`, `../typings/`, `../utils/`)
   3. Sibling/child imports (`./ChildComponent.vue`)
 - Use the existing ESLint + Prettier configuration. Run `bun run lint` before committing.
 
@@ -193,7 +196,7 @@ This eliminates the hundreds of lines of repetitive `computed({ get, set })` blo
 
 ### Patterns
 
-- Use `Arc<Mutex<T>>` sparingly. Prefer message-passing (as in `player_runtime.rs`) for state that is accessed from multiple threads.
+- Use `Arc<Mutex<T>>` sparingly. Prefer message-passing (as in `player/runtime.rs`) for state that is accessed from multiple threads.
 - Group related `use` statements. Place `std` imports first, then external crates, then internal modules.
 - Avoid wildcard imports (`use crate::player::*`) in files other than `main.rs`. Wildcard re-exports in `main.rs` are acceptable for registering invoke handlers.
 
@@ -311,7 +314,6 @@ This eliminates the hundreds of lines of repetitive `computed({ get, set })` blo
 
 The following files contain `println!` or `console.log` statements that should be converted or removed:
 
-- `src-tauri/src/player.rs` — multiple `println!` for shuffle, effects, volume
 - `src-tauri/src/file/export.rs` — `println!` for command output and settings
 - `src-tauri/src/file/project_io.rs` — `println!` for save/open operations
 - `src-tauri/src/main.rs` — `println!("Hello, world!")`
@@ -346,7 +348,7 @@ There is no JavaScript test framework configured. Rust tests are minimal.
 - **Rust compilation must succeed.** `cargo build` from `src-tauri/` must complete without warnings treated as errors.
 - **Manual testing** is expected for UI changes. Include screenshots or recordings in PRs when applicable.
 - When a JS test framework is introduced, prioritize tests for:
-  1. Pure utility functions (`src/assets/effects.ts`, serialization logic)
+  1. Pure utility functions (`src/utils/effects.ts`, serialization logic)
   2. Store logic (Pinia store actions with mocked `invoke`)
   3. Complex computed properties
 

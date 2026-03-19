@@ -3,7 +3,7 @@ use crate::peaks::{
     get_cached_peak_amplitudes_in_range, get_cached_peak_duration_seconds,
     get_cached_peaks_for_full_duration, simplify_peaks, SimplifiedPeaks,
 };
-use crate::player_runtime::{player_shuffle_schedule, PlayerActorState};
+use crate::player::{player_shuffle_schedule, PlayerActorState};
 use crate::project::{read_project, WindowProjectState};
 use std::collections::{HashMap, HashSet};
 use std::path::Path;

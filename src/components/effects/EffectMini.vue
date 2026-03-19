@@ -45,7 +45,7 @@
 
 <script setup lang="ts">
 import { computed, defineAsyncComponent, ref } from 'vue'
-import type { EffectChainItem } from '../../assets/effects'
+import type { EffectChainItem } from '../../utils/effects'
 import { useAudioStore } from '../../stores/audio'
 import type { EffectSettings } from '../../typings/effects'
 import { AnalogIndicator } from '../analog'

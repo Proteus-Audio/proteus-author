@@ -6,11 +6,9 @@
 mod alerts;
 mod effects;
 mod file;
-mod helpers;
 mod menu;
 mod peaks;
 mod player;
-mod player_runtime;
 mod project;
 mod startup;
 mod windows;
@@ -26,7 +24,6 @@ use menu::{
     ShufflePointToolModeState,
 };
 use player::*;
-use player_runtime::*;
 use project::*;
 use startup::*;
 use tauri::{Manager, RunEvent, WindowEvent};
@@ -49,7 +46,7 @@ fn main() {
         // .plugin(tauri_plugin_process::init())
         // .plugin(tauri_plugin_fs::init())
         .manage(project::create_project_state())
-        .manage(player_runtime::create_player_actor_state())
+        .manage(player::create_player_actor_state())
         .manage(project::create_unsaved_state())
         .manage(project::create_saved_snapshot_state())
         .manage(startup::create_startup_trace_state())

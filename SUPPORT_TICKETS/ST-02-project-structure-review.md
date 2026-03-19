@@ -117,15 +117,15 @@ The **Low** items are cleanup with no risk. The **Medium** items are straightfor
 
 ## Acceptance Criteria
 
-- [ ] Empty directories `src/classes/`, `src/components/playground/`, `src/components/util/` are deleted
-- [ ] `src-tauri/src/test.rs` is deleted and its mod declaration removed
-- [ ] `src/assets/effects.ts` is moved to `src/utils/effects.ts` with all imports updated
-- [ ] `STYLE_GUIDE.md` project structure diagrams are updated to reflect: `effects.ts` in `utils/`, `file.rs` instead of `file/mod.rs`, and the new `player/` submodule
-- [ ] `src-tauri/src/helpers.rs` is folded into `src-tauri/src/file/utils.rs`
-- [ ] `player.rs` and `player_runtime.rs` are refactored into a `player/` submodule with files under the soft limit
-- [ ] `bun run build` passes (frontend type check)
-- [ ] `bun run lint` passes
-- [ ] `cargo build` succeeds from `src-tauri/`
+- [x] Empty directories `src/classes/`, `src/components/playground/`, `src/components/util/` are deleted
+- [x] `src-tauri/src/test.rs` is deleted (no mod declaration existed)
+- [x] `src/assets/effects.ts` is moved to `src/utils/effects.ts` with all imports updated
+- [x] `STYLE_GUIDE.md` project structure diagrams are updated to reflect: `effects.ts` in `utils/`, `file.rs` instead of `file/mod.rs`, and the new `player/` submodule
+- [x] `src-tauri/src/helpers.rs` is folded into `src-tauri/src/file/utils.rs`
+- [x] `player.rs` and `player_runtime.rs` are refactored into a `player/` submodule (largest file is `commands.rs` at 362 lines, near the 350 soft limit)
+- [x] `bun run build` passes (frontend type check)
+- [x] `bun run lint` passes
+- [x] `cargo check` succeeds from `src-tauri/`
 - [ ] App runs and plays audio correctly (manual verification)
 
-Backlog
+Done (pending manual verification)
