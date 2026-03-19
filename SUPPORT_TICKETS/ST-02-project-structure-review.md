@@ -24,7 +24,7 @@ Three empty directories exist with no files:
 
 ### 1b. `src-tauri/src/test.rs`
 
-This file is 18 lines of entirely commented-out code (a sample `ProjectSkeleton` struct). It violates the style guide's rule: *"Remove commented-out code. It lives in version control if you need it later."*
+This file is 18 lines of entirely commented-out code (a sample `ProjectSkeleton` struct). It violates the style guide's rule: _"Remove commented-out code. It lives in version control if you need it later."_
 
 **Recommendation:** Delete `test.rs` and remove the `mod test;` declaration from `main.rs` (if present -- verify before deleting).
 
@@ -36,7 +36,7 @@ This file is 18 lines of entirely commented-out code (a sample `ProjectSkeleton`
 
 `effects.ts` contains pure TypeScript logic: type conversion maps, factory functions for default effect settings, dB conversion math, and serialization helpers. It imports from `../typings/effects` and exports interfaces and functions. It has no static asset characteristics (no CSS, no images, no fonts).
 
-The style guide defines `assets/` as *"Static assets, CSS, and shared logic"* and explicitly lists `effects.ts` there. However, the style guide also defines `utils/` as *"Pure utility functions"* -- which is exactly what `effects.ts` contains. The file was likely placed in `assets/` early on before `utils/` existed, and the style guide was written to describe reality rather than prescribe the ideal.
+The style guide defines `assets/` as _"Static assets, CSS, and shared logic"_ and explicitly lists `effects.ts` there. However, the style guide also defines `utils/` as _"Pure utility functions"_ -- which is exactly what `effects.ts` contains. The file was likely placed in `assets/` early on before `utils/` existed, and the style guide was written to describe reality rather than prescribe the ideal.
 
 **Recommendation:** Move `effects.ts` to `src/utils/effects.ts`. Update all imports (grep for `assets/effects` to find them). Update the style guide's project structure diagram to reflect the move.
 
@@ -55,6 +55,7 @@ The style guide's backend structure diagram shows `file/mod.rs` as the module ro
 `player.rs` (469 lines) and `player_runtime.rs` (518 lines) are both over the style guide's hard limit of 500 lines for `.rs` files, and they are closely coupled -- `player.rs` sends commands via the channel that `player_runtime.rs` listens on.
 
 **Current:**
+
 ```
 src-tauri/src/
 ├── player.rs              # 469 lines - Tauri command handlers
@@ -62,6 +63,7 @@ src-tauri/src/
 ```
 
 **Proposed:**
+
 ```
 src-tauri/src/
 ├── player.rs              # Module root (re-exports, like file.rs does)
@@ -74,7 +76,7 @@ src-tauri/src/
 
 This mirrors the pattern already established by `file.rs` + `file/`. Extracting `PlayerCommand` and related types into `types.rs`, and pulling shuffle-point and `build_paths_tracks` helpers into `mix.rs`, would bring both main files well under the 350-line soft limit.
 
-**Recommendation:** Refactor into a `player/` submodule. This also addresses the style guide's note: *"player.rs -- extract `build_paths_tracks` and shuffle-point helpers into separate modules."*
+**Recommendation:** Refactor into a `player/` submodule. This also addresses the style guide's note: _"player.rs -- extract `build_paths_tracks` and shuffle-point helpers into separate modules."_
 
 ### 3b. Fold `helpers.rs` into `file/utils.rs`
 
@@ -86,7 +88,7 @@ Having a top-level `helpers.rs` with one function is not harmful, but it adds a 
 
 ### 3c. Consider the `analog/` and `digital/` component grouping
 
-The style guide says *"Group by domain, not by technical role."* The `analog/` and `digital/` directories group by visual metaphor (skeuomorphic knob vs. digital fader), not by feature domain. For example, `DigitalTrackMix.vue` is in `digital/` but is functionally a track-level control.
+The style guide says _"Group by domain, not by technical role."_ The `analog/` and `digital/` directories group by visual metaphor (skeuomorphic knob vs. digital fader), not by feature domain. For example, `DigitalTrackMix.vue` is in `digital/` but is functionally a track-level control.
 
 However, this is a deliberate design system choice -- analog and digital represent two distinct UI paradigms that the app explicitly offers. A `DigitalTrackMix` uses the same visual language as `DigitalFader` and `DigitalPot`, so grouping them together makes sense from a design-system perspective.
 
@@ -102,14 +104,14 @@ However, this is a deliberate design system choice -- analog and digital represe
 
 ## Summary of Recommended Actions
 
-| Priority | Action | Effort |
-| -------- | ------ | ------ |
-| Low | Delete empty dirs: `classes/`, `playground/`, `util/` | Trivial |
-| Low | Delete `test.rs` (commented-out code) | Trivial |
-| Low | Fix style guide: `file/mod.rs` -> `file.rs` | Trivial |
-| Medium | Move `assets/effects.ts` -> `utils/effects.ts` | Small (update imports) |
-| Medium | Fold `helpers.rs` into `file/utils.rs` | Small (move function, update imports) |
-| High | Refactor `player.rs` + `player_runtime.rs` into `player/` submodule | Medium (module restructure) |
+| Priority | Action                                                              | Effort                                |
+| -------- | ------------------------------------------------------------------- | ------------------------------------- |
+| Low      | Delete empty dirs: `classes/`, `playground/`, `util/`               | Trivial                               |
+| Low      | Delete `test.rs` (commented-out code)                               | Trivial                               |
+| Low      | Fix style guide: `file/mod.rs` -> `file.rs`                         | Trivial                               |
+| Medium   | Move `assets/effects.ts` -> `utils/effects.ts`                      | Small (update imports)                |
+| Medium   | Fold `helpers.rs` into `file/utils.rs`                              | Small (move function, update imports) |
+| High     | Refactor `player.rs` + `player_runtime.rs` into `player/` submodule | Medium (module restructure)           |
 
 The **Low** items are cleanup with no risk. The **Medium** items are straightforward moves. The **High** item (player submodule) is the most impactful improvement and directly addresses two of the style guide's noted size violations.
 
