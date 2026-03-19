@@ -7,7 +7,7 @@ import {
   effectChainFromPayload,
   getEffectLabel,
   serializeEffectChainForBackend,
-} from '../assets/effects'
+} from '../utils/effects'
 import type { AudioEffectPayload, AudioEffectType } from '../typings/effects'
 import { useAlertStore } from './alerts'
 import { useTrackStore } from './track'

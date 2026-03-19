@@ -28,6 +28,17 @@ export const useTrackStore = defineStore('track', () => {
     return items[index]
   }
 
+  const normalizeTrackState = (track: Track): Track => {
+    if (typeof track.level !== 'number') track.level = 1
+    if (typeof track.pan !== 'number') track.pan = 0
+    if (typeof track.muted !== 'boolean') track.muted = false
+    if (typeof track.soloed !== 'boolean') track.soloed = false
+    if (!track.shuffle_points) track.shuffle_points = []
+    return track
+  }
+
+  const isTrackPlayable = (track: Track) => track.file_ids.length > 0
+
   /////////////
   // GETTERS //
   /////////////
@@ -56,6 +67,9 @@ export const useTrackStore = defineStore('track', () => {
   })
 
   const allTracks = computed((): Track[] => tracks.value)
+  const anySoloed = computed((): boolean =>
+    tracks.value.some((track) => isTrackPlayable(track) && track.soloed === true),
+  )
 
   /////////////
   // SETTERS //
@@ -100,9 +114,7 @@ export const useTrackStore = defineStore('track', () => {
     if (tracks.value.some((t) => t.id === track.id)) {
       track.id = nextTrackId.value
     }
-    if (typeof track.level !== 'number') track.level = 1
-    if (typeof track.pan !== 'number') track.pan = 0
-    if (!track.shuffle_points) track.shuffle_points = []
+    normalizeTrackState(track)
 
     tracks.value.push(track)
 
@@ -146,6 +158,15 @@ export const useTrackStore = defineStore('track', () => {
     return Math.min(1, Math.max(-1, pan))
   }
 
+  const effectiveTrackLevel = (trackId: number) => {
+    const track = getTrackFromId(trackId)
+    if (!track) return 0
+    const level = clampLevel(track.level ?? 1)
+    if (track.muted) return 0
+    if (anySoloed.value && !track.soloed) return 0
+    return level
+  }
+
   const scheduleTrackMixSync = (trackId: number) => {
     const existing = mixSyncTimers.get(trackId)
     if (existing) {
@@ -187,6 +208,28 @@ export const useTrackStore = defineStore('track', () => {
     track.pan = next
     void head.logChanges()
     scheduleTrackMixSync(trackId)
+    return next
+  }
+
+  const setTrackMuted = (trackId: number, muted: boolean) => {
+    const track = getTrackFromId(trackId)
+    if (!track) return false
+    const next = !!muted
+    if ((track.muted ?? false) === next) return next
+    track.muted = next
+    void invoke('set_track_mute', { trackId, muted: next })
+    void head.logChanges()
+    return next
+  }
+
+  const setTrackSoloed = (trackId: number, soloed: boolean) => {
+    const track = getTrackFromId(trackId)
+    if (!track) return false
+    const next = !!soloed
+    if ((track.soloed ?? false) === next) return next
+    track.soloed = next
+    void invoke('set_track_solo', { trackId, soloed: next })
+    void head.logChanges()
     return next
   }
 
@@ -287,10 +330,14 @@ export const useTrackStore = defineStore('track', () => {
 
     files.value = projectState.files
     tracks.value = projectState.tracks.map((track) => ({
-      ...track,
-      level: track.level ?? 1,
-      pan: track.pan ?? 0,
-      shuffle_points: track.shuffle_points || [],
+      ...normalizeTrackState({
+        ...track,
+        level: track.level ?? 1,
+        pan: track.pan ?? 0,
+        muted: track.muted ?? false,
+        soloed: track.soloed ?? false,
+        shuffle_points: track.shuffle_points || [],
+      }),
     }))
 
     addEmptyTrackIfNone()
@@ -306,6 +353,7 @@ export const useTrackStore = defineStore('track', () => {
     files,
     possibleCombinations,
     allTracks,
+    anySoloed,
     nextTrackId,
     emptyTrackExists,
     trackFilesExists,
@@ -325,6 +373,9 @@ export const useTrackStore = defineStore('track', () => {
     setTrackSelection,
     setTrackLevel,
     setTrackPan,
+    setTrackMuted,
+    setTrackSoloed,
+    effectiveTrackLevel,
     addShufflePoint,
     removeShufflePoint,
     removeFileFromTrack,

@@ -47,7 +47,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import Draggable from 'vuedraggable'
-import { effectTypeLabels, effectTypes } from '../../assets/effects'
+import { effectTypeLabels, effectTypes } from '../../utils/effects'
 import { useAudioStore } from '../../stores/audio'
 import type { AudioEffectType } from '../../typings/effects'
 import EffectMini from './EffectMini.vue'

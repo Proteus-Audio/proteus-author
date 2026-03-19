@@ -72,6 +72,8 @@ export const useHeadStore = defineStore('head', () => {
       shuffle_points: t.shuffle_points || [],
       level: t.level ?? 1,
       pan: t.pan ?? 0,
+      muted: t.muted ?? false,
+      soloed: t.soloed ?? false,
     })) as TrackSkeleton[]
 
     const project = {

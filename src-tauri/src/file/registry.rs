@@ -1,7 +1,8 @@
 use crate::peaks::get_cached_peaks;
 use crate::project::{
-    default_track_level, default_track_pan, read_project, with_project_mut, FileInfo,
-    FileInfoSkeleton, TrackSkeleton, WindowProjectState,
+    default_track_level, default_track_muted, default_track_pan, default_track_soloed,
+    read_project, with_project_mut, FileInfo, FileInfoSkeleton, TrackSkeleton,
+    WindowProjectState,
 };
 use serde::Serialize;
 use std::path::Path;
@@ -35,6 +36,8 @@ pub fn push_file_id(
                     shuffle_points: Vec::new(),
                     level: default_track_level(),
                     pan: default_track_pan(),
+                    muted: default_track_muted(),
+                    soloed: default_track_soloed(),
                 };
 
                 project.tracks.push(track);

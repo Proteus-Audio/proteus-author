@@ -38,7 +38,7 @@ use tauri::Manager;
 use tauri::State;
 use tauri::Window;
 
-use crate::helpers::get_cache_dir;
+use crate::file::get_cache_dir;
 
 use crate::project::{read_project, WindowProjectState};
 

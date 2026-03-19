@@ -1,6 +1,7 @@
 use crate::alerts::{emit_alert_current_window, emit_alert_current_window_keyed};
 use crate::effects::decode_effects;
 use crate::file::utils::{attachment_mime_for_path, split_arguments, unique_attachment_name};
+use crate::player::mix::{any_playable_track_soloed, effective_track_level};
 use crate::project::{read_project, WindowProjectState};
 use proteus_lib::container::play_settings::{EffectSettings, PlaySettingsPayload, SettingsTrack};
 use proteus_lib::dsp::effects::AudioEffect;
@@ -120,10 +121,11 @@ pub fn export_prot(window: Window, project_state: State<WindowProjectState>) {
             effects: encoded_effects,
             tracks: Vec::new(),
         };
+        let any_soloed = any_playable_track_soloed(&project);
 
         for track in project.tracks.iter() {
             let mut settings_track = SettingsTrack {
-                level: track.level,
+                level: effective_track_level(track, any_soloed),
                 pan: track.pan,
                 ids: Vec::new(),
                 name: track.name.clone(),

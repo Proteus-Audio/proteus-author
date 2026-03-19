@@ -257,7 +257,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useAudioStore } from '../../stores/audio'
-import { getEffectLabel, getEffectType } from '../../assets/effects'
+import { getEffectLabel, getEffectType } from '../../utils/effects'
 import type { AudioEffectPayload } from '../../typings/effects'
 import AnalogIndicator from '../analog/AnalogIndicator.vue'
 import AnalogKnob from '../analog/AnalogKnob.vue'
