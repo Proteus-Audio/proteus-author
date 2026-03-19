@@ -163,12 +163,11 @@ fn player_worker(rx: Receiver<PlayerCommand>) {
                 new_player
                     .set_reporting(Arc::new(Mutex::new(reporter)), Duration::from_millis(100));
                 new_player.pause();
-                new_player.set_start_sink_chunks(1);
-                new_player.set_start_buffer_ms(10.0);
-                new_player.set_startup_fade_ms(5.0);
+
+                new_player.configure_for_live_authoring();
+                new_player.set_max_sink_latency_ms(Some(100.0));
                 new_player.set_max_sink_chunks(20);
-                new_player.set_seek_fade_in_ms(50.0);
-                new_player.set_seek_fade_out_ms(30.0);
+                new_player.set_start_buffer_ms(10.0);
 
                 if let Some(Some(old_player)) = players.insert(label, Some(new_player)) {
                     old_player.stop();
