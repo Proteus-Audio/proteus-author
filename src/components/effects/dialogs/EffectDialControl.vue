@@ -6,10 +6,10 @@
         <div v-if="helper" class="mt-1 text-xs leading-5 text-zinc-500">{{ helper }}</div>
       </div>
 
-      <div class="shrink-0 text-right text-sm font-medium text-zinc-950">{{ readout }}</div>
+      <!-- <div class="shrink-0 text-right text-sm font-medium text-zinc-950">{{ readout }}</div> -->
     </div>
 
-    <div class="grid place-items-center gap-3">
+    <div class="flex justify-center gap-3">
       <DigitalPot
         :model-value="dialValue"
         :min="0"
@@ -22,17 +22,6 @@
         size="large"
         :aria-label="label"
         @update:model-value="updateFromDial"
-      />
-
-      <input
-        class="w-full accent-zinc-950"
-        type="range"
-        min="0"
-        max="1000"
-        step="1"
-        :value="dialValue"
-        :disabled="disabled"
-        @input="updateFromDial(Number(($event.target as HTMLInputElement).value))"
       />
 
       <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">

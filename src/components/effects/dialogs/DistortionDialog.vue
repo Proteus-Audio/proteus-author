@@ -21,38 +21,25 @@
         />
 
         <div class="grid gap-3 md:grid-cols-2">
-          <div class="rounded-[18px] border border-zinc-200 bg-zinc-50 p-4">
-            <div class="text-[10px] uppercase tracking-[0.18em] text-zinc-500">Drive</div>
-            <div class="mt-2 text-2xl font-semibold text-zinc-950">{{ driveReadout }}</div>
-          </div>
-          <div class="rounded-[18px] border border-zinc-200 bg-zinc-50 p-4">
-            <div class="text-[10px] uppercase tracking-[0.18em] text-zinc-500">Clip Threshold</div>
-            <div class="mt-2 text-2xl font-semibold text-zinc-950">{{ thresholdReadout }}</div>
-          </div>
+          <EffectDialControl
+            v-model="settings.gain"
+            label="Drive"
+            :min="-30"
+            :max="30"
+            :step="0.5"
+            units="dB"
+            :precision="1"
+          />
+          <EffectDialControl
+            v-model="settings.threshold"
+            label="Threshold"
+            :min="-30"
+            :max="0"
+            :step="0.5"
+            units="dB"
+            :precision="1"
+          />
         </div>
-      </div>
-    </template>
-
-    <template #controls>
-      <div class="grid gap-3">
-        <EffectDialControl
-          v-model="settings.gain"
-          label="Drive"
-          :min="-30"
-          :max="30"
-          :step="0.5"
-          units="dB"
-          :precision="1"
-        />
-        <EffectDialControl
-          v-model="settings.threshold"
-          label="Threshold"
-          :min="-30"
-          :max="0"
-          :step="0.5"
-          units="dB"
-          :precision="1"
-        />
       </div>
     </template>
 
