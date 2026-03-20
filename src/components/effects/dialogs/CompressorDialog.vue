@@ -21,65 +21,54 @@
         />
 
         <div class="grid gap-3 md:grid-cols-4">
-          <div
-            v-for="stat in stats"
-            :key="stat.label"
-            class="rounded-[18px] border border-zinc-200 bg-zinc-50 p-4"
-          >
-            <div class="text-[10px] uppercase tracking-[0.18em] text-zinc-500">
-              {{ stat.label }}
-            </div>
-            <div class="mt-2 text-xl font-semibold text-zinc-950">{{ stat.value }}</div>
-          </div>
+          <EffectDialControl
+            v-model="settings.threshold_db"
+            label="Threshold"
+            :min="-60"
+            :max="0"
+            :step="0.5"
+            units="dB"
+            :precision="1"
+          />
+          <EffectDialControl
+            v-model="settings.ratio"
+            label="Ratio"
+            :min="1"
+            :max="20"
+            :step="0.1"
+            :precision="1"
+          />
+          <EffectDialControl
+            v-model="settings.attack_ms"
+            label="Attack"
+            :min="1"
+            :max="200"
+            :step="1"
+            units="ms"
+          />
+          <EffectDialControl
+            v-model="settings.release_ms"
+            label="Release"
+            :min="1"
+            :max="500"
+            :step="1"
+            units="ms"
+          />
+          <EffectDialControl
+            v-model="settings.makeup_gain_db"
+            label="Makeup Gain"
+            :min="-30"
+            :max="30"
+            :step="0.5"
+            units="dB"
+            :precision="1"
+          />
         </div>
       </div>
     </template>
 
     <template #controls>
-      <div class="grid gap-3">
-        <EffectDialControl
-          v-model="settings.threshold_db"
-          label="Threshold"
-          :min="-60"
-          :max="0"
-          :step="0.5"
-          units="dB"
-          :precision="1"
-        />
-        <EffectDialControl
-          v-model="settings.ratio"
-          label="Ratio"
-          :min="1"
-          :max="20"
-          :step="0.1"
-          :precision="1"
-        />
-        <EffectDialControl
-          v-model="settings.attack_ms"
-          label="Attack"
-          :min="1"
-          :max="200"
-          :step="1"
-          units="ms"
-        />
-        <EffectDialControl
-          v-model="settings.release_ms"
-          label="Release"
-          :min="1"
-          :max="500"
-          :step="1"
-          units="ms"
-        />
-        <EffectDialControl
-          v-model="settings.makeup_gain_db"
-          label="Makeup Gain"
-          :min="-30"
-          :max="30"
-          :step="0.5"
-          units="dB"
-          :precision="1"
-        />
-      </div>
+      <div class="grid gap-3"></div>
     </template>
 
     <template #meters>
