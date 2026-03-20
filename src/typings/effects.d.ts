@@ -8,6 +8,7 @@ export type AudioEffectKey =
   | 'GainSettings'
   | 'CompressorSettings'
   | 'LimiterSettings'
+  | 'MultibandEqSettings'
 
 export type AudioEffectType =
   | 'BasicReverb'
@@ -19,6 +20,7 @@ export type AudioEffectType =
   | 'Gain'
   | 'Compressor'
   | 'Limiter'
+  | 'MultibandEq'
 
 export interface BasicReverbSettings {
   enabled: boolean
@@ -87,6 +89,45 @@ export interface LimiterSettings {
   release_ms: number
 }
 
+export interface EqPointSettings {
+  freq_hz: number
+  q: number
+  gain_db: number
+}
+
+export type LowEdgeFilterSettings =
+  | {
+      type: 'high_pass'
+      freq_hz: number
+      q: number
+    }
+  | {
+      type: 'low_shelf'
+      freq_hz: number
+      q: number
+      gain_db: number
+    }
+
+export type HighEdgeFilterSettings =
+  | {
+      type: 'low_pass'
+      freq_hz: number
+      q: number
+    }
+  | {
+      type: 'high_shelf'
+      freq_hz: number
+      q: number
+      gain_db: number
+    }
+
+export interface MultibandEqSettings {
+  enabled: boolean
+  points: EqPointSettings[]
+  low_edge?: LowEdgeFilterSettings | null
+  high_edge?: HighEdgeFilterSettings | null
+}
+
 export type EffectSettings =
   | BasicReverbSettings
   | DiffusionReverbSettings
@@ -97,6 +138,7 @@ export type EffectSettings =
   | GainSettings
   | CompressorSettings
   | LimiterSettings
+  | MultibandEqSettings
 
 export type AudioEffectPayload =
   | { BasicReverbSettings: BasicReverbSettings }
@@ -108,3 +150,34 @@ export type AudioEffectPayload =
   | { GainSettings: GainSettings }
   | { CompressorSettings: CompressorSettings }
   | { LimiterSettings: LimiterSettings }
+  | { MultibandEqSettings: MultibandEqSettings }
+
+export interface LevelSnapshot {
+  peak: number[]
+  rms: number[]
+}
+
+export interface EffectLevelSnapshot {
+  input: LevelSnapshot
+  output: LevelSnapshot
+}
+
+export interface FrequencyResponsePoint {
+  freq_hz: number
+  gain_db: number
+}
+
+export interface FilterResponseCurve {
+  composite: FrequencyResponsePoint[]
+  per_band: FrequencyResponsePoint[][]
+}
+
+export interface BandLevels {
+  bands_db: number[]
+  band_centers_hz: number[]
+}
+
+export interface EffectBandSnapshot {
+  input: BandLevels
+  output: BandLevels
+}

@@ -2,6 +2,7 @@ use std::sync::mpsc::Sender;
 
 use proteus_lib::container::play_settings::EffectSettings;
 use proteus_lib::container::prot::PathsTrack;
+use proteus_lib::dsp::meter::{EffectBandSnapshot, EffectLevelSnapshot, FilterResponseCurve};
 use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 
@@ -119,6 +120,31 @@ pub(super) enum PlayerCommand {
     GetLevelsDb {
         label: String,
         reply: Sender<Vec<f32>>,
+    },
+    SetEffectLevelMetering {
+        label: String,
+        enabled: bool,
+        refresh_hz: Option<f32>,
+        reply: Sender<()>,
+    },
+    GetEffectLevelsAudible {
+        label: String,
+        reply: Sender<Option<Vec<EffectLevelSnapshot>>>,
+    },
+    GetEffectFrequencyResponses {
+        label: String,
+        num_points: usize,
+        reply: Sender<Vec<Option<FilterResponseCurve>>>,
+    },
+    SetEffectSpectralAnalysis {
+        label: String,
+        enabled: bool,
+        refresh_hz: Option<f32>,
+        reply: Sender<()>,
+    },
+    GetEffectBandLevelsAudible {
+        label: String,
+        reply: Sender<Option<Vec<Option<EffectBandSnapshot>>>>,
     },
     GetShuffleSchedule {
         label: String,

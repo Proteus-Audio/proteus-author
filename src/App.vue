@@ -306,7 +306,7 @@ const handleStartExport = async () => {
 
 const effectRackRef = ref<HTMLElement | null>(null)
 const effectRackHover = useElementHover(effectRackRef)
-const effectRackHeight = computed(() => (effectRackHover.value ? `7rem` : `5rem`))
+const effectRackHeight = computed(() => (effectRackHover.value ? `11rem` : `8rem`))
 
 const registerWindowListeners = async (
   appWindow: Window,

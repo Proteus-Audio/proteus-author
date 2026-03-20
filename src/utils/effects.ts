@@ -7,10 +7,14 @@ import type {
   ConvolutionReverbSettings,
   DiffusionReverbSettings,
   DistortionSettings,
+  EqPointSettings,
   GainSettings,
+  HighEdgeFilterSettings,
   HighPassFilterSettings,
   LimiterSettings,
   LowPassFilterSettings,
+  LowEdgeFilterSettings,
+  MultibandEqSettings,
 } from '../typings/effects'
 
 export interface EffectChainItem {
@@ -33,6 +37,7 @@ const effectTypeToKey: Record<AudioEffectType, AudioEffectKey> = {
   ConvolutionReverb: 'ConvolutionReverbSettings',
   LowPassFilter: 'LowPassFilterSettings',
   HighPassFilter: 'HighPassFilterSettings',
+  MultibandEq: 'MultibandEqSettings',
   Distortion: 'DistortionSettings',
   Gain: 'GainSettings',
   Compressor: 'CompressorSettings',
@@ -45,6 +50,7 @@ const effectKeyToType: Record<AudioEffectKey, AudioEffectType> = {
   ConvolutionReverbSettings: 'ConvolutionReverb',
   LowPassFilterSettings: 'LowPassFilter',
   HighPassFilterSettings: 'HighPassFilter',
+  MultibandEqSettings: 'MultibandEq',
   DistortionSettings: 'Distortion',
   GainSettings: 'Gain',
   CompressorSettings: 'Compressor',
@@ -59,6 +65,7 @@ export const effectTypes: AudioEffectType[] = [
   'Limiter',
   'LowPassFilter',
   'HighPassFilter',
+  'MultibandEq',
   'Distortion',
   'Gain',
 ]
@@ -71,8 +78,22 @@ export const effectTypeLabels: Record<AudioEffectType, string> = {
   Limiter: 'Limiter',
   LowPassFilter: 'Low-Pass Filter',
   HighPassFilter: 'High-Pass Filter',
+  MultibandEq: 'Multiband EQ',
   Distortion: 'Distortion',
   Gain: 'Gain',
+}
+
+export const effectDescriptions: Record<AudioEffectType, string> = {
+  BasicReverb: 'Short algorithmic wash with direct control over mix, decay, and amplitude.',
+  DiffusionReverb: 'Diffuse ambience with pre-delay, room shaping, and damping controls.',
+  ConvolutionReverb: 'Impulse-response ambience with file-backed loading and dry/wet blending.',
+  Compressor: 'Dynamic range control with threshold, ratio, timing, and makeup gain.',
+  Limiter: 'Fast peak control with ceiling, knee width, and release behaviour.',
+  LowPassFilter: 'Analytical low-pass response with live filter monitoring.',
+  HighPassFilter: 'Analytical high-pass response with live filter monitoring.',
+  MultibandEq: 'Parametric EQ with optional edge filters and analytical response guidance.',
+  Distortion: 'Gain-staged clipping curve with threshold-driven saturation.',
+  Gain: 'Output trim with immediate delta and live level feedback.',
 }
 
 const defaultBasicReverb = (): BasicReverbSettings => ({
@@ -142,6 +163,55 @@ const defaultLimiter = (): LimiterSettings => ({
   release_ms: 100.0,
 })
 
+export const createEqPoint = (freq_hz: number, gain_db = 0, q = 0.8): EqPointSettings => ({
+  freq_hz,
+  q,
+  gain_db,
+})
+
+export const createLowEdgeFilter = (type: LowEdgeFilterSettings['type']): LowEdgeFilterSettings => {
+  if (type === 'low_shelf') {
+    return {
+      type: 'low_shelf',
+      freq_hz: 80,
+      q: 0.8,
+      gain_db: 0,
+    }
+  }
+
+  return {
+    type: 'high_pass',
+    freq_hz: 50,
+    q: 0.7,
+  }
+}
+
+export const createHighEdgeFilter = (
+  type: HighEdgeFilterSettings['type'],
+): HighEdgeFilterSettings => {
+  if (type === 'high_shelf') {
+    return {
+      type: 'high_shelf',
+      freq_hz: 10_000,
+      q: 0.8,
+      gain_db: 0,
+    }
+  }
+
+  return {
+    type: 'low_pass',
+    freq_hz: 14_000,
+    q: 0.7,
+  }
+}
+
+const defaultMultibandEq = (): MultibandEqSettings => ({
+  enabled: true,
+  points: [createEqPoint(120, 0, 0.8), createEqPoint(1_000, 0, 0.8), createEqPoint(8_000, 0, 0.8)],
+  low_edge: null,
+  high_edge: null,
+})
+
 export const createEffect = (type: AudioEffectType): AudioEffectPayload => {
   switch (type) {
     case 'BasicReverb':
@@ -154,6 +224,8 @@ export const createEffect = (type: AudioEffectType): AudioEffectPayload => {
       return { LowPassFilterSettings: defaultLowPassFilter() }
     case 'HighPassFilter':
       return { HighPassFilterSettings: defaultHighPassFilter() }
+    case 'MultibandEq':
+      return { MultibandEqSettings: defaultMultibandEq() }
     case 'Distortion':
       return { DistortionSettings: defaultDistortion() }
     case 'Gain':
@@ -173,6 +245,7 @@ export const getEffectKey = (effect: AudioEffectPayload): AudioEffectKey => {
   if ('ConvolutionReverbSettings' in effect) return 'ConvolutionReverbSettings'
   if ('LowPassFilterSettings' in effect) return 'LowPassFilterSettings'
   if ('HighPassFilterSettings' in effect) return 'HighPassFilterSettings'
+  if ('MultibandEqSettings' in effect) return 'MultibandEqSettings'
   if ('DistortionSettings' in effect) return 'DistortionSettings'
   if ('GainSettings' in effect) return 'GainSettings'
   if ('LimiterSettings' in effect) return 'LimiterSettings'
@@ -216,6 +289,21 @@ export const normalizeEffect = (effect: AudioEffectPayload): AudioEffectPayload 
       HighPassFilterSettings: { ...defaultHighPassFilter(), ...effect.HighPassFilterSettings },
     }
   }
+  if ('MultibandEqSettings' in effect) {
+    const normalized = { ...defaultMultibandEq(), ...effect.MultibandEqSettings }
+    return {
+      MultibandEqSettings: {
+        ...normalized,
+        points:
+          normalized.points?.map((point) => ({
+            ...createEqPoint(1_000),
+            ...point,
+          })) ?? defaultMultibandEq().points,
+        low_edge: normalized.low_edge ?? null,
+        high_edge: normalized.high_edge ?? null,
+      },
+    }
+  }
   if ('DistortionSettings' in effect) {
     const normalized = { ...defaultDistortion(), ...effect.DistortionSettings }
     return {
@@ -246,6 +334,118 @@ export const effectKeyFromType = (type: AudioEffectType): AudioEffectKey => effe
 
 export const isEffectType = (effect: AudioEffectPayload, type: AudioEffectType): boolean => {
   return getEffectType(effect) === type
+}
+
+export const effectSupportsFrequencyResponse = (type: AudioEffectType): boolean => {
+  return type === 'LowPassFilter' || type === 'HighPassFilter' || type === 'MultibandEq'
+}
+
+export const effectSupportsSpectralOverlay = (type: AudioEffectType): boolean => {
+  return effectSupportsFrequencyResponse(type)
+}
+
+export const getEffectEnabled = (effect: AudioEffectPayload): boolean => {
+  if ('BasicReverbSettings' in effect) return effect.BasicReverbSettings.enabled
+  if ('DiffusionReverbSettings' in effect) return effect.DiffusionReverbSettings.enabled
+  if ('ConvolutionReverbSettings' in effect) return effect.ConvolutionReverbSettings.enabled
+  if ('LowPassFilterSettings' in effect) return effect.LowPassFilterSettings.enabled
+  if ('HighPassFilterSettings' in effect) return effect.HighPassFilterSettings.enabled
+  if ('MultibandEqSettings' in effect) return effect.MultibandEqSettings.enabled
+  if ('DistortionSettings' in effect) return effect.DistortionSettings.enabled
+  if ('GainSettings' in effect) return effect.GainSettings.enabled
+  if ('LimiterSettings' in effect) return effect.LimiterSettings.enabled
+  return effect.CompressorSettings.enabled
+}
+
+export const setEffectEnabled = (effect: AudioEffectPayload, enabled: boolean) => {
+  if ('BasicReverbSettings' in effect) effect.BasicReverbSettings.enabled = enabled
+  else if ('DiffusionReverbSettings' in effect) effect.DiffusionReverbSettings.enabled = enabled
+  else if ('ConvolutionReverbSettings' in effect) {
+    effect.ConvolutionReverbSettings.enabled = enabled
+  } else if ('LowPassFilterSettings' in effect) effect.LowPassFilterSettings.enabled = enabled
+  else if ('HighPassFilterSettings' in effect) effect.HighPassFilterSettings.enabled = enabled
+  else if ('MultibandEqSettings' in effect) effect.MultibandEqSettings.enabled = enabled
+  else if ('DistortionSettings' in effect) effect.DistortionSettings.enabled = enabled
+  else if ('GainSettings' in effect) effect.GainSettings.enabled = enabled
+  else if ('LimiterSettings' in effect) effect.LimiterSettings.enabled = enabled
+  else effect.CompressorSettings.enabled = enabled
+}
+
+const formatSignedNumber = (value: number, digits = 1) => {
+  const rounded = Number(value.toFixed(digits))
+  return `${rounded > 0 ? '+' : ''}${rounded}`
+}
+
+export const formatDbValue = (value: number, digits = 1): string =>
+  `${formatSignedNumber(value, digits)} dB`
+
+export const formatFrequencyValue = (value: number): string => {
+  if (value >= 1000) {
+    const rounded = Number((value / 1000).toFixed(value >= 10_000 ? 1 : 2))
+    return `${rounded} kHz`
+  }
+  return `${Math.round(value)} Hz`
+}
+
+const describeEdge = (
+  edge: LowEdgeFilterSettings | HighEdgeFilterSettings | null | undefined,
+): string | null => {
+  if (!edge) return null
+  if (edge.type === 'high_pass') return `HP ${formatFrequencyValue(edge.freq_hz)}`
+  if (edge.type === 'low_pass') return `LP ${formatFrequencyValue(edge.freq_hz)}`
+  if (edge.type === 'low_shelf') return `Low Shelf ${formatDbValue(edge.gain_db)}`
+  return `High Shelf ${formatDbValue(edge.gain_db)}`
+}
+
+export const getEffectSummary = (effect: AudioEffectPayload): string => {
+  if ('BasicReverbSettings' in effect) {
+    return `${Math.round(effect.BasicReverbSettings.mix * 100)}% mix · ${Math.round(effect.BasicReverbSettings.duration_ms)} ms`
+  }
+
+  if ('DiffusionReverbSettings' in effect) {
+    return `${Math.round(effect.DiffusionReverbSettings.mix * 100)}% mix · ${Math.round(effect.DiffusionReverbSettings.room_size_ms)} ms room`
+  }
+
+  if ('ConvolutionReverbSettings' in effect) {
+    const ir =
+      effect.ConvolutionReverbSettings.impulse_response_path ||
+      effect.ConvolutionReverbSettings.impulse_response_attachment ||
+      effect.ConvolutionReverbSettings.impulse_response
+    return `${Math.round(effect.ConvolutionReverbSettings.dry_wet * 100)}% wet · ${ir ? 'IR loaded' : 'No IR'}`
+  }
+
+  if ('CompressorSettings' in effect) {
+    return `${formatDbValue(effect.CompressorSettings.threshold_db)} · ${effect.CompressorSettings.ratio.toFixed(1)}:1`
+  }
+
+  if ('LimiterSettings' in effect) {
+    return `${formatDbValue(effect.LimiterSettings.threshold_db)} ceiling`
+  }
+
+  if ('LowPassFilterSettings' in effect) {
+    return `${formatFrequencyValue(effect.LowPassFilterSettings.freq_hz)} · Q ${effect.LowPassFilterSettings.q.toFixed(2)}`
+  }
+
+  if ('HighPassFilterSettings' in effect) {
+    return `${formatFrequencyValue(effect.HighPassFilterSettings.freq_hz)} · Q ${effect.HighPassFilterSettings.q.toFixed(2)}`
+  }
+
+  if ('MultibandEqSettings' in effect) {
+    const points = effect.MultibandEqSettings.points.length
+    const low = describeEdge(effect.MultibandEqSettings.low_edge)
+    const high = describeEdge(effect.MultibandEqSettings.high_edge)
+    return [points === 1 ? '1 band' : `${points} bands`, low, high].filter(Boolean).join(' · ')
+  }
+
+  if ('DistortionSettings' in effect) {
+    return `${formatDbValue(effect.DistortionSettings.gain)} drive · ${formatDbValue(effect.DistortionSettings.threshold)} clip`
+  }
+
+  if ('GainSettings' in effect) {
+    return formatDbValue(effect.GainSettings.gain)
+  }
+
+  return effectTypeLabels[getEffectType(effect)]
 }
 
 export const effectChainFromPayload = (effects: AudioEffectPayload[]): EffectChainItem[] => {

@@ -2,6 +2,7 @@ use std::sync::mpsc::{self, Sender};
 
 use proteus_lib::container::play_settings::EffectSettings;
 use proteus_lib::container::prot::PathsTrack;
+use proteus_lib::dsp::meter::{EffectBandSnapshot, EffectLevelSnapshot, FilterResponseCurve};
 use tauri::{Manager, State, Window};
 
 use super::types::{
@@ -51,11 +52,7 @@ pub fn player_resume_state(window: &Window, state: &State<PlayerActorState>) -> 
     })
 }
 
-pub fn player_play(
-    window: &Window,
-    state: &State<PlayerActorState>,
-    effects: Vec<EffectSettings>,
-) {
+pub fn player_play(window: &Window, state: &State<PlayerActorState>, effects: Vec<EffectSettings>) {
     let label = window_label(window);
     ask(state, move |reply| PlayerCommand::Play {
         label,
@@ -174,6 +171,74 @@ pub fn player_levels_db(window: &Window, state: &State<PlayerActorState>) -> Vec
     ask(state, move |reply| PlayerCommand::GetLevelsDb {
         label,
         reply,
+    })
+}
+
+pub fn player_set_effect_level_metering(
+    window: &Window,
+    state: &State<PlayerActorState>,
+    enabled: bool,
+    refresh_hz: Option<f32>,
+) {
+    let label = window_label(window);
+    ask(state, move |reply| PlayerCommand::SetEffectLevelMetering {
+        label,
+        enabled,
+        refresh_hz,
+        reply,
+    });
+}
+
+pub fn player_effect_levels_audible(
+    window: &Window,
+    state: &State<PlayerActorState>,
+) -> Option<Vec<EffectLevelSnapshot>> {
+    let label = window_label(window);
+    ask(state, move |reply| PlayerCommand::GetEffectLevelsAudible {
+        label,
+        reply,
+    })
+}
+
+pub fn player_effect_frequency_responses(
+    window: &Window,
+    state: &State<PlayerActorState>,
+    num_points: usize,
+) -> Vec<Option<FilterResponseCurve>> {
+    let label = window_label(window);
+    ask(state, move |reply| {
+        PlayerCommand::GetEffectFrequencyResponses {
+            label,
+            num_points,
+            reply,
+        }
+    })
+}
+
+pub fn player_set_effect_spectral_analysis(
+    window: &Window,
+    state: &State<PlayerActorState>,
+    enabled: bool,
+    refresh_hz: Option<f32>,
+) {
+    let label = window_label(window);
+    ask(state, move |reply| {
+        PlayerCommand::SetEffectSpectralAnalysis {
+            label,
+            enabled,
+            refresh_hz,
+            reply,
+        }
+    });
+}
+
+pub fn player_effect_band_levels_audible(
+    window: &Window,
+    state: &State<PlayerActorState>,
+) -> Option<Vec<Option<EffectBandSnapshot>>> {
+    let label = window_label(window);
+    ask(state, move |reply| {
+        PlayerCommand::GetEffectBandLevelsAudible { label, reply }
     })
 }
 
