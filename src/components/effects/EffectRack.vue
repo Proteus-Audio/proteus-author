@@ -1,8 +1,8 @@
 <template>
   <div
-    class="fixed right-0 bottom-0 left-0 z-20 h-[var(--effect-rack-height)] w-full border-t border-zinc-300 bg-[linear-gradient(180deg,#f8fafc_0%,#eef2f7_100%)] px-4 py-3 transition-[height] duration-300"
+    class="fixed right-0 bottom-0 left-0 z-20 h-[var(--effect-rack-height)] overflow-hidden border-t border-zinc-300 bg-zinc-50 px-4 py-3 transition-[height] duration-300"
   >
-    <div class="grid h-full grid-rows-[auto_minmax(0,1fr)] gap-3">
+    <div class="relative grid h-full min-w-0 grid-rows-[auto_minmax(0,1fr)] gap-3">
       <div class="flex items-center justify-between gap-3">
         <div>
           <div class="text-[10px] uppercase tracking-[0.18em] text-zinc-500">Master Chain</div>
@@ -24,14 +24,14 @@
 
       <div
         v-if="noEffects"
-        class="flex h-full items-center justify-center rounded-[18px] border border-dashed border-zinc-300 bg-white/70 text-center text-xs uppercase tracking-[0.18em] text-zinc-500"
+        class="flex h-full items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-white/70 text-center text-xs uppercase tracking-[0.18em] text-zinc-500"
       >
         There are no effects yet. Add one to start shaping the master chain.
       </div>
 
-      <div v-else class="pointer-events-none z-30 min-h-0">
+      <div v-else class="pointer-events-none z-30 min-h-0 min-w-0 overflow-hidden">
         <Draggable
-          class="pointer-events-auto flex h-full w-full flex-nowrap items-stretch gap-4 overflow-x-auto overflow-y-hidden pb-1"
+          class="pointer-events-auto flex h-full max-w-full min-w-0 flex-nowrap items-stretch gap-4 overflow-x-auto overflow-y-hidden pb-1 pr-1"
           :list="effects"
           item-key="id"
           handle=".effect-drag-handle"

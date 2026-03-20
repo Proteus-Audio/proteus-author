@@ -1,10 +1,10 @@
 <template>
   <div
-    class="relative flex h-full min-w-[220px] w-[220px] cursor-grab flex-col justify-between gap-3 overflow-hidden rounded-[18px] border border-zinc-300 bg-[linear-gradient(135deg,#ffffff_0%,#eef2f7_100%)] px-4 py-3 text-zinc-950 shadow-[0_10px_24px_rgba(15,23,42,0.08)] transition-transform duration-150 hover:-translate-y-0.5"
+    class="relative flex h-full min-w-[220px] w-[220px] cursor-pointer flex-col justify-between gap-3 overflow-hidden rounded-xl border border-zinc-300 bg-zinc-50 px-4 py-3 text-zinc-950 shadow-sm transition-transform duration-150 mt-0.5 hover:-translate-y-0.5"
     @click.stop="toggleEdit"
   >
     <button
-      class="effect-drag-handle absolute top-3 right-3 cursor-grab rounded-full border border-zinc-300 bg-white px-2 py-1 text-[0.7rem] leading-none tracking-[0.2em] text-zinc-500 active:cursor-grabbing"
+      class="effect-drag-handle absolute top-2 right-3 cursor-grab! rounded-full border border-zinc-300 bg-white px-2 py-1 text-[0.7rem] leading-none tracking-[0.2em] text-zinc-500 active:cursor-grabbing"
       type="button"
       aria-label="Drag effect"
       @click.stop
@@ -16,19 +16,17 @@
       <div class="flex items-start gap-3">
         <DigitalIndicator
           size="small"
-          :state="enabled"
+          class="w-6"
+          :state="true"
           :color="enabled ? 'green' : 'red'"
           :blue-scale="false"
         />
         <div class="min-w-0">
-          <div class="text-[10px] uppercase tracking-[0.2em] text-zinc-500">
-            Effect {{ index + 1 }}
-          </div>
-          <div class="mt-1 text-sm font-semibold leading-5 text-zinc-950">{{ label }}</div>
+          <div class="-mt-1 text-sm font-semibold leading-5 text-zinc-950">{{ label }}</div>
         </div>
       </div>
 
-      <div class="min-h-[2.5rem] text-xs leading-5 text-zinc-600">{{ summary }}</div>
+      <!-- <div class="min-h-[2.5rem] text-xs leading-5 text-zinc-600">{{ summary }}</div> -->
     </div>
 
     <UModal

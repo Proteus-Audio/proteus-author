@@ -18,7 +18,7 @@ import { computed } from 'vue'
 interface Props {
   state: boolean
   label?: string
-  size?: 'small' | 'medium' | 'large'
+  size?: 'tiny' | 'small' | 'medium' | 'large'
   color?: 'red' | 'green' | 'lime' | 'amber' | 'yellow' | 'orange' | 'dark-red'
   blueScale?: boolean
   frozen?: boolean
@@ -33,6 +33,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const sizeClass = computed(() => {
+  if (props.size === 'tiny') return 'tiny'
   if (props.size === 'small') return 'small'
   if (props.size === 'large') return 'large'
   return 'medium'
@@ -47,6 +48,10 @@ const sizeClass = computed(() => {
 
   .light {
     @apply block w-full border-4 border-gray-200 bg-slate-100/50 transition-colors duration-150;
+  }
+
+  &.tiny .light {
+    @apply h-1 border-0;
   }
 
   &.small .light {
