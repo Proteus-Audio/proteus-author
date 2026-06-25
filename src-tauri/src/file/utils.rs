@@ -1,7 +1,6 @@
 use crate::project::{
     read_project_by_label, ProjectSkeleton, WindowProjectState, WindowSavedSnapshotState,
 };
-use regex::Regex;
 use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
@@ -79,23 +78,6 @@ pub(super) fn update_window_title(window: &Window, project: &ProjectSkeleton, is
     if let Err(err) = window.set_title(&title) {
         println!("Failed to set title: {:?}", err);
     }
-}
-
-pub(super) fn split_arguments(string: &str) -> Vec<&str> {
-    let re = Regex::new(r#"[^"\s]*("[^"]*")|([^"\s]+)"#).unwrap();
-    re.find_iter(string)
-        .map(|m| {
-            let string = m.as_str();
-            let first = string.chars().next().unwrap();
-            let last = string.chars().last().unwrap();
-            let quote = '"';
-            if first == quote && last == quote {
-                &string[1..string.len() - 1]
-            } else {
-                string
-            }
-        })
-        .collect()
 }
 
 pub(super) fn attachment_mime_for_path(path: &Path) -> &'static str {

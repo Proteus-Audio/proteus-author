@@ -1,8 +1,7 @@
 use crate::peaks::get_cached_peaks;
 use crate::project::{
     default_track_level, default_track_muted, default_track_pan, default_track_soloed,
-    read_project, with_project_mut, FileInfo, FileInfoSkeleton, TrackSkeleton,
-    WindowProjectState,
+    read_project, with_project_mut, FileInfo, FileInfoSkeleton, TrackSkeleton, WindowProjectState,
 };
 use serde::Serialize;
 use std::path::Path;

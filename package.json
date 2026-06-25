@@ -1,6 +1,6 @@
 {
   "name": "proteus-author",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "An authoring application for .prot files.",
   "type": "module",
   "scripts": {
@@ -28,9 +28,9 @@
     "@iconify-vue/dinkie-icons": "^1.0.1",
     "@iconify/vue": "^5.0.0",
     "@nuxt/ui": "^4.4.0",
-    "@tauri-apps/api": "^2.10.0",
-    "@tauri-apps/cli": "^2.10.0",
-    "@tauri-apps/plugin-dialog": "^2.0.0",
+    "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/cli": "^2.11.3",
+    "@tauri-apps/plugin-dialog": "^2.7.1",
     "@vueuse/core": "^14.2.1",
     "pinia": "^3.0.4",
     "tailwindcss": "^4.1.18",
