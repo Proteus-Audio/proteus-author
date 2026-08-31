@@ -1,12 +1,15 @@
 use proteus_lib::container::play_settings::EffectSettings;
 use proteus_lib::container::prot::Prot;
+use proteus_lib::dsp::meter::{EffectBandSnapshot, EffectLevelSnapshot, FilterResponseCurve};
 use tauri::{Emitter, Manager, State, Window};
 
 use super::api::{
-    player_duration, player_flags, player_ids, player_levels, player_levels_db, player_pause,
-    player_play, player_position, player_resume_state, player_seek, player_set_effects_inline,
-    player_set_track_mix, player_set_volume, player_shuffle, player_stop, player_volume,
-    replace_window_player,
+    player_duration, player_effect_band_levels_audible, player_effect_frequency_responses,
+    player_effect_levels_audible, player_flags, player_ids, player_levels, player_levels_db,
+    player_pause, player_play, player_position, player_resume_state, player_seek,
+    player_set_effect_level_metering, player_set_effect_spectral_analysis,
+    player_set_effects_inline, player_set_track_mix, player_set_volume, player_shuffle,
+    player_stop, player_volume, replace_window_player,
 };
 use super::mix::{
     build_inline_track_mixes, build_paths_tracks, clamp_pan, clamp_track_level,
@@ -400,4 +403,37 @@ pub fn get_levels(window: Window) -> Vec<f32> {
 pub fn get_levels_db(window: Window) -> Vec<f32> {
     let player_state: State<PlayerActorState> = window.state();
     player_levels_db(&window, &player_state)
+}
+
+#[tauri::command]
+pub fn set_effect_level_metering(enabled: bool, refresh_hz: Option<f32>, window: Window) {
+    let player_state: State<PlayerActorState> = window.state();
+    player_set_effect_level_metering(&window, &player_state, enabled, refresh_hz);
+}
+
+#[tauri::command]
+pub fn get_effect_levels_audible(window: Window) -> Option<Vec<EffectLevelSnapshot>> {
+    let player_state: State<PlayerActorState> = window.state();
+    player_effect_levels_audible(&window, &player_state)
+}
+
+#[tauri::command]
+pub fn get_effect_frequency_responses(
+    num_points: usize,
+    window: Window,
+) -> Vec<Option<FilterResponseCurve>> {
+    let player_state: State<PlayerActorState> = window.state();
+    player_effect_frequency_responses(&window, &player_state, num_points)
+}
+
+#[tauri::command]
+pub fn set_effect_spectral_analysis(enabled: bool, refresh_hz: Option<f32>, window: Window) {
+    let player_state: State<PlayerActorState> = window.state();
+    player_set_effect_spectral_analysis(&window, &player_state, enabled, refresh_hz);
+}
+
+#[tauri::command]
+pub fn get_effect_band_levels_audible(window: Window) -> Option<Vec<Option<EffectBandSnapshot>>> {
+    let player_state: State<PlayerActorState> = window.state();
+    player_effect_band_levels_audible(&window, &player_state)
 }

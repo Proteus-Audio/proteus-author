@@ -1,27 +1,37 @@
 <template>
   <div
-    class="fixed right-0 bottom-0 left-0 z-20 h-[var(--effect-rack-height)] w-full cursor-pointer border-t-2 border-zinc-500 bg-zinc-200 p-4 transition-[height] duration-300"
+    class="fixed right-0 bottom-0 left-0 z-20 h-[var(--effect-rack-height)] overflow-hidden border-t border-zinc-300 bg-zinc-50 px-4 py-3 transition-[height] duration-300"
   >
-    <UDropdownMenu
-      id="effect-rack"
-      :items="effectMenuItems"
-      class="z-20"
-      :content="{ align: 'center', side: 'top' }"
-      :ui="{ content: 'z-[70]' }"
-    >
-      <div class="absolute inset-0 flex items-center justify-center w-full h-full">
-        <div v-if="noEffects" class="text-center text-xs uppercase text-zinc-500">
-          There are no effects, click to add one
+    <div class="relative grid h-full min-w-0 grid-rows-[auto_minmax(0,1fr)] gap-3">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <div class="text-[10px] uppercase tracking-[0.18em] text-zinc-500">Master Chain</div>
+          <div class="mt-1 text-sm font-semibold text-zinc-950">Effect Rack</div>
         </div>
+
+        <UDropdownMenu
+          id="effect-rack"
+          :items="effectMenuItems"
+          class="z-20"
+          :content="{ align: 'end', side: 'top' }"
+          :ui="{ content: 'z-[70]' }"
+        >
+          <UButton icon="i-lucide-plus" color="neutral" variant="outline" size="sm">
+            Add Effect
+          </UButton>
+        </UDropdownMenu>
       </div>
-    </UDropdownMenu>
-    <div
-      v-if="!noEffects"
-      class="absolute inset-0 p-2 flex items-center justify-start pointer-events-none z-30"
-    >
-      <div>
+
+      <div
+        v-if="noEffects"
+        class="flex h-full items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-white/70 text-center text-xs uppercase tracking-[0.18em] text-zinc-500"
+      >
+        There are no effects yet. Add one to start shaping the master chain.
+      </div>
+
+      <div v-else class="pointer-events-none z-30 min-h-0 min-w-0 overflow-hidden">
         <Draggable
-          class="flex h-full w-full flex-nowrap items-stretch gap-4 overflow-x-auto overflow-y-hidden pb-1 pointer-events-auto"
+          class="pointer-events-auto flex h-full max-w-full min-w-0 flex-nowrap items-stretch gap-4 overflow-x-auto overflow-y-hidden pb-1 pr-1"
           :list="effects"
           item-key="id"
           handle=".effect-drag-handle"
@@ -65,7 +75,7 @@ const effectMenuItems = computed(() => {
   return [
     effectTypes.map((type) => ({
       label: effectTypeLabels[type],
-      class: 'cursor-pointer text-xs uppercase text-zinc-500 hover:bg-zinc-200',
+      class: 'cursor-pointer text-xs uppercase tracking-[0.16em] text-zinc-600 hover:bg-zinc-100',
       onSelect: () => addEffect(type),
     })),
   ]
@@ -90,8 +100,8 @@ const onDragEnd = () => {
 
 .effect-drag-active {
   opacity: 0.9;
-  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.35);
-  @apply rounded-lg;
+  box-shadow: 0 18px 32px rgba(15, 23, 42, 0.18);
+  @apply rounded-[18px];
 }
 
 .effect-rack-item.effect-drag-active {

@@ -215,6 +215,60 @@ fn player_worker(rx: Receiver<PlayerCommand>) {
                     .unwrap_or_else(|| vec![f32::NEG_INFINITY, f32::NEG_INFINITY]);
                 let _ = reply.send(value);
             }
+            PlayerCommand::SetEffectLevelMetering {
+                label,
+                enabled,
+                refresh_hz,
+                reply,
+            } => {
+                if let Some(Some(player)) = players.get(&label) {
+                    if let Some(hz) = refresh_hz {
+                        player.set_effect_level_meter_refresh_hz(hz);
+                    }
+                    player.set_effect_level_metering_enabled(enabled);
+                }
+                let _ = reply.send(());
+            }
+            PlayerCommand::GetEffectLevelsAudible { label, reply } => {
+                let value = players
+                    .get(&label)
+                    .and_then(|player| player.as_ref())
+                    .and_then(|player| player.effect_levels_audible());
+                let _ = reply.send(value);
+            }
+            PlayerCommand::GetEffectFrequencyResponses {
+                label,
+                num_points,
+                reply,
+            } => {
+                let value = players
+                    .get(&label)
+                    .and_then(|player| player.as_ref())
+                    .map(|player| player.effect_frequency_responses(num_points))
+                    .unwrap_or_default();
+                let _ = reply.send(value);
+            }
+            PlayerCommand::SetEffectSpectralAnalysis {
+                label,
+                enabled,
+                refresh_hz,
+                reply,
+            } => {
+                if let Some(Some(player)) = players.get(&label) {
+                    if let Some(hz) = refresh_hz {
+                        player.set_spectral_analysis_refresh_hz(hz);
+                    }
+                    player.set_spectral_analysis_enabled(enabled);
+                }
+                let _ = reply.send(());
+            }
+            PlayerCommand::GetEffectBandLevelsAudible { label, reply } => {
+                let value = players
+                    .get(&label)
+                    .and_then(|player| player.as_ref())
+                    .and_then(|player| player.effect_band_levels_audible());
+                let _ = reply.send(value);
+            }
             PlayerCommand::GetShuffleSchedule { label, reply } => {
                 let value = players
                     .get(&label)

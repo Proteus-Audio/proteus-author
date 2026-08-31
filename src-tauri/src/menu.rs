@@ -1,9 +1,12 @@
 use serde::Serialize;
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tauri::menu::{CheckMenuItem, Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::{AppHandle, Emitter, Manager, Runtime, State};
 
 use crate::alerts::AlertPayload;
+use crate::file::open_project_file_at_path_and_emit;
+use crate::recent_files;
 use crate::windows;
 
 const ID_ABOUT: &str = "about";
@@ -11,6 +14,8 @@ const ID_NEW_WINDOW: &str = "new_window";
 const ID_SAVE: &str = "save";
 const ID_SAVE_AS: &str = "save_as";
 const ID_OPEN: &str = "open";
+const ID_OPEN_RECENT: &str = "open_recent";
+const ID_OPEN_RECENT_PREFIX: &str = "open_recent_";
 const ID_EXPORT_PROT: &str = "export_prot";
 const ID_ZOOM_IN: &str = "zoom";
 const ID_ZOOM_OUT: &str = "zoom_out";
@@ -92,6 +97,77 @@ fn find_check_menu_item<R: Runtime>(menu: &Menu<R>, target_id: &str) -> Option<C
         .and_then(|items| find_in_items(items, target_id))
 }
 
+fn find_submenu<R: Runtime>(menu: &Menu<R>, target_id: &str) -> Option<Submenu<R>> {
+    fn find_in_items<R: Runtime>(
+        items: Vec<tauri::menu::MenuItemKind<R>>,
+        target_id: &str,
+    ) -> Option<Submenu<R>> {
+        for item in items {
+            if item.id().as_ref() == target_id {
+                if let Some(submenu) = item.as_submenu() {
+                    return Some(submenu.clone());
+                }
+            }
+
+            if let Some(submenu) = item.as_submenu() {
+                if let Ok(sub_items) = submenu.items() {
+                    if let Some(found) = find_in_items(sub_items, target_id) {
+                        return Some(found);
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    menu.items()
+        .ok()
+        .and_then(|items| find_in_items(items, target_id))
+}
+
+fn recent_menu_item_id(index: usize) -> String {
+    format!("{ID_OPEN_RECENT_PREFIX}{index}")
+}
+
+fn recent_menu_item_label(path: &PathBuf) -> String {
+    path.file_name()
+        .unwrap_or(path.as_os_str())
+        .to_string_lossy()
+        .to_string()
+}
+
+fn make_recent_items<R: Runtime>(
+    app: &AppHandle<R>,
+    files: &[PathBuf],
+) -> tauri::Result<Vec<MenuItem<R>>> {
+    files
+        .iter()
+        .enumerate()
+        .map(|(index, path)| {
+            MenuItem::with_id(
+                app,
+                recent_menu_item_id(index),
+                recent_menu_item_label(path),
+                true,
+                None::<&str>,
+            )
+        })
+        .collect()
+}
+
+fn open_recent_path<R: Runtime>(app: &AppHandle<R>, path: PathBuf) {
+    let focused_window = app
+        .webview_windows()
+        .values()
+        .find(|window| window.is_focused().unwrap_or(false))
+        .cloned();
+
+    let window = focused_window.unwrap_or_else(|| windows::get_or_create_main_window(app));
+    open_project_file_at_path_and_emit(&window, path);
+    let _ = window.show();
+    let _ = window.set_focus();
+}
+
 pub fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     let about = MenuItem::with_id(app, ID_ABOUT, "About Proteus Author", true, None::<&str>)?;
 
@@ -127,6 +203,19 @@ pub fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     let save_as = MenuItem::with_id(app, ID_SAVE_AS, "Save As", true, Some("CmdOrCtrl+Shift+S"))?;
 
     let open = MenuItem::with_id(app, ID_OPEN, "Open", true, Some("CmdOrCtrl+O"))?;
+    let recent_files = recent_files::load(app);
+    let recent_items = make_recent_items(app, &recent_files)?;
+    let recent_item_refs: Vec<&dyn tauri::menu::IsMenuItem<R>> = recent_items
+        .iter()
+        .map(|item| item as &dyn tauri::menu::IsMenuItem<R>)
+        .collect();
+    let open_recent = Submenu::with_id_and_items(
+        app,
+        ID_OPEN_RECENT,
+        "Open Recent",
+        !recent_files.is_empty(),
+        &recent_item_refs,
+    )?;
 
     let export_prot = MenuItem::with_id(
         app,
@@ -147,6 +236,7 @@ pub fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
             &save,
             &save_as,
             &open,
+            &open_recent,
             &separator,
             &export_prot,
         ],
@@ -284,6 +374,16 @@ pub fn handle_menu_event<R: Runtime>(
         emit_to_active_window(app, "SAVE_FILE_AS", ())
     } else if id == ID_OPEN {
         emit_to_active_window(app, "OPEN_FILE", ())
+    } else if let Some(index) = id
+        .as_ref()
+        .strip_prefix(ID_OPEN_RECENT_PREFIX)
+        .and_then(|index| index.parse::<usize>().ok())
+    {
+        if let Some(path) = recent_files::path_at(app, index) {
+            open_recent_path(app, path);
+        } else {
+            recent_files::refresh_menu(app);
+        }
     } else if id == ID_EXPORT_PROT {
         emit_to_active_window(app, "START_EXPORT", ())
     } else if id == ID_ZOOM_IN {
@@ -319,6 +419,26 @@ pub fn handle_menu_event<R: Runtime>(
             },
         );
     }
+}
+
+pub fn refresh_recent_files_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
+    let Some(menu) = app.menu() else {
+        return Ok(());
+    };
+    let Some(open_recent) = find_submenu(&menu, ID_OPEN_RECENT) else {
+        return Ok(());
+    };
+
+    while open_recent.remove_at(0)?.is_some() {}
+
+    let recent_files = recent_files::load(app);
+    let recent_items = make_recent_items(app, &recent_files)?;
+
+    for item in &recent_items {
+        open_recent.append(item)?;
+    }
+
+    open_recent.set_enabled(!recent_files.is_empty())
 }
 
 #[tauri::command]

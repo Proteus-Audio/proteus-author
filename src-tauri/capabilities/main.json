@@ -51,18 +51,6 @@
     "core:window:allow-set-ignore-cursor-events",
     "core:window:allow-start-dragging",
     "core:webview:allow-print",
-    {
-      "identifier": "shell:allow-execute",
-      "allow": [
-        {
-          "args": false,
-          "cmd": "",
-          "name": "/Users/innocentsmith/Dev/proteus/proteus-author/ffmpeg/proteus-author-ffmpeg",
-          "sidecar": true
-        }
-      ]
-    },
-    "shell:allow-open",
     "dialog:allow-open",
     "dialog:allow-save",
     "dialog:allow-message",
@@ -83,7 +71,6 @@
     "os:allow-hostname",
     "core:app:allow-app-show",
     "core:app:allow-app-hide",
-    "shell:default",
     "dialog:default",
     "os:default",
     "global-shortcut:default"

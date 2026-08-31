@@ -10,6 +10,7 @@ mod menu;
 mod peaks;
 mod player;
 mod project;
+mod recent_files;
 mod startup;
 mod windows;
 
@@ -34,7 +35,6 @@ fn main() {
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_shell::init())
         .plugin(
             tauri_plugin_log::Builder::new()
                 .level(log::LevelFilter::Info)
@@ -94,6 +94,11 @@ fn main() {
             get_play_state,
             get_levels,
             get_levels_db,
+            set_effect_level_metering,
+            get_effect_levels_audible,
+            get_effect_frequency_responses,
+            set_effect_spectral_analysis,
+            get_effect_band_levels_audible,
             get_volume,
             set_selections,
             add_shuffle_point,

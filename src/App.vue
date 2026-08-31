@@ -105,7 +105,7 @@
               Unique playback combinations: {{ formattedPossibleCombinations }}
             </div>
 
-            <div class="inline-block size-4"></div>
+            <div class="inline-block h-12"></div>
           </BaseContainer>
 
           <div ref="effectRackRef">
@@ -306,7 +306,7 @@ const handleStartExport = async () => {
 
 const effectRackRef = ref<HTMLElement | null>(null)
 const effectRackHover = useElementHover(effectRackRef)
-const effectRackHeight = computed(() => (effectRackHover.value ? `7rem` : `5rem`))
+const effectRackHeight = computed(() => (effectRackHover.value ? `9rem` : `8.75rem`))
 
 const registerWindowListeners = async (
   appWindow: Window,
