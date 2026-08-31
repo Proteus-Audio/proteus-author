@@ -10,6 +10,7 @@ mod menu;
 mod peaks;
 mod player;
 mod project;
+mod recent_files;
 mod startup;
 mod windows;
 

@@ -7,6 +7,7 @@ use crate::project::{
     set_unsaved_by_label, ProjectSkeleton, WindowProjectState, WindowSavedSnapshotState,
     WindowUnsavedState,
 };
+use crate::recent_files;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
@@ -98,7 +99,7 @@ pub async fn save_file(window: Window) -> Option<ProjectSkeleton> {
         return None;
     };
 
-    let mut file = match File::create(location) {
+    let mut file = match File::create(&location) {
         Ok(file) => file,
         Err(err) => {
             println!("Failed to create project file: {:?}", err);
@@ -118,6 +119,7 @@ pub async fn save_file(window: Window) -> Option<ProjectSkeleton> {
     );
     set_unsaved(&window, &unsaved_state, false);
     update_window_title(&window, &project, false);
+    recent_files::record(&window.app_handle(), Path::new(&location));
 
     Some(project.clone())
 }
@@ -186,6 +188,7 @@ pub async fn save_file_as(window: Window) -> Option<ProjectSkeleton> {
     set_unsaved(&window, &unsaved_state, false);
 
     update_window_title(&window, &project, false);
+    recent_files::record(&window.app_handle(), &path_buff);
 
     Some(project.clone())
 }
@@ -289,6 +292,8 @@ pub fn open_project_file_at_path<R: Runtime>(
     if let Err(err) = window.set_title(&title) {
         println!("Failed to set title: {:?}", err);
     }
+
+    recent_files::record(window.app_handle(), &path);
 
     Some(new_project)
 }
